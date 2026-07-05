@@ -19,6 +19,61 @@ export type Business = {
   updated_at: string;
 };
 
+export type Customer = {
+  id: string;
+  business_id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  company: string | null;
+  status: CustomerStatus;
+  next_follow_up: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CustomerNote = {
+  id: string;
+  customer_id: string;
+  body: string;
+  created_at: string;
+};
+
+export type Task = {
+  id: string;
+  business_id: string;
+  customer_id: string | null;
+  title: string;
+  due_date: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CustomerStatus = "lead" | "active" | "past";
+
+export const CUSTOMER_STATUSES: {
+  value: CustomerStatus;
+  label: string;
+  badgeClass: string;
+}[] = [
+  {
+    value: "lead",
+    label: "Lead",
+    badgeClass: "bg-amber-50 text-amber-700 border-amber-200",
+  },
+  {
+    value: "active",
+    label: "Active",
+    badgeClass: "bg-green-50 text-green-700 border-green-200",
+  },
+  {
+    value: "past",
+    label: "Past",
+    badgeClass: "bg-slate-100 text-slate-500 border-slate-200",
+  },
+];
+
 export const BUSINESS_TYPES = [
   { value: "design", label: "Design & Creative" },
   { value: "development", label: "Web & Software Development" },

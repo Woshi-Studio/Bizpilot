@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireUserAndBusiness } from "@/lib/data";
+import { formatMoney } from "@/lib/types";
 import DailyPlan from "./daily-plan";
 
 export const metadata = { title: "Dashboard" };
@@ -15,8 +16,15 @@ export default async function DashboardPage() {
   const { supabase, user, business } = await requireUserAndBusiness();
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ data: profile }, { data: dueTasks }, { data: followUps }, { count: customerCount }] =
-    await Promise.all([
+  const monthStart = `${today.slice(0, 7)}-01`;
+
+  const [
+    { data: profile },
+    { data: dueTasks },
+    { data: followUps },
+    { count: customerCount },
+    { data: monthTransactions },
+  ] = await Promise.all([
       supabase
         .from("profiles")
         .select("full_name")
@@ -41,11 +49,25 @@ export default async function DashboardPage() {
         .from("customers")
         .select("id", { count: "exact", head: true })
         .eq("business_id", business.id),
+      supabase
+        .from("transactions")
+        .select("type, amount")
+        .eq("business_id", business.id)
+        .gte("date", monthStart),
     ]);
 
   const firstName = (profile?.full_name ?? "").split(" ")[0] || "there";
   const tasks = dueTasks ?? [];
   const reminders = followUps ?? [];
+
+  const txs = monthTransactions ?? [];
+  const monthIncome = txs
+    .filter((t) => t.type === "income")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+  const monthExpenses = txs
+    .filter((t) => t.type === "expense")
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+  const monthProfit = monthIncome - monthExpenses;
 
   return (
     <div className="mx-auto max-w-5xl">
@@ -159,18 +181,51 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        {/* Money placeholder (Phase 5) */}
+        {/* Money snapshot (this month) */}
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-800">
-            Money Snapshot
-          </h2>
-          <p className="mt-3 text-sm font-medium text-slate-600">
-            No income or expenses logged.
-          </p>
-          <p className="mt-2 text-xs leading-5 text-slate-400">
-            Simple money tracking is on the way — monthly totals and profit
-            estimates will live here.
-          </p>
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-800">
+              Money Snapshot
+            </h2>
+            <Link
+              href="/money"
+              className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
+            >
+              Details &rarr;
+            </Link>
+          </div>
+          {txs.length === 0 ? (
+            <p className="mt-3 text-sm text-slate-400">
+              Nothing logged this month.{" "}
+              <Link href="/money" className="text-indigo-600 hover:underline">
+                Add income or expenses
+              </Link>
+              .
+            </p>
+          ) : (
+            <dl className="mt-3 space-y-1.5 text-sm">
+              <div className="flex justify-between">
+                <dt className="text-slate-500">Income</dt>
+                <dd className="font-semibold text-green-600">
+                  {formatMoney(monthIncome, business.currency)}
+                </dd>
+              </div>
+              <div className="flex justify-between">
+                <dt className="text-slate-500">Expenses</dt>
+                <dd className="font-semibold text-red-600">
+                  {formatMoney(monthExpenses, business.currency)}
+                </dd>
+              </div>
+              <div className="flex justify-between border-t border-slate-100 pt-1.5">
+                <dt className="font-medium text-slate-700">Profit</dt>
+                <dd
+                  className={`font-bold ${monthProfit >= 0 ? "text-slate-900" : "text-red-600"}`}
+                >
+                  {formatMoney(monthProfit, business.currency)}
+                </dd>
+              </div>
+            </dl>
+          )}
         </div>
       </div>
 

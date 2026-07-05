@@ -74,6 +74,47 @@ export const CUSTOMER_STATUSES: {
   },
 ];
 
+export type Transaction = {
+  id: string;
+  business_id: string;
+  customer_id: string | null;
+  type: "income" | "expense";
+  amount: number;
+  category: string;
+  description: string | null;
+  date: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export const INCOME_CATEGORIES = [
+  { value: "project", label: "Project payment" },
+  { value: "retainer", label: "Retainer" },
+  { value: "deposit", label: "Deposit" },
+  { value: "other_income", label: "Other income" },
+] as const;
+
+export const EXPENSE_CATEGORIES = [
+  { value: "software", label: "Software & subscriptions" },
+  { value: "equipment", label: "Equipment" },
+  { value: "marketing", label: "Marketing" },
+  { value: "travel", label: "Travel" },
+  { value: "fees", label: "Fees & taxes" },
+  { value: "other_expense", label: "Other expense" },
+] as const;
+
+export function categoryLabel(value: string) {
+  const all = [...INCOME_CATEGORIES, ...EXPENSE_CATEGORIES];
+  return all.find((c) => c.value === value)?.label ?? value;
+}
+
+export function formatMoney(amount: number, currency: string) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: currency || "USD",
+  }).format(amount);
+}
+
 export const BUSINESS_TYPES = [
   { value: "design", label: "Design & Creative" },
   { value: "development", label: "Web & Software Development" },

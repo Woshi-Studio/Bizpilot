@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireUserAndBusiness } from "@/lib/data";
+import DailyPlan from "./daily-plan";
 
 export const metadata = { title: "Dashboard" };
 
@@ -57,7 +58,11 @@ export default async function DashboardPage() {
           : "You're all caught up. Nice."}
       </p>
 
-      <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="mt-8">
+        <DailyPlan />
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* Today's tasks */}
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">

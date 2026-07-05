@@ -14,6 +14,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Customers", href: "/customers" },
   { label: "Tasks", href: "/tasks" },
+  { label: "AI Messages", href: "/messages" },
   { label: "Money", href: "/money", soon: true },
   { label: "Settings", href: "/settings" },
 ];

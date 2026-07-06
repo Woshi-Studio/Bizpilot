@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import SettingsForm from "./settings-form";
+import PublicPageForm from "./public-page-form";
 
 export const metadata = { title: "Settings" };
 
@@ -14,7 +15,7 @@ export default async function SettingsPage() {
     redirect("/login");
   }
 
-  const [{ data: profile }, { data: business }, planResult] =
+  const [{ data: profile }, { data: business }, planResult, publicResult] =
     await Promise.all([
       supabase
         .from("profiles")
@@ -31,6 +32,11 @@ export default async function SettingsPage() {
         .select("plan")
         .eq("owner_id", user.id)
         .maybeSingle(),
+      supabase
+        .from("businesses")
+        .select("slug, public_page_enabled, tagline, services")
+        .eq("owner_id", user.id)
+        .maybeSingle(),
     ]);
 
   // The `plan` column ships in migration 0006 — until the user runs it,
@@ -42,6 +48,9 @@ export default async function SettingsPage() {
     );
   }
   const plan = planResult.data?.plan === "premium" ? "premium" : "free";
+
+  // Public-page columns ship in migration 0007 — tolerate their absence
+  const publicPage = publicResult.error ? null : publicResult.data;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -92,6 +101,19 @@ export default async function SettingsPage() {
           </div>
         )}
       </div>
+
+      {publicPage && (
+        <div className="mt-8">
+          <PublicPageForm
+            defaults={{
+              enabled: publicPage.public_page_enabled ?? false,
+              slug: publicPage.slug ?? "",
+              tagline: publicPage.tagline ?? "",
+              services: publicPage.services ?? "",
+            }}
+          />
+        </div>
+      )}
 
       <div className="mt-8">
         <SettingsForm

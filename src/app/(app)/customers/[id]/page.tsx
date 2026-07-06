@@ -103,6 +103,14 @@ export default async function CustomerDetailPage({
         >
           ✨ Write them a message
         </Link>
+        <Link
+          href={`/messages?customer=${customer.id}&details=${encodeURIComponent(
+            "Write a warm, short message asking this customer if they know anyone else who could use my services — a friendly referral ask, not pushy. Mention I'd love to return the favor."
+          )}`}
+          className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+        >
+          🙌 Ask for a referral
+        </Link>
       </div>
 
       <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

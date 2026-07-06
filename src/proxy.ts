@@ -9,6 +9,7 @@ const PUBLIC_PATHS = [
   "/auth",
   "/terms",
   "/privacy",
+  "/b/",
 ];
 
 export async function proxy(request: NextRequest) {

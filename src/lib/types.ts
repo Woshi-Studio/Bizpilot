@@ -162,6 +162,17 @@ export const INVOICE_STATUS_META: Record<
   },
 };
 
+export type Lead = {
+  id: string;
+  business_id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  message: string | null;
+  status: "new" | "converted";
+  created_at: string;
+};
+
 export const BUSINESS_TYPES = [
   { value: "design", label: "Design & Creative" },
   { value: "development", label: "Web & Software Development" },

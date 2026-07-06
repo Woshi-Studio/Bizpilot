@@ -20,14 +20,18 @@ export default function OnboardingForm({
   const [businessName, setBusinessName] = useState("");
   const [businessType, setBusinessType] = useState("");
   const [primaryGoal, setPrimaryGoal] = useState("");
+  const [stage, setStage] = useState("");
 
-  const steps = ["About you", "Your work", "Your goal"];
+  const steps = ["About you", "Your work", "Your goal", "Your stage"];
+  const lastStep = steps.length - 1;
   const canContinue =
     step === 0
       ? fullName.trim() !== "" && businessName.trim() !== ""
       : step === 1
         ? businessType !== ""
-        : primaryGoal !== "";
+        : step === 2
+          ? primaryGoal !== ""
+          : stage !== "";
 
   return (
     <form action={formAction}>
@@ -36,6 +40,7 @@ export default function OnboardingForm({
       <input type="hidden" name="business_name" value={businessName} />
       <input type="hidden" name="business_type" value={businessType} />
       <input type="hidden" name="primary_goal" value={primaryGoal} />
+      <input type="hidden" name="stage" value={stage} />
 
       <div className="mb-6 flex items-center gap-2">
         {steps.map((label, i) => (
@@ -149,6 +154,44 @@ export default function OnboardingForm({
         </div>
       )}
 
+      {step === 3 && (
+        <div>
+          <p className="text-sm font-medium text-slate-700">
+            Where are you on the journey?
+          </p>
+          <div className="mt-3 space-y-2">
+            {[
+              {
+                value: "running",
+                label: "Already running",
+                blurb: "I have customers or income — help me stay organized",
+              },
+              {
+                value: "starting",
+                label: "Just starting 🚀",
+                blurb: "I have an idea — help me build a plan and launch",
+              },
+            ].map((s) => (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => setStage(s.value)}
+                className={`block w-full rounded-md border px-3 py-2.5 text-left text-sm transition-colors ${
+                  stage === s.value
+                    ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+                    : "border-slate-300 text-slate-700 hover:border-indigo-300"
+                }`}
+              >
+                <span className="font-medium">{s.label}</span>
+                <span className="mt-0.5 block text-xs text-slate-400">
+                  {s.blurb}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-8 flex items-center justify-between">
         <button
           type="button"
@@ -159,7 +202,7 @@ export default function OnboardingForm({
         >
           Back
         </button>
-        {step < 2 ? (
+        {step < lastStep ? (
           <button
             type="button"
             disabled={!canContinue}

@@ -20,6 +20,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Decision Guard", href: "/decisions" },
   { label: "Money", href: "/money" },
   { label: "Invoices", href: "/invoices" },
+  { label: "Coach", href: "/coach" },
+  { label: "Launchpad", href: "/launchpad" },
   { label: "Settings", href: "/settings" },
 ];
 

@@ -50,5 +50,7 @@ export async function completeOnboarding(
     return { error: businessError.message };
   }
 
-  redirect("/dashboard");
+  // Brand-new founders go straight to Launchpad to build their plan
+  const stage = String(formData.get("stage") ?? "");
+  redirect(stage === "starting" ? "/launchpad" : "/dashboard");
 }

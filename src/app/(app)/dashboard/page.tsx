@@ -27,6 +27,10 @@ export default async function DashboardPage() {
     { count: taskCount },
     { count: transactionCount },
     { count: decisionCount },
+    { data: overdueInvoices },
+    { data: noFollowUpCustomers },
+    leadsResult,
+    { data: incomeByCustomer },
   ] = await Promise.all([
       supabase
         .from("profiles")
@@ -69,6 +73,33 @@ export default async function DashboardPage() {
         .from("decisions")
         .select("id", { count: "exact", head: true })
         .eq("business_id", business.id),
+      supabase
+        .from("invoices")
+        .select("id, number, due_date, customers(name)")
+        .eq("business_id", business.id)
+        .eq("doc_type", "invoice")
+        .eq("status", "sent")
+        .lt("due_date", today)
+        .limit(3),
+      supabase
+        .from("customers")
+        .select("id, name")
+        .eq("business_id", business.id)
+        .eq("status", "active")
+        .is("next_follow_up", null)
+        .limit(3),
+      supabase
+        .from("leads")
+        .select("id", { count: "exact", head: true })
+        .eq("business_id", business.id)
+        .eq("status", "new"),
+      supabase
+        .from("transactions")
+        .select("amount, customers(name)")
+        .eq("business_id", business.id)
+        .eq("type", "income")
+        .not("customer_id", "is", null)
+        .gte("date", `${today.slice(0, 4)}-01-01`),
     ]);
 
   const firstName = (profile?.full_name ?? "").split(" ")[0] || "there";
@@ -83,6 +114,53 @@ export default async function DashboardPage() {
     .filter((t) => t.type === "expense")
     .reduce((sum, t) => sum + Number(t.amount), 0);
   const monthProfit = monthIncome - monthExpenses;
+
+  // Autopilot: things the app noticed on its own
+  const newLeadCount = leadsResult.error ? 0 : (leadsResult.count ?? 0);
+  const revenueByName = new Map<string, number>();
+  for (const t of incomeByCustomer ?? []) {
+    const cust = t.customers as unknown as { name: string } | null;
+    if (cust?.name) {
+      revenueByName.set(
+        cust.name,
+        (revenueByName.get(cust.name) ?? 0) + Number(t.amount)
+      );
+    }
+  }
+  const topCustomer = [...revenueByName.entries()].sort(
+    (a, b) => b[1] - a[1]
+  )[0];
+
+  const autopilotItems: { emoji: string; text: string; href: string }[] = [];
+  for (const inv of overdueInvoices ?? []) {
+    const cust = inv.customers as unknown as { name: string } | null;
+    autopilotItems.push({
+      emoji: "⏰",
+      text: `Invoice ${inv.number}${cust ? ` (${cust.name})` : ""} was due ${inv.due_date} and isn't paid — time to chase it.`,
+      href: `/invoices/${inv.id}`,
+    });
+  }
+  for (const c of noFollowUpCustomers ?? []) {
+    autopilotItems.push({
+      emoji: "👋",
+      text: `${c.name} is an active customer with no follow-up planned — set one so they don't drift away.`,
+      href: `/customers/${c.id}`,
+    });
+  }
+  if (newLeadCount > 0) {
+    autopilotItems.push({
+      emoji: "📥",
+      text: `${newLeadCount} new lead${newLeadCount === 1 ? "" : "s"} waiting in your inbox.`,
+      href: "/leads",
+    });
+  }
+  if (topCustomer && topCustomer[1] > 0) {
+    autopilotItems.push({
+      emoji: "💡",
+      text: `${topCustomer[0]} is your biggest customer this year (${formatMoney(topCustomer[1], business.currency)}). Keep them close.`,
+      href: "/customers",
+    });
+  }
 
   const checklist = [
     {
@@ -161,6 +239,27 @@ export default async function DashboardPage() {
       <div className={showChecklist ? "mt-4" : "mt-8"}>
         <DailyPlan />
       </div>
+
+      {autopilotItems.length > 0 && (
+        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-800">
+            🤖 Autopilot noticed
+          </h2>
+          <ul className="mt-3 space-y-2">
+            {autopilotItems.map((item, i) => (
+              <li key={i}>
+                <Link
+                  href={item.href}
+                  className="-mx-2 flex items-start gap-2 rounded-md px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                >
+                  <span>{item.emoji}</span>
+                  <span>{item.text}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
         {/* Today's tasks */}

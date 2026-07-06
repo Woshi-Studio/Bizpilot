@@ -17,6 +17,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "AI Messages", href: "/messages" },
   { label: "Decision Guard", href: "/decisions" },
   { label: "Money", href: "/money" },
+  { label: "Invoices", href: "/invoices" },
   { label: "Settings", href: "/settings" },
 ];
 
@@ -68,7 +69,7 @@ export default function AppShell({
   return (
     <div className="flex min-h-screen w-full">
       {/* Desktop sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-slate-200 bg-white py-5 lg:flex">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-slate-200 bg-white py-5 print:hidden lg:flex">
         <div className="mb-6 px-6">
           <Link href="/dashboard" className="text-xl font-bold text-indigo-600">
             BizPilot
@@ -105,7 +106,7 @@ export default function AppShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Topbar */}
-        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 sm:px-6">
+        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 print:hidden sm:px-6">
           <div className="flex items-center gap-3">
             <button
               type="button"

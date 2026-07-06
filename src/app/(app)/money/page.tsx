@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { requireUserAndBusiness } from "@/lib/data";
+import { applyDueRecurring } from "@/lib/recurring";
 import {
   categoryLabel,
   formatMoney,
   type Transaction,
 } from "@/lib/types";
 import TransactionComposer from "./transaction-composer";
-import { deleteTransaction } from "./actions";
+import { deleteTransaction, deleteRecurring } from "./actions";
 
 export const metadata = { title: "Money" };
 
@@ -50,7 +51,11 @@ export default async function MoneyPage({
 
   const { supabase, business } = await requireUserAndBusiness();
 
-  const [{ data }, { data: customers }] = await Promise.all([
+  // Materialize any recurring transactions that came due
+  await applyDueRecurring(supabase, business.id);
+
+  const [{ data }, { data: customers }, { data: recurring }] =
+    await Promise.all([
     supabase
       .from("transactions")
       .select("*, customers(name)")
@@ -64,11 +69,31 @@ export default async function MoneyPage({
       .select("id, name")
       .eq("business_id", business.id)
       .order("name"),
+    supabase
+      .from("recurring_transactions")
+      .select("id, type, amount, category, description, next_date")
+      .eq("business_id", business.id)
+      .order("next_date"),
   ]);
 
   const transactions = (data ?? []) as (Transaction & {
     customers: { name: string } | null;
   })[];
+
+  // Signed URLs for attached receipts (valid 1 hour)
+  const receiptUrls = new Map<string, string>();
+  const withReceipts = transactions.filter((t) => t.receipt_path);
+  if (withReceipts.length > 0) {
+    const { data: signed } = await supabase.storage
+      .from("receipts")
+      .createSignedUrls(
+        withReceipts.map((t) => t.receipt_path!),
+        3600
+      );
+    signed?.forEach((s, i) => {
+      if (s.signedUrl) receiptUrls.set(withReceipts[i].id, s.signedUrl);
+    });
+  }
   const income = transactions
     .filter((t) => t.type === "income")
     .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -88,6 +113,12 @@ export default async function MoneyPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <a
+            href={`/money/export?year=${month.slice(0, 4)}`}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          >
+            ⬇ Export {month.slice(0, 4)}
+          </a>
           <Link
             href={`/money?month=${shiftMonth(month, -1)}`}
             className="rounded-md border border-slate-300 px-2.5 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
@@ -147,6 +178,49 @@ export default async function MoneyPage({
         <TransactionComposer customers={customers ?? []} />
       </div>
 
+      {(recurring ?? []).length > 0 && (
+        <div className="mt-6">
+          <h2 className="text-sm font-semibold text-slate-800">
+            🔁 Recurring monthly
+          </h2>
+          <ul className="mt-2 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            {(recurring ?? []).map((r) => (
+              <li
+                key={r.id}
+                className="group flex items-center gap-3 px-5 py-2.5"
+              >
+                <span
+                  className={`w-24 shrink-0 text-sm font-semibold ${
+                    r.type === "income" ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {r.type === "income" ? "+" : "−"}
+                  {formatMoney(Number(r.amount), cur)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm text-slate-700">
+                    {r.description || categoryLabel(r.category)}
+                  </p>
+                  <p className="text-xs text-slate-400">
+                    next on {r.next_date}
+                  </p>
+                </div>
+                <form action={deleteRecurring}>
+                  <input type="hidden" name="id" value={r.id} />
+                  <button
+                    type="submit"
+                    aria-label="Stop recurring"
+                    className="text-xs text-slate-300 transition-colors hover:text-red-500"
+                  >
+                    stop
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="mt-6">
         {transactions.length === 0 ? (
           <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
@@ -175,6 +249,19 @@ export default async function MoneyPage({
                   <p className="text-xs text-slate-400">
                     {categoryLabel(t.category)} · {t.date}
                     {t.customers ? ` · ${t.customers.name}` : ""}
+                    {receiptUrls.has(t.id) && (
+                      <>
+                        {" · "}
+                        <a
+                          href={receiptUrls.get(t.id)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-indigo-500 hover:text-indigo-600"
+                        >
+                          📎 receipt
+                        </a>
+                      </>
+                    )}
                   </p>
                 </div>
                 <form action={deleteTransaction}>

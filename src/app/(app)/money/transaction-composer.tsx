@@ -59,7 +59,7 @@ export default function TransactionComposer({
       <form
         ref={formRef}
         action={formAction}
-        className="flex flex-col gap-2 sm:flex-row"
+        className="flex flex-col gap-2 sm:flex-row sm:flex-wrap"
       >
         <input type="hidden" name="type" value={type} />
         <input
@@ -113,6 +113,26 @@ export default function TransactionComposer({
         >
           {pending ? "Adding..." : "Add"}
         </button>
+
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              name="repeats_monthly"
+              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            Repeats monthly (subscriptions, rent, retainers)
+          </label>
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <span className="shrink-0">📎 Receipt:</span>
+            <input
+              type="file"
+              name="receipt"
+              accept="image/*,application/pdf"
+              className="text-xs text-slate-500 file:mr-2 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-slate-600 hover:file:bg-slate-200"
+            />
+          </label>
+        </div>
       </form>
       {state.error && (
         <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">

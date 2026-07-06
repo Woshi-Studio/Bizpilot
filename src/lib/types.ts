@@ -83,6 +83,7 @@ export type Transaction = {
   category: string;
   description: string | null;
   date: string;
+  receipt_path: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -114,6 +115,51 @@ export function formatMoney(amount: number, currency: string) {
     currency: currency || "USD",
   }).format(amount);
 }
+
+export type Invoice = {
+  id: string;
+  business_id: string;
+  customer_id: string | null;
+  number: string;
+  doc_type: "invoice" | "quote";
+  status: "draft" | "sent" | "accepted" | "paid";
+  issue_date: string;
+  due_date: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InvoiceItem = {
+  id: string;
+  invoice_id: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  position: number;
+};
+
+export const INVOICE_STATUS_META: Record<
+  Invoice["status"],
+  { label: string; badgeClass: string }
+> = {
+  draft: {
+    label: "Draft",
+    badgeClass: "bg-slate-100 text-slate-500 border-slate-200",
+  },
+  sent: {
+    label: "Sent",
+    badgeClass: "bg-blue-50 text-blue-700 border-blue-200",
+  },
+  accepted: {
+    label: "Accepted",
+    badgeClass: "bg-green-50 text-green-700 border-green-200",
+  },
+  paid: {
+    label: "Paid",
+    badgeClass: "bg-green-50 text-green-700 border-green-200",
+  },
+};
 
 export const BUSINESS_TYPES = [
   { value: "design", label: "Design & Creative" },

@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUserAndBusiness } from "@/lib/data";
+import { checkAiQuota, recordAiUse } from "@/lib/ai-quota";
 import { aiConfigured, createAiClient, AI_MODEL } from "@/lib/ai";
 
 export type PlanState = {
@@ -19,6 +20,14 @@ export async function generateDailyPlan(
   }
 
   const { supabase, business } = await requireUserAndBusiness();
+
+  const quota = await checkAiQuota(supabase, business);
+  if (!quota.ok) {
+    return {
+      error: `You've used all ${quota.limit} AI generations included this month. Your counter resets on the 1st.`,
+    };
+  }
+
   const today = new Date().toISOString().slice(0, 10);
 
   const [{ data: openTasks }, { data: followUps }, { data: customers }] =
@@ -113,6 +122,7 @@ What should I focus on today?`,
       return { error: "The AI returned an empty response — try again." };
     }
 
+    await recordAiUse(supabase, business.id);
     return { plan: text };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";

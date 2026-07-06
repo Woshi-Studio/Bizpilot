@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import FeedbackWidget from "./feedback-widget";
 
 type NavItem = {
   label: string;
@@ -149,6 +150,8 @@ export default function AppShell({
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
       </div>
+
+      <FeedbackWidget />
     </div>
   );
 }

@@ -15,6 +15,7 @@ export type Business = {
   primary_goal: string | null;
   currency: string;
   onboarding_completed: boolean;
+  plan: string;
   created_at: string;
   updated_at: string;
 };

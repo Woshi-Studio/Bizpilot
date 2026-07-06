@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUserAndBusiness } from "@/lib/data";
+import { checkAiQuota, recordAiUse } from "@/lib/ai-quota";
 import {
   aiConfigured,
   createAiClient,
@@ -40,6 +41,13 @@ export async function generateMessage(
   }
 
   const { supabase, user, business } = await requireUserAndBusiness();
+
+  const quota = await checkAiQuota(supabase, business);
+  if (!quota.ok) {
+    return {
+      error: `You've used all ${quota.limit} AI messages included this month. Your counter resets on the 1st.`,
+    };
+  }
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -117,6 +125,7 @@ Write ready-to-send messages. Rules:
       return { error: "The AI returned an empty response — try again." };
     }
 
+    await recordAiUse(supabase, business.id);
     return { message: text };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";

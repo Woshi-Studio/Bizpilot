@@ -9,7 +9,11 @@ const initialState: TransactionFormState = {};
 const inputClass =
   "block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
 
-export default function TransactionComposer() {
+export default function TransactionComposer({
+  customers,
+}: {
+  customers: { id: string; name: string }[];
+}) {
   const [state, formAction, pending] = useActionState(
     createTransaction,
     initialState
@@ -84,6 +88,18 @@ export default function TransactionComposer() {
           }
           className={`${inputClass} flex-1`}
         />
+        <select
+          name="customer_id"
+          defaultValue=""
+          className={`${inputClass} sm:w-44`}
+        >
+          <option value="">No customer</option>
+          {customers.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
         <input
           type="date"
           name="date"

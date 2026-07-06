@@ -24,6 +24,9 @@ export default async function DashboardPage() {
     { data: followUps },
     { count: customerCount },
     { data: monthTransactions },
+    { count: taskCount },
+    { count: transactionCount },
+    { count: decisionCount },
   ] = await Promise.all([
       supabase
         .from("profiles")
@@ -54,6 +57,18 @@ export default async function DashboardPage() {
         .select("type, amount")
         .eq("business_id", business.id)
         .gte("date", monthStart),
+      supabase
+        .from("tasks")
+        .select("id", { count: "exact", head: true })
+        .eq("business_id", business.id),
+      supabase
+        .from("transactions")
+        .select("id", { count: "exact", head: true })
+        .eq("business_id", business.id),
+      supabase
+        .from("decisions")
+        .select("id", { count: "exact", head: true })
+        .eq("business_id", business.id),
     ]);
 
   const firstName = (profile?.full_name ?? "").split(" ")[0] || "there";
@@ -69,6 +84,30 @@ export default async function DashboardPage() {
     .reduce((sum, t) => sum + Number(t.amount), 0);
   const monthProfit = monthIncome - monthExpenses;
 
+  const checklist = [
+    {
+      label: "Add your first customer",
+      href: "/customers/new",
+      done: (customerCount ?? 0) > 0,
+    },
+    {
+      label: "Add a task for today",
+      href: "/tasks",
+      done: (taskCount ?? 0) > 0,
+    },
+    {
+      label: "Log an income or expense",
+      href: "/money",
+      done: (transactionCount ?? 0) > 0,
+    },
+    {
+      label: "Run a decision through Decision Guard",
+      href: "/decisions",
+      done: (decisionCount ?? 0) > 0,
+    },
+  ];
+  const showChecklist = checklist.some((c) => !c.done);
+
   return (
     <div className="mx-auto max-w-5xl">
       <h1 className="text-2xl font-bold text-slate-900">
@@ -80,7 +119,46 @@ export default async function DashboardPage() {
           : "You're all caught up. Nice."}
       </p>
 
-      <div className="mt-8">
+      {showChecklist && (
+        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h2 className="text-sm font-semibold text-slate-800">
+            🚀 Getting started
+          </h2>
+          <p className="mt-1 text-xs text-slate-400">
+            Set up your hub in a few minutes — each step unlocks more of the
+            dashboard.
+          </p>
+          <ul className="mt-3 space-y-2">
+            {checklist.map((item) => (
+              <li key={item.label} className="flex items-center gap-2 text-sm">
+                <span
+                  className={`flex h-5 w-5 items-center justify-center rounded-full text-xs ${
+                    item.done
+                      ? "bg-green-500 text-white"
+                      : "border border-slate-300 text-transparent"
+                  }`}
+                >
+                  ✓
+                </span>
+                {item.done ? (
+                  <span className="text-slate-400 line-through">
+                    {item.label}
+                  </span>
+                ) : (
+                  <Link
+                    href={item.href}
+                    className="text-slate-700 hover:text-indigo-600"
+                  >
+                    {item.label} &rarr;
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className={showChecklist ? "mt-4" : "mt-8"}>
         <DailyPlan />
       </div>
 

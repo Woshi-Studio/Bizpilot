@@ -150,6 +150,18 @@ export default function DecisionWizard() {
             Check another decision
           </button>
           <Link
+            href={`/messages?details=${encodeURIComponent(
+              `Context: I ran a Decision Guard check on "${title || typeMeta.label}" (${meta.label.toLowerCase()}). ` +
+                (result.recommendations[0]
+                  ? `Key advice: ${result.recommendations[0]} `
+                  : "") +
+                `Write the message to the customer that follows this advice.`
+            )}`}
+            className="rounded-md border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+          >
+            ✨ Write this message for me
+          </Link>
+          <Link
             href="/decisions"
             className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
           >

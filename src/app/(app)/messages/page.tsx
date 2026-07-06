@@ -4,7 +4,12 @@ import MessageGenerator from "./message-generator";
 
 export const metadata = { title: "AI Messages" };
 
-export default async function MessagesPage() {
+export default async function MessagesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ customer?: string; details?: string }>;
+}) {
+  const params = await searchParams;
   const { supabase, business } = await requireUserAndBusiness();
 
   const { data: customers } = await supabase
@@ -28,7 +33,11 @@ export default async function MessagesPage() {
       )}
 
       <div className="mt-6">
-        <MessageGenerator customers={customers ?? []} />
+        <MessageGenerator
+          customers={customers ?? []}
+          prefillCustomerId={params.customer}
+          prefillDetails={params.details}
+        />
       </div>
     </div>
   );

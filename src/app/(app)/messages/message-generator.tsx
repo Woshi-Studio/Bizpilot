@@ -11,8 +11,12 @@ const inputClass =
 
 export default function MessageGenerator({
   customers,
+  prefillCustomerId,
+  prefillDetails,
 }: {
   customers: { id: string; name: string; company: string | null }[];
+  prefillCustomerId?: string;
+  prefillDetails?: string;
 }) {
   const [state, formAction, pending] = useActionState(
     generateMessage,
@@ -90,7 +94,7 @@ export default function MessageGenerator({
             <select
               id="customer_id"
               name="customer_id"
-              defaultValue=""
+              defaultValue={prefillCustomerId ?? ""}
               className={inputClass}
             >
               <option value="">No specific customer</option>
@@ -117,7 +121,8 @@ export default function MessageGenerator({
             <textarea
               id="details"
               name="details"
-              rows={3}
+              rows={prefillDetails ? 5 : 3}
+              defaultValue={prefillDetails ?? ""}
               placeholder="e.g. Invoice #12 for $500 is 2 weeks overdue"
               className={inputClass}
             />

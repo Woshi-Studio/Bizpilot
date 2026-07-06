@@ -18,6 +18,7 @@ export async function createTransaction(
   const category = String(formData.get("category") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
   const date = String(formData.get("date") ?? "").trim();
+  const customerId = String(formData.get("customer_id") ?? "").trim();
 
   if (type !== "income" && type !== "expense") {
     return { error: "Pick income or expense." };
@@ -43,6 +44,7 @@ export async function createTransaction(
     category: safeCategory,
     description: description || null,
     date: date || new Date().toISOString().slice(0, 10),
+    customer_id: customerId || null,
   });
 
   if (error) {

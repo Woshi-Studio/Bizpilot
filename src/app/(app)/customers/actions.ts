@@ -137,6 +137,27 @@ export async function addNote(
   return { success: "Note added." };
 }
 
+export async function setFollowUpIn(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const days = Number(formData.get("days") ?? 0);
+  if (!id || !Number.isFinite(days)) return;
+
+  const { supabase, business } = await requireUserAndBusiness();
+
+  const target = new Date();
+  target.setDate(target.getDate() + days);
+
+  await supabase
+    .from("customers")
+    .update({ next_follow_up: target.toISOString().slice(0, 10) })
+    .eq("id", id)
+    .eq("business_id", business.id);
+
+  revalidatePath(`/customers/${id}`);
+  revalidatePath("/customers");
+  revalidatePath("/dashboard");
+}
+
 export async function deleteNote(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const customerId = String(formData.get("customer_id") ?? "");

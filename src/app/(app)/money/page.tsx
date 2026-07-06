@@ -50,16 +50,25 @@ export default async function MoneyPage({
 
   const { supabase, business } = await requireUserAndBusiness();
 
-  const { data } = await supabase
-    .from("transactions")
-    .select("*")
-    .eq("business_id", business.id)
-    .gte("date", start)
-    .lt("date", next)
-    .order("date", { ascending: false })
-    .order("created_at", { ascending: false });
+  const [{ data }, { data: customers }] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("*, customers(name)")
+      .eq("business_id", business.id)
+      .gte("date", start)
+      .lt("date", next)
+      .order("date", { ascending: false })
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("customers")
+      .select("id, name")
+      .eq("business_id", business.id)
+      .order("name"),
+  ]);
 
-  const transactions = (data ?? []) as Transaction[];
+  const transactions = (data ?? []) as (Transaction & {
+    customers: { name: string } | null;
+  })[];
   const income = transactions
     .filter((t) => t.type === "income")
     .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -135,7 +144,7 @@ export default async function MoneyPage({
       </div>
 
       <div className="mt-6">
-        <TransactionComposer />
+        <TransactionComposer customers={customers ?? []} />
       </div>
 
       <div className="mt-6">
@@ -165,6 +174,7 @@ export default async function MoneyPage({
                   </p>
                   <p className="text-xs text-slate-400">
                     {categoryLabel(t.category)} · {t.date}
+                    {t.customers ? ` · ${t.customers.name}` : ""}
                   </p>
                 </div>
                 <form action={deleteTransaction}>

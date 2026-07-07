@@ -17,9 +17,16 @@ export function getStripe() {
 }
 
 // The public URL of the deployed app, used for Stripe redirect URLs.
+// Trim whitespace and trailing slash so a stray space in the env var
+// (a common paste mistake) can't produce an invalid URL.
 export function siteUrl() {
   return (
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/+$/, "") ||
     "http://localhost:3000"
   );
+}
+
+// Returns the configured Pro price ID, trimmed of stray whitespace.
+export function proPriceId() {
+  return process.env.STRIPE_PRICE_ID?.trim() ?? "";
 }

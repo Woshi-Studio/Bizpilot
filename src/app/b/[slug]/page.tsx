@@ -84,7 +84,7 @@ export default async function PublicBusinessPage({
       <footer className="px-6 py-6 text-center text-xs text-slate-400">
         Powered by{" "}
         <Link href="/" className="font-medium text-indigo-500 hover:text-indigo-600">
-          BizPilot
+          Jephelen
         </Link>
       </footer>
     </div>

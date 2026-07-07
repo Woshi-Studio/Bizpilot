@@ -14,7 +14,7 @@ export type LaunchpadInputs = {
 export const ROADMAP_TASKS: { title: string; days: number }[] = [
   // This week
   { title: "Decide your business name (simple beats clever)", days: 2 },
-  { title: "Set up your BizPilot public page so people can reach you", days: 3 },
+  { title: "Set up your Jephelen public page so people can reach you", days: 3 },
   { title: "Check what registration/licenses your city or state requires", days: 5 },
   { title: "Open a separate bank account for business money", days: 7 },
   { title: "Tell 10 people you're open for business", days: 7 },
@@ -77,7 +77,7 @@ You said you can invest: ${budget}.
 Rule of thumb: spend first on whatever gets you customers (a page, samples of your work, telling people). Delay everything else — most "startup costs" can wait until real money is coming in.
 
 ## Your time
-You have about ${hours}. Protect it: a fixed weekly rhythm (one slot for finding customers, one for the actual work, one hour for admin in BizPilot) beats working "whenever."
+You have about ${hours}. Protect it: a fixed weekly rhythm (one slot for finding customers, one for the actual work, one hour for admin in Jephelen) beats working "whenever."
 
 ## First-year goal
 ${inputs.goal || "Reach steady monthly income that covers your bills."}
@@ -88,7 +88,7 @@ ${inputs.goal || "Reach steady monthly income that covers your bills."}
 - Save a slice of every payment for taxes — ask a local accountant what percentage.
 - Get any agreements in writing, even a short email: what's included, price, deadline.
 
-## How BizPilot carries this plan
+## How Jephelen carries this plan
 Your roadmap is already loaded into Tasks with real deadlines. Leads from your public page land in the Leads inbox. Every payment and expense goes in Money. And before any big discount, deal, or purchase — run it through Decision Guard first.
 `;
 }

@@ -73,7 +73,7 @@ export async function askCoach(
       model: AI_MODEL,
       max_tokens: 8000,
       thinking: { type: "adaptive" },
-      system: `You are the BizPilot Coach — a practical small-business mentor inside the BizPilot app, advising the owner of "${business.name}", a freelance ${business.business_type} business.
+      system: `You are the Jephelen Coach — a practical small-business mentor inside the Jephelen app, advising the owner of "${business.name}", a freelance ${business.business_type} business.
 
 Rules:
 - Plain language, concrete steps, no corporate fluff. Encouraging but honest.

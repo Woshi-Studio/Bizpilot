@@ -94,7 +94,7 @@ export default function CustomersList({
           </p>
           {customers.length === 0 && (
             <p className="mt-1 text-sm text-slate-400">
-              Add your first customer and BizPilot will keep track of
+              Add your first customer and Jephelen will keep track of
               follow-ups for you.
             </p>
           )}

@@ -48,7 +48,7 @@ export default async function Home() {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center justify-between px-6 py-4 sm:px-10">
-        <span className="text-xl font-bold text-indigo-600">BizPilot</span>
+        <span className="text-xl font-bold text-indigo-600">Jephelen</span>
         <div className="flex items-center gap-3">
           <Link
             href="/login"
@@ -108,7 +108,7 @@ export default async function Home() {
 
       <footer className="border-t border-slate-200 px-6 py-6">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
-          <span>© {new Date().getFullYear()} BizPilot</span>
+          <span>© {new Date().getFullYear()} Jephelen</span>
           <div className="flex gap-4">
             <Link href="/terms" className="hover:text-slate-600">
               Terms of Service

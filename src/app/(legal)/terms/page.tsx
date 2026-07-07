@@ -6,9 +6,9 @@ export default function TermsPage() {
       <h1>Terms of Service</h1>
       <p>Last updated: July 2026</p>
 
-      <h2>1. What BizPilot is</h2>
+      <h2>1. What Jephelen is</h2>
       <p>
-        BizPilot is a business management tool for freelancers and small
+        Jephelen is a business management tool for freelancers and small
         businesses: customer records, tasks, money tracking, invoices, and
         AI-assisted writing and suggestions. By creating an account you agree
         to these terms.
@@ -23,7 +23,7 @@ export default function TermsPage() {
 
       <h2>3. Not professional advice</h2>
       <p>
-        BizPilot&apos;s suggestions — including Decision Guard results,
+        Jephelen&apos;s suggestions — including Decision Guard results,
         AI-generated messages, and any business, tax, or legal guidance — are
         educational tools, not professional legal, tax, or financial advice.
         For binding decisions, consult a qualified professional in your area.
@@ -38,14 +38,14 @@ export default function TermsPage() {
 
       <h2>5. Fair use</h2>
       <p>
-        Don&apos;t use BizPilot for anything illegal, to store content you
+        Don&apos;t use Jephelen for anything illegal, to store content you
         don&apos;t have the right to store, or to abuse the AI features. We
         may suspend accounts that do.
       </p>
 
       <h2>6. Availability</h2>
       <p>
-        We work hard to keep BizPilot running, but it is provided &quot;as
+        We work hard to keep Jephelen running, but it is provided &quot;as
         is&quot; without guarantees of uninterrupted availability. Keep your
         own copies of critical documents.
       </p>

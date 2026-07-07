@@ -125,7 +125,7 @@ export async function upgradePlanWithAi(
       model: AI_MODEL,
       max_tokens: 8000,
       thinking: { type: "adaptive" },
-      system: `You are BizPilot's business planning coach. You write practical, encouraging, concrete business plans for first-time entrepreneurs. Plain language, no jargon, no fluff. Use markdown headings (#, ##). Include a short "Legal & money checklist" section that is explicitly educational, not legal advice, and tells them to check local requirements. Keep the whole plan under 700 words.`,
+      system: `You are Jephelen's business planning coach. You write practical, encouraging, concrete business plans for first-time entrepreneurs. Plain language, no jargon, no fluff. Use markdown headings (#, ##). Include a short "Legal & money checklist" section that is explicitly educational, not legal advice, and tells them to check local requirements. Keep the whole plan under 700 words.`,
       messages: [
         {
           role: "user",

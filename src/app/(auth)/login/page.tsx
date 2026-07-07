@@ -13,7 +13,7 @@ export default function LoginPage() {
     <div>
       <h2 className="text-xl font-semibold text-slate-900">Welcome back</h2>
       <p className="mt-1 text-sm text-slate-500">
-        Log in to your BizPilot account.
+        Log in to your Jephelen account.
       </p>
 
       <form action={formAction} className="mt-6 space-y-4">
@@ -72,7 +72,7 @@ export default function LoginPage() {
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-500">
-        New to BizPilot?{" "}
+        New to Jephelen?{" "}
         <Link
           href="/signup"
           className="font-medium text-indigo-600 hover:text-indigo-500"

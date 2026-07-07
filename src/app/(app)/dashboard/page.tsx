@@ -194,7 +194,13 @@ export default async function DashboardPage() {
       <p className="mt-1 text-sm text-slate-500">
         {tasks.length + reminders.length > 0
           ? `You have ${tasks.length} task${tasks.length === 1 ? "" : "s"} due and ${reminders.length} follow-up${reminders.length === 1 ? "" : "s"} waiting.`
-          : "You're all caught up. Nice."}
+          : "You're all caught up. Nice."}{" "}
+        <Link
+          href="/reports"
+          className="font-medium text-indigo-600 hover:text-indigo-500"
+        >
+          See your Business Health Score →
+        </Link>
       </p>
 
       {showChecklist && (

@@ -14,11 +14,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "BizPilot — Your AI copilot for running a smarter business",
-    template: "%s | BizPilot",
+    default: "Jephelen — Your AI copilot for running a smarter business",
+    template: "%s | Jephelen",
   },
   description:
-    "BizPilot is an AI business copilot that helps freelancers manage customers, organize tasks, generate communications, track money, and make smarter business decisions.",
+    "Jephelen is an AI business copilot that helps freelancers manage customers, organize tasks, generate communications, track money, and make smarter business decisions.",
 };
 
 export default function RootLayout({

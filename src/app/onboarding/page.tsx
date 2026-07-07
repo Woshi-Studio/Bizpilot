@@ -35,7 +35,7 @@ export default async function OnboardingPage() {
     <div className="flex flex-1 flex-col items-center justify-center px-4 py-12">
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold tracking-tight text-indigo-600">
-          BizPilot
+          Jephelen
         </h1>
         <p className="mt-1 text-sm text-slate-500">
           Let&apos;s set up your business — takes less than a minute.

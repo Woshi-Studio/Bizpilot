@@ -33,5 +33,5 @@ export async function submitFeedback(
     return { error: "Couldn't send feedback right now — try again later." };
   }
 
-  return { success: "Thanks! Every bit of feedback makes BizPilot better." };
+  return { success: "Thanks! Every bit of feedback makes Jephelen better." };
 }

@@ -93,7 +93,7 @@ ${
       model: AI_MODEL,
       max_tokens: 8000,
       thinking: { type: "adaptive" },
-      system: `You are the AI communication assistant inside BizPilot, writing on behalf of ${
+      system: `You are the AI communication assistant inside Jephelen, writing on behalf of ${
         profile?.full_name ?? "the owner"
       }, who runs "${business.name}", a freelance ${
         business.business_type

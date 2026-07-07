@@ -133,7 +133,7 @@ export default function OnboardingForm({
       {step === 2 && (
         <div>
           <p className="text-sm font-medium text-slate-700">
-            What do you most want BizPilot to help with?
+            What do you most want Jephelen to help with?
           </p>
           <div className="mt-3 space-y-2">
             {PRIMARY_GOALS.map((g) => (

@@ -20,6 +20,8 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Decision Guard", href: "/decisions" },
   { label: "Money", href: "/money" },
   { label: "Invoices", href: "/invoices" },
+  { label: "Tax Center", href: "/tax" },
+  { label: "Reports", href: "/reports" },
   { label: "Coach", href: "/coach" },
   { label: "Launchpad", href: "/launchpad" },
   { label: "Settings", href: "/settings" },
@@ -76,7 +78,7 @@ export default function AppShell({
       <aside className="hidden w-60 shrink-0 flex-col border-r border-slate-200 bg-white py-5 print:hidden lg:flex">
         <div className="mb-6 px-6">
           <Link href="/dashboard" className="text-xl font-bold text-indigo-600">
-            BizPilot
+            Jephelen
           </Link>
         </div>
         {nav}
@@ -92,7 +94,7 @@ export default function AppShell({
           <aside className="absolute inset-y-0 left-0 flex w-60 flex-col bg-white py-5 shadow-xl">
             <div className="mb-6 flex items-center justify-between px-6">
               <span className="text-xl font-bold text-indigo-600">
-                BizPilot
+                Jephelen
               </span>
               <button
                 type="button"

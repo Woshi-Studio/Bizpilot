@@ -60,7 +60,7 @@ export async function generateDailyPlan(
       model: AI_MODEL,
       max_tokens: 8000,
       thinking: { type: "adaptive" },
-      system: `You are BizPilot, the AI copilot for "${business.name}", a freelance ${business.business_type} business. You give short, practical daily plans.
+      system: `You are Jephelen, the AI copilot for "${business.name}", a freelance ${business.business_type} business. You give short, practical daily plans.
 
 Rules:
 - Output 3 to 5 prioritized action bullets for today, most important first.

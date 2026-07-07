@@ -1,11 +1,28 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { stripeConfigured } from "@/lib/stripe";
 import SettingsForm from "./settings-form";
 import PublicPageForm from "./public-page-form";
+import { startCheckout, openBillingPortal } from "./billing-actions";
 
 export const metadata = { title: "Settings" };
 
-export default async function SettingsPage() {
+const BILLING_MESSAGES: Record<string, string> = {
+  success: "🎉 You're on Pro — thanks for upgrading!",
+  cancelled: "Checkout cancelled — no charge was made.",
+  error: "Something went wrong starting checkout. Please try again.",
+  unconfigured: "Billing isn't switched on yet.",
+  nocustomer: "No billing account found yet.",
+};
+
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ billing?: string }>;
+}) {
+  const { billing } = await searchParams;
+  const billingMessage = billing ? BILLING_MESSAGES[billing] : null;
+  const billingReady = stripeConfigured();
   const supabase = await createClient();
   const {
     data: { user },
@@ -78,26 +95,54 @@ export default async function SettingsPage() {
             {plan}
           </span>
         </div>
-        {plan === "free" && (
+        {billingMessage && (
+          <p className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            {billingMessage}
+          </p>
+        )}
+
+        {plan === "premium" ? (
+          <div className="mt-4">
+            <p className="text-sm text-slate-500">
+              You&apos;re on Pro. Thank you! 💜
+            </p>
+            {billingReady && (
+              <form action={openBillingPortal}>
+                <button
+                  type="submit"
+                  className="mt-3 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  Manage billing / cancel
+                </button>
+              </form>
+            )}
+          </div>
+        ) : billingReady ? (
+          <div className="mt-4 rounded-md border border-indigo-200 bg-indigo-50 px-4 py-3">
+            <p className="text-sm font-medium text-indigo-800">
+              Upgrade to Pro — $9.99/month
+            </p>
+            <p className="mt-1 text-xs text-indigo-700">
+              Unlimited AI, invoices, receipts, tax export, reports &amp; the
+              Business Health Score.
+            </p>
+            <form action={startCheckout}>
+              <button
+                type="submit"
+                className="mt-3 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+              >
+                Upgrade now
+              </button>
+            </form>
+          </div>
+        ) : (
           <div className="mt-4 rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-3">
             <p className="text-sm font-medium text-slate-700">
               Upgrade — coming soon
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              Premium (more AI generations, more customers) will be available
-              here once billing is set up. Nothing to do yet.
+              Paid plans will appear here once billing is switched on.
             </p>
-            {/* TODO(stripe): replace this with a real "Upgrade" button that
-                creates a Stripe Checkout session and redirects. Requires
-                STRIPE_SECRET_KEY + STRIPE_PRICE_ID env vars and a
-                stripe webhook route to flip businesses.plan to 'premium'. */}
-            <button
-              type="button"
-              disabled
-              className="mt-3 cursor-not-allowed rounded-md bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-500"
-            >
-              Upgrade (coming soon)
-            </button>
           </div>
         )}
       </div>

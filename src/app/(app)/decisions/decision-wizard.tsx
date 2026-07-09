@@ -9,14 +9,116 @@ import {
   scoreDecision,
   type DecisionType,
 } from "@/lib/decision-guard";
-import { saveDecision, type SaveDecisionState } from "./actions";
+import {
+  saveDecision,
+  getDecisionAdvice,
+  type SaveDecisionState,
+  type AdviceState,
+} from "./actions";
 
 const initialState: SaveDecisionState = {};
+const adviceInitial: AdviceState = {};
 
 const inputClass =
   "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
 
-export default function DecisionWizard() {
+// Pro-only panel: personalized AI advice grounded in real numbers + history.
+function AiAdvicePanel({
+  type,
+  title,
+  amount,
+  answers,
+  isPremium,
+}: {
+  type: DecisionType;
+  title: string;
+  amount: string;
+  answers: Record<string, string>;
+  isPremium: boolean;
+}) {
+  const [state, action, pending] = useActionState(
+    getDecisionAdvice,
+    adviceInitial
+  );
+
+  return (
+    <div className="mt-5 rounded-lg border border-indigo-200 bg-indigo-50/40 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-800">
+            🧠 Personalized AI advice{" "}
+            <span className="ml-1 rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+              Pro
+            </span>
+          </h3>
+          <p className="mt-0.5 text-xs text-slate-500">
+            Looks at your real numbers and how your past decisions turned out.
+          </p>
+        </div>
+        {!state.advice && !state.locked && (
+          <form action={action}>
+            <input type="hidden" name="decision_type" value={type} />
+            <input type="hidden" name="title" value={title} />
+            <input type="hidden" name="amount" value={amount} />
+            <input
+              type="hidden"
+              name="answers"
+              value={JSON.stringify(answers)}
+            />
+            <button
+              type="submit"
+              disabled={pending}
+              className="shrink-0 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+            >
+              {pending ? "Thinking..." : isPremium ? "Get advice" : "Get advice"}
+            </button>
+          </form>
+        )}
+      </div>
+
+      {pending && (
+        <div className="mt-3 flex gap-1">
+          <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-300" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-300 [animation-delay:120ms]" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-300 [animation-delay:240ms]" />
+        </div>
+      )}
+      {state.locked && (
+        <div className="mt-3 rounded-md bg-white px-3 py-3 text-sm">
+          <p className="font-medium text-slate-700">
+            Personalized AI advice is a Pro feature.
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Upgrade to get advice built around your real numbers and your
+            decision history.
+          </p>
+          <Link
+            href="/settings"
+            className="mt-2 inline-block rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500"
+          >
+            Upgrade to Pro
+          </Link>
+        </div>
+      )}
+      {state.error && (
+        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          {state.error}
+        </p>
+      )}
+      {state.advice && (
+        <pre className="mt-3 whitespace-pre-wrap rounded-md bg-white px-3 py-3 font-sans text-sm leading-6 text-slate-700">
+          {state.advice}
+        </pre>
+      )}
+    </div>
+  );
+}
+
+export default function DecisionWizard({
+  isPremium = false,
+}: {
+  isPremium?: boolean;
+}) {
   const [type, setType] = useState<DecisionType | null>(null);
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
@@ -107,6 +209,14 @@ export default function DecisionWizard() {
             </ul>
           </div>
         )}
+
+        <AiAdvicePanel
+          type={type}
+          title={title || typeMeta.label}
+          amount={amount}
+          answers={answers}
+          isPremium={isPremium}
+        />
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
           {saveState.success ? (

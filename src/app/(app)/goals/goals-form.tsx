@@ -70,13 +70,13 @@ export default function GoalsForm({ business }: { business: Business }) {
           Long-term savings goal (optional)
         </p>
         <p className="mt-1 text-xs text-slate-400">
-          Anything you're saving toward — a house down payment, equipment,
+          Anything you&apos;re saving toward — a house down payment, equipment,
           whatever it is for you.
         </p>
         <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <label className="block text-sm font-medium text-slate-700">
-              What's it for?
+              What&apos;s it for?
             </label>
             <input
               name="savings_goal_label"

@@ -22,12 +22,21 @@ export default function TaskComposer({
   const [value, setValue] = useState("");
   const [description, setDescription] = useState("");
 
-  useEffect(() => {
+  // Clear the controlled fields while rendering (not in an effect) when a
+  // new successful result arrives.
+  const [handledState, setHandledState] = useState(state);
+  if (state !== handledState) {
+    setHandledState(state);
     if (state.success) {
-      formRef.current?.reset();
       setServiceId("");
       setValue("");
       setDescription("");
+    }
+  }
+
+  useEffect(() => {
+    if (state.success) {
+      formRef.current?.reset();
     }
   }, [state]);
 

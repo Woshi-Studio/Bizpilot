@@ -65,7 +65,7 @@ export default async function GoalsPage() {
     <div className="mx-auto max-w-4xl">
       <h1 className="text-2xl font-bold text-slate-900">Goals & Wins</h1>
       <p className="mt-1 text-sm text-slate-500">
-        What you're aiming for, and proof you're getting there.
+        What you&apos;re aiming for, and proof you&apos;re getting there.
       </p>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">

@@ -18,13 +18,21 @@ export default function CoachChat() {
   const formRef = useRef<HTMLFormElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
+  // Add each new answer to the history while rendering (not in an effect),
+  // tracking the last action result we've already handled.
+  const [handledState, setHandledState] = useState(state);
+  if (state !== handledState) {
+    setHandledState(state);
+    if (state.answer && state.question) {
+      const entry = { q: state.question, a: state.answer };
+      setHistory((h) =>
+        h.some((e) => e.q === entry.q && e.a === entry.a) ? h : [...h, entry]
+      );
+    }
+  }
+
   useEffect(() => {
     if (state.answer && state.question) {
-      setHistory((h) =>
-        h.some((e) => e.q === state.question && e.a === state.answer)
-          ? h
-          : [...h, { q: state.question!, a: state.answer! }]
-      );
       formRef.current?.reset();
     }
   }, [state]);

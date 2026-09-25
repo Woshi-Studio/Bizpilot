@@ -37,7 +37,7 @@ export default async function LeadsPage() {
     <div className="mx-auto max-w-4xl">
       <h1 className="text-2xl font-bold text-slate-900">Leads</h1>
       <p className="mt-1 text-sm text-slate-500">
-        Everyone you've reached out to, and everyone who's reached out to
+        Everyone you&apos;ve reached out to, and everyone who&apos;s reached out to
         you.
       </p>
 

@@ -39,9 +39,18 @@ export async function submitLead(
     email: email.slice(0, 320) || null,
     phone: phone.slice(0, 50) || null,
     message: message.slice(0, 2000) || null,
+    // Visitors can only create new inbound leads; the database forces
+    // these values too (0011_security.sql) and rate-limits submissions.
+    status: "new",
+    channel: "inbound",
   });
 
   if (error) {
+    if (/too many/i.test(error.message)) {
+      return {
+        error: "You've sent a few messages already — please try again in an hour.",
+      };
+    }
     return { error: "Something went wrong — please try again." };
   }
 

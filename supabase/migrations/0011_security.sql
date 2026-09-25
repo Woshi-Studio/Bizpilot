@@ -204,3 +204,14 @@ create policy "Anyone can submit a lead to a public page"
 
 create index if not exists leads_business_created_idx
   on public.leads (business_id, created_at);
+
+-- ============================================================
+-- 4. Receipts bucket: same limits as the app (money/actions.ts)
+--    The app checks type and size, but a signed-in user could upload
+--    straight to storage with the public key. The bucket now enforces
+--    10 MB and JPG/PNG/WEBP/PDF only.
+-- ============================================================
+update storage.buckets
+set file_size_limit = 10485760,
+    allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+where id = 'receipts';

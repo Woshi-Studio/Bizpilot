@@ -2,6 +2,22 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 
+// Only same-site paths: must start with one "/" and not "//" or "/\"
+// (both of which browsers treat as another host). Anything else goes to
+// the dashboard.
+function safeNext(next: string | null): string {
+  if (
+    !next ||
+    !next.startsWith("/") ||
+    next.startsWith("//") ||
+    next.startsWith("/\\") ||
+    /[\u0000-\u001f\u007f]/.test(next)
+  ) {
+    return "/dashboard";
+  }
+  return next;
+}
+
 // Handles both PKCE code exchanges (?code=) and OTP verification links
 // (?token_hash=&type=) from Supabase emails.
 export async function GET(request: Request) {
@@ -9,7 +25,7 @@ export async function GET(request: Request) {
   const code = searchParams.get("code");
   const tokenHash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
-  const next = searchParams.get("next") ?? "/dashboard";
+  const next = safeNext(searchParams.get("next"));
 
   const supabase = await createClient();
 

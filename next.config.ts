@@ -3,8 +3,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
-      // Receipt photo uploads go through server actions
-      bodySizeLimit: "8mb",
+      // Receipt uploads (max 10MB, see money/actions.ts) go through server actions
+      bodySizeLimit: "11mb",
     },
   },
 };

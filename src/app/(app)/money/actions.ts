@@ -5,6 +5,17 @@ import { requireUserAndBusiness } from "@/lib/data";
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from "@/lib/types";
 import { addMonths } from "@/lib/recurring";
 
+const MAX_RECEIPT_BYTES = 10 * 1024 * 1024;
+
+// Allowed receipt file extensions -> the MIME types each may carry
+const RECEIPT_TYPES: Record<string, string[]> = {
+  jpg: ["image/jpeg"],
+  jpeg: ["image/jpeg"],
+  png: ["image/png"],
+  webp: ["image/webp"],
+  pdf: ["application/pdf"],
+};
+
 export type TransactionFormState = {
   error?: string;
   success?: string;
@@ -45,15 +56,21 @@ export async function createTransaction(
   // Upload the receipt first (if provided) so we can store its path
   let receiptPath: string | null = null;
   if (receipt instanceof File && receipt.size > 0) {
-    if (receipt.size > 6 * 1024 * 1024) {
-      return { error: "Receipt file is too large (max 6MB)." };
+    if (receipt.size > MAX_RECEIPT_BYTES) {
+      return { error: "Receipt file is too large (max 10MB)." };
     }
-    const ext = (receipt.name.split(".").pop() ?? "jpg").toLowerCase();
+    // Both the file extension and the browser-reported type must be on
+    // the allow-list, and they must agree.
+    const ext = (receipt.name.split(".").pop() ?? "").toLowerCase();
+    const allowedMimes = RECEIPT_TYPES[ext];
+    if (!allowedMimes || !allowedMimes.includes(receipt.type)) {
+      return { error: "Receipts must be a JPG, PNG, WEBP or PDF file." };
+    }
     const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
     const { error: uploadError } = await supabase.storage
       .from("receipts")
       .upload(path, receipt, {
-        contentType: receipt.type || "application/octet-stream",
+        contentType: receipt.type,
       });
     if (uploadError) {
       return { error: `Receipt upload failed: ${uploadError.message}` };

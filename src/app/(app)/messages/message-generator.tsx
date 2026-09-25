@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { MESSAGE_TYPES, TONES } from "@/lib/ai";
+import { MESSAGE_TYPES, TONES } from "@/lib/ai-options";
 import { generateMessage, type GenerateState } from "./actions";
 
 const initialState: GenerateState = {};

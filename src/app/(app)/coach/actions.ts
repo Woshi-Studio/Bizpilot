@@ -1,8 +1,16 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness } from "@/lib/data";
 import { consumeAiCredit, aiCreditError } from "@/lib/ai-quota";
-import { aiConfigured, createAiClient, AI_CONFIG } from "@/lib/ai";
+import {
+  aiConfigured,
+  aiNotConfiguredMessage,
+  aiFailure,
+  createAiClient,
+  AI_CONFIG,
+  AI_BREAK_MESSAGE,
+} from "@/lib/ai";
 
 export type CoachState = {
   error?: string;
@@ -24,10 +32,7 @@ export async function askCoach(
   }
 
   if (!aiConfigured()) {
-    return {
-      error:
-        "AI is not set up yet — the ANTHROPIC_API_KEY is missing from .env.local.",
-    };
+    return { error: aiNotConfiguredMessage("coach") };
   }
 
   const { supabase, business } = await requireUserAndBusiness();
@@ -36,6 +41,8 @@ export async function askCoach(
   if (!quota.ok) {
     return { error: aiCreditError(quota) };
   }
+  // Refresh the credit meter on the page.
+  revalidatePath("/coach");
 
   // Gather a compact snapshot of the business so answers use THEIR numbers
   const monthStart = `${new Date().toISOString().slice(0, 7)}-01`;
@@ -89,12 +96,11 @@ Their current numbers: this month income ${income.toFixed(2)} ${business.currenc
       .trim();
 
     if (!text) {
-      return { error: "The AI returned an empty response — try again." };
+      return { error: AI_BREAK_MESSAGE };
     }
 
     return { question, answer: text };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return { error: `AI request failed: ${msg}` };
+    return { error: aiFailure(err, "coach") };
   }
 }

@@ -1,3 +1,4 @@
+import AiCreditMeter from "@/components/ai-credit-meter";
 import Link from "next/link";
 import { requireUserAndBusiness } from "@/lib/data";
 import { LaunchpadIntake, AiUpgradeButton } from "./launchpad-form";
@@ -77,6 +78,7 @@ export default async function LaunchpadPage() {
         From &quot;I have an idea&quot; to a running business — with a plan and
         a roadmap that live inside your app.
       </p>
+      <AiCreditMeter className="mt-2" />
 
       {planError ? (
         <p className="mt-6 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">

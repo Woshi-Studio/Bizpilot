@@ -3,7 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness } from "@/lib/data";
 import { consumeAiCredit, aiCreditError } from "@/lib/ai-quota";
-import { aiConfigured, createAiClient, AI_CONFIG } from "@/lib/ai";
+import {
+  aiConfigured,
+  aiNotConfiguredMessage,
+  aiFailure,
+  createAiClient,
+  AI_CONFIG,
+  AI_BREAK_MESSAGE,
+} from "@/lib/ai";
 import {
   scoreDecision,
   QUESTIONS,
@@ -139,16 +146,15 @@ export async function getDecisionAdvice(
   }
 
   if (!aiConfigured()) {
-    return {
-      error:
-        "AI is not set up yet — the ANTHROPIC_API_KEY is missing from .env.local.",
-    };
+    return { error: aiNotConfiguredMessage("decisions") };
   }
 
   const quota = await consumeAiCredit(supabase, business);
   if (!quota.ok) {
     return { error: aiCreditError(quota) };
   }
+  // Refresh the credit meter on the page.
+  revalidatePath("/decisions");
 
   const result = scoreDecision(type, answers);
   const typeLabel =
@@ -239,12 +245,11 @@ Given my real numbers and my past ${typeLabel.toLowerCase()} decisions above, wh
       .trim();
 
     if (!text) {
-      return { error: "The AI returned an empty response — try again." };
+      return { error: AI_BREAK_MESSAGE };
     }
 
     return { advice: text };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return { error: `AI request failed: ${msg}` };
+    return { error: aiFailure(err, "decisions") };
   }
 }

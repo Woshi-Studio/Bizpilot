@@ -1,3 +1,4 @@
+import AiCreditMeter from "@/components/ai-credit-meter";
 import { requireUserAndBusiness } from "@/lib/data";
 import { formatMoney } from "@/lib/types";
 import {
@@ -56,6 +57,7 @@ export default async function DecisionsPage() {
       <div className="mt-6">
         <DecisionWizard isPremium={isPremium} />
       </div>
+      {isPremium && <AiCreditMeter className="mt-2" />}
 
       {decisions.length > 0 && (
         <div className="mt-10">

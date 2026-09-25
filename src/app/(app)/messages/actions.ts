@@ -1,11 +1,15 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness } from "@/lib/data";
 import { consumeAiCredit, aiCreditError } from "@/lib/ai-quota";
 import {
   aiConfigured,
+  aiNotConfiguredMessage,
+  aiFailure,
   createAiClient,
   AI_CONFIG,
+  AI_BREAK_MESSAGE,
   MESSAGE_TYPES,
   TONES,
 } from "@/lib/ai";
@@ -20,10 +24,7 @@ export async function generateMessage(
   formData: FormData
 ): Promise<GenerateState> {
   if (!aiConfigured()) {
-    return {
-      error:
-        "AI is not set up yet — the ANTHROPIC_API_KEY is missing from .env.local.",
-    };
+    return { error: aiNotConfiguredMessage("messages") };
   }
 
   const messageType = String(formData.get("message_type") ?? "");
@@ -44,8 +45,10 @@ export async function generateMessage(
 
   const quota = await consumeAiCredit(supabase, business);
   if (!quota.ok) {
-    return { error: aiCreditError(quota, "AI messages") };
+    return { error: aiCreditError(quota) };
   }
+  // Refresh the credit meter on the page.
+  revalidatePath("/messages");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -119,12 +122,11 @@ Write ready-to-send messages. Rules:
       .trim();
 
     if (!text) {
-      return { error: "The AI returned an empty response — try again." };
+      return { error: AI_BREAK_MESSAGE };
     }
 
     return { message: text };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return { error: `AI request failed: ${msg}` };
+    return { error: aiFailure(err, "messages") };
   }
 }

@@ -1,8 +1,16 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness } from "@/lib/data";
 import { consumeAiCredit, aiCreditError } from "@/lib/ai-quota";
-import { aiConfigured, createAiClient, AI_CONFIG } from "@/lib/ai";
+import {
+  aiConfigured,
+  aiNotConfiguredMessage,
+  aiFailure,
+  createAiClient,
+  AI_CONFIG,
+  AI_BREAK_MESSAGE,
+} from "@/lib/ai";
 
 export type PlanState = {
   error?: string;
@@ -13,10 +21,7 @@ export async function generateDailyPlan(
   _prevState: PlanState
 ): Promise<PlanState> {
   if (!aiConfigured()) {
-    return {
-      error:
-        "AI is not set up yet — the ANTHROPIC_API_KEY is missing from .env.local.",
-    };
+    return { error: aiNotConfiguredMessage("dashboard") };
   }
 
   const { supabase, business } = await requireUserAndBusiness();
@@ -25,6 +30,8 @@ export async function generateDailyPlan(
   if (!quota.ok) {
     return { error: aiCreditError(quota) };
   }
+  // Refresh the credit meter on the page.
+  revalidatePath("/dashboard");
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -116,12 +123,11 @@ What should I focus on today?`,
       .trim();
 
     if (!text) {
-      return { error: "The AI returned an empty response — try again." };
+      return { error: AI_BREAK_MESSAGE };
     }
 
     return { plan: text };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return { error: `AI request failed: ${msg}` };
+    return { error: aiFailure(err, "dashboard") };
   }
 }

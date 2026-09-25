@@ -1,3 +1,4 @@
+import AiCreditMeter from "@/components/ai-credit-meter";
 import { requireUserAndBusiness } from "@/lib/data";
 import { aiConfigured } from "@/lib/ai";
 import MessageGenerator from "./message-generator";
@@ -27,10 +28,11 @@ export default async function MessagesPage({
 
       {!aiConfigured() && (
         <p className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          AI isn&apos;t connected yet. Add your <code>ANTHROPIC_API_KEY</code>{" "}
-          to <code>.env.local</code> and restart the app.
+          AI is taking a short break. Please try again in a few minutes.
         </p>
       )}
+
+      <AiCreditMeter className="mt-2" />
 
       <div className="mt-6">
         <MessageGenerator

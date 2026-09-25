@@ -1,3 +1,4 @@
+import AiCreditMeter from "@/components/ai-credit-meter";
 import Link from "next/link";
 import { requireUserAndBusiness } from "@/lib/data";
 import { formatMoney } from "@/lib/types";
@@ -244,6 +245,7 @@ export default async function DashboardPage() {
 
       <div className={showChecklist ? "mt-4" : "mt-8"}>
         <DailyPlan />
+        <AiCreditMeter className="mt-2" />
       </div>
 
       {autopilotItems.length > 0 && (

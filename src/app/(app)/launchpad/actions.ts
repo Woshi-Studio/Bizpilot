@@ -3,7 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness } from "@/lib/data";
 import { consumeAiCredit, aiCreditError } from "@/lib/ai-quota";
-import { aiConfigured, createAiClient, AI_CONFIG } from "@/lib/ai";
+import {
+  aiConfigured,
+  aiNotConfiguredMessage,
+  aiFailure,
+  createAiClient,
+  AI_CONFIG,
+  AI_BREAK_MESSAGE,
+} from "@/lib/ai";
 import {
   buildTemplatePlan,
   roadmapWithDates,
@@ -89,10 +96,7 @@ export async function upgradePlanWithAi(
   _prevState: LaunchpadState
 ): Promise<LaunchpadState> {
   if (!aiConfigured()) {
-    return {
-      error:
-        "AI is not set up yet — the ANTHROPIC_API_KEY is missing from .env.local.",
-    };
+    return { error: aiNotConfiguredMessage("launchpad") };
   }
 
   const { supabase, business } = await requireUserAndBusiness();
@@ -111,6 +115,8 @@ export async function upgradePlanWithAi(
   if (!quota.ok) {
     return { error: aiCreditError(quota) };
   }
+  // Refresh the credit meter on the page.
+  revalidatePath("/launchpad");
 
   const typeLabel =
     BUSINESS_TYPES.find((t) => t.value === business.business_type)?.label ??
@@ -144,7 +150,7 @@ ${plan.content}`,
       .trim();
 
     if (!text) {
-      return { error: "The AI returned an empty response — try again." };
+      return { error: AI_BREAK_MESSAGE };
     }
     if (response.stop_reason === "max_tokens") {
       // Don't overwrite the saved plan with a cut-off one.
@@ -159,7 +165,6 @@ ${plan.content}`,
     revalidatePath("/launchpad");
     return { success: "Your plan has been personalized by the AI." };
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return { error: `AI request failed: ${msg}` };
+    return { error: aiFailure(err, "launchpad") };
   }
 }

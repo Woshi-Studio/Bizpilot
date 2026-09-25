@@ -6,8 +6,10 @@
 // Gemini keys: GEMINI_API_KEYS (comma-separated, preferred) and/or
 // GEMINI_API_KEY. When a key is out of quota (429) or refused (401/403,
 // or 400 "API key not valid"), the next key is tried, so N free keys give
-// about N times the free daily limit. Key VALUES are never logged — only
-// their position in the list ("key #2").
+// about N times the free daily limit. If the main model (Flash) is out of
+// quota on EVERY key, the call falls back to the small model (Flash Lite,
+// much bigger free quota), again rotating keys. Key VALUES are never
+// logged — only their position in the list ("key #2").
 //
 // Users never see a raw provider error: use aiFailure() in a catch block.
 
@@ -169,9 +171,13 @@ function keyProblem(status: number, body: string) {
   return status === 400 && /API_KEY_INVALID|API key not valid|API key expired/i.test(body);
 }
 
-// Start with the key that worked last time (per server instance), so a
-// spent key isn't retried first on every call.
-let geminiStartIndex = 0;
+// Start with the key that worked last time for that model (per server
+// instance), so a spent key isn't retried first on every call.
+const geminiStartIndex = new Map<string, number>();
+
+// Every key failed with a key problem and at least one was a 429:
+// this model's free daily quota is used up on all keys.
+class GeminiExhausted extends AiError {}
 
 async function geminiCreate(req: AiRequest): Promise<AiResponse> {
   const keys = geminiKeys();
@@ -192,11 +198,32 @@ async function geminiCreate(req: AiRequest): Promise<AiResponse> {
     },
   });
 
-  const url = GEMINI_URL.replace("%MODEL%", encodeURIComponent(req.model));
+  try {
+    return await geminiTryModel(req.model, keys, body);
+  } catch (err) {
+    // Flash's free quota is small (~20/day/key); Flash Lite's is ~500.
+    // When Flash is spent on every key, answer with Lite instead.
+    const lite = AI_CONFIG.geminiModels.small;
+    if (err instanceof GeminiExhausted && req.model !== lite) {
+      console.warn("[ai] main exhausted → lite");
+      return geminiTryModel(lite, keys, body);
+    }
+    throw err;
+  }
+}
+
+async function geminiTryModel(
+  model: string,
+  keys: string[],
+  body: string
+): Promise<AiResponse> {
+  const url = GEMINI_URL.replace("%MODEL%", encodeURIComponent(model));
   const problems: string[] = [];
+  let saw429 = false;
+  const first = geminiStartIndex.get(model) ?? 0;
 
   for (let n = 0; n < keys.length; n++) {
-    const i = (geminiStartIndex + n) % keys.length;
+    const i = (first + n) % keys.length;
     let res: Response;
     try {
       // Auth as brain.py does it: the key as the ?key= query parameter.
@@ -210,27 +237,33 @@ async function geminiCreate(req: AiRequest): Promise<AiResponse> {
       });
     } catch (err) {
       const why = err instanceof Error ? err.name : "network error";
-      throw new AiError(AI_BREAK_MESSAGE, `gemini ${req.model} key #${i + 1}: ${why}`);
+      throw new AiError(AI_BREAK_MESSAGE, `gemini ${model} key #${i + 1}: ${why}`);
     }
 
     if (!res.ok) {
       const text = (await res.text().catch(() => "")).slice(0, 300);
       const line = `key #${i + 1} → HTTP ${res.status}: ${text.replace(/\s+/g, " ")}`;
-      if (keyProblem(res.status, text) && n < keys.length - 1) {
-        console.warn(`[ai] gemini ${req.model} ${line} — trying next key`);
-        problems.push(line);
-        continue;
-      }
       problems.push(line);
-      throw new AiError(AI_BREAK_MESSAGE, `gemini ${req.model} failed: ${problems.join(" | ")}`);
+      if (keyProblem(res.status, text)) {
+        if (res.status === 429) saw429 = true;
+        if (n < keys.length - 1) {
+          console.warn(`[ai] gemini ${model} ${line} — trying next key`);
+          continue;
+        }
+        const detail = `gemini ${model}: every key failed: ${problems.join(" | ")}`;
+        throw saw429
+          ? new GeminiExhausted(AI_BREAK_MESSAGE, detail)
+          : new AiError(AI_BREAK_MESSAGE, detail);
+      }
+      throw new AiError(AI_BREAK_MESSAGE, `gemini ${model} failed: ${problems.join(" | ")}`);
     }
 
-    geminiStartIndex = i;
+    geminiStartIndex.set(model, i);
     const data = (await res.json().catch(() => null)) as GeminiResponse | null;
-    return parseGemini(data, req.model);
+    return parseGemini(data, model);
   }
 
-  // Only reached if keys is empty, handled above.
+  // Only reached if keys is empty, handled by the caller.
   throw new AiError(AI_BREAK_MESSAGE, "gemini: no key worked");
 }
 

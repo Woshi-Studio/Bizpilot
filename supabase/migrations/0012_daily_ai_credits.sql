@@ -5,7 +5,7 @@
 --
 -- What changes:
 --   Before: 10 (free) / 300 (premium) AI credits per MONTH.
---   Now:    25 (free) / 200 (premium) AI credits per DAY, reset at
+--   Now:    10 (free) / 100 (premium) AI credits per DAY, reset at
 --           midnight UTC.
 --   Keep the numbers in sync with AI_DAILY_CREDITS in src/lib/ai-quota.ts.
 --
@@ -66,7 +66,7 @@ begin
     raise exception 'not your business' using errcode = '42501';
   end if;
 
-  v_limit := case when v_plan = 'premium' then 200 else 25 end;
+  v_limit := case when v_plan = 'premium' then 100 else 10 end;
 
   insert into public.ai_usage (business_id, month, count)
   values (p_business, v_day, 0)

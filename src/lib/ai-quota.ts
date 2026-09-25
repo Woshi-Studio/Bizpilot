@@ -6,8 +6,8 @@ import type { Business } from "@/lib/types";
 // (supabase/migrations/0012_daily_ai_credits.sql) — keep these numbers
 // in sync with that file. These are only used for display and fallbacks.
 export const AI_DAILY_CREDITS: Record<string, number> = {
-  free: 25,
-  premium: 200,
+  free: 10,
+  premium: 100,
 };
 
 // Kept for anything that still imports the old name.

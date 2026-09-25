@@ -9,14 +9,16 @@ Anthropic. Users get daily AI credits. Errors are friendly.
 - `src/lib/ai.ts` — provider switch (`AI_PROVIDER`, default `gemini`).
   Models: main = `gemini-flash-latest`, small = `gemini-flash-lite-latest`.
   Several keys can be set; when one is out of quota (429) or refused
-  (401/403/invalid key), the next is tried. Key values are never logged, only
-  their number ("key #2").
+  (401/403/invalid key), the next is tried. If Flash is out of quota (429) on
+  EVERY key, the call falls back to Flash Lite, again trying each key. The log
+  says `[ai] main exhausted → lite`. Key values are never logged, only their
+  number ("key #2").
 - Users never see a raw provider error. They see
   "AI is taking a short break. Please try again in a few minutes."
   The real error is in the Vercel function logs, lines starting `[ai]`.
-- Daily credits: free = 25 a day, premium = 200 a day, reset at midnight UTC.
+- Daily credits: free = 10 a day, premium = 100 a day, reset at midnight UTC.
   The owner's business (`OWNER_BUSINESS_IDS`) is unlimited and not counted.
-- A small line on each AI page: "AI credits today: 7 of 25 · resets at
+- A small line on each AI page: "AI credits today: 7 of 10 · resets at
   midnight UTC".
 - `supabase/migrations/0012_daily_ai_credits.sql` — counting moves from
   per-month to per-day. All 0011 protections are kept.
@@ -67,19 +69,19 @@ limit. Never prefix any of these with `NEXT_PUBLIC_`.
 3. AI Messages, Today's Plan (Dashboard), Launchpad "personalize with AI",
    Decision advisor (premium only): each one answers.
 4. Signed in as a normal free account: the credit line goes up by 1 per use,
-   e.g. "AI credits today: 1 of 25 · resets at midnight UTC".
+   e.g. "AI credits today: 1 of 10 · resets at midnight UTC".
 5. Signed in as yourself (Woshi Studio): the line says
    "AI credits today: unlimited (owner)".
 6. Out of credits check (optional, SQL Editor, use a TEST business id):
 
    ```sql
-   update public.ai_usage set count = 25
+   update public.ai_usage set count = 10
    where business_id = 'TEST-BUSINESS-ID'
      and month = to_char(now() at time zone 'utc', 'YYYY-MM-DD');
    ```
 
    The next AI click shows "You've used all of today's AI credits. AI credits
-   today: 25 of 25 · resets at midnight UTC." Set it back to 0 after.
+   today: 10 of 10 · resets at midnight UTC." Set it back to 0 after.
 7. Error check: in Vercel -> Logs, filter `[ai]`. A failed call shows the
    status and which key number failed, never the key itself.
 
@@ -88,7 +90,18 @@ limit. Never prefix any of these with `NEXT_PUBLIC_`.
 - Midnight UTC is 8 pm Eastern (summer) / 7 pm (winter).
 - A credit is used when the button is pressed. If Gemini then fails, that
   credit is not given back.
-- Gemini free keys have their own daily limits set by Google. When every key
-  is spent, users see the "short break" message until Google resets them.
+- How much AI the free keys give (owner's measurement, 09-05):
+  - `gemini-flash-latest` (main): about 20 calls a day per key.
+    4 keys × ~20 ≈ **80 main calls a day**.
+  - `gemini-flash-lite-latest` (small, and the fallback): about 500 a day per
+    key. 4 keys × ~500 ≈ **2,000 calls a day**.
+  - That ~2,000 a day is shared across ALL users, not per user. At 10 credits
+    a day that is roughly 200 fully active free users a day before Google's
+    limit is hit. The owner's unlimited use comes out of the same pool.
+  - Coach, Decision advisor and Launchpad use Flash first; after ~80 calls
+    they switch to Lite for the rest of the day. Messages and Today's Plan
+    use Lite always.
+- When every key is spent on Lite too, users see the "short break" message
+  until Google resets the quota.
 - Gemini Flash may "think" before answering; the app gives it 2,048 extra
   output tokens for that so answers are not cut short. Free tier, no bill.

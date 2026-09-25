@@ -10,8 +10,8 @@ import Anthropic from "@anthropic-ai/sdk";
 // answer's token budget.
 export const AI_CONFIG = {
   models: {
-    main: "claude-opus-4-8",
-    small: "claude-haiku-4-5",
+    main: "claude-sonnet-5",           // 2026-09-25: current model; cheaper than Opus for coach/decisions/launchpad
+    small: "claude-haiku-4-5-20251001",
   },
   MAX_OUTPUT_TOKENS: 1500,
   // The launchpad rewrites a whole business plan; 1500 would cut it off.

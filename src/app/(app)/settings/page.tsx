@@ -4,6 +4,7 @@ import { stripeConfigured } from "@/lib/stripe";
 import SettingsForm from "./settings-form";
 import PublicPageForm from "./public-page-form";
 import PaymentMethodsForm from "./payment-methods-form";
+import ChangeEmailForm from "./change-email-form";
 import type { PaymentMethod } from "@/lib/types";
 import { startCheckout, openBillingPortal } from "./billing-actions";
 
@@ -17,13 +18,20 @@ const BILLING_MESSAGES: Record<string, string> = {
   nocustomer: "No billing account found yet.",
 };
 
+const EMAIL_MESSAGES: Record<string, string> = {
+  partial:
+    "One link confirmed. Now click the confirm link in the other inbox to finish.",
+  changed: "Your login email is updated.",
+};
+
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ billing?: string }>;
+  searchParams: Promise<{ billing?: string; email?: string }>;
 }) {
-  const { billing } = await searchParams;
+  const { billing, email: emailStatus } = await searchParams;
   const billingMessage = billing ? BILLING_MESSAGES[billing] : null;
+  const emailMessage = emailStatus ? EMAIL_MESSAGES[emailStatus] ?? null : null;
   const billingReady = stripeConfigured();
   const supabase = await createClient();
   const {
@@ -190,6 +198,14 @@ export default async function SettingsPage({
             description: business?.description ?? "",
             currency: business?.currency ?? "USD",
           }}
+        />
+      </div>
+
+      <div className="mt-8">
+        <ChangeEmailForm
+          currentEmail={user.email ?? ""}
+          pendingEmail={user.new_email ?? null}
+          notice={emailMessage}
         />
       </div>
     </div>

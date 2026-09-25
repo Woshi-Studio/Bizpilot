@@ -140,3 +140,49 @@ export async function resetPassword(
 
   redirect("/dashboard");
 }
+
+const EMAIL_CHANGE_SENT =
+  "Check both inboxes. Click the confirm link in each to finish. You stay logged in with the old email until then.";
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export async function changeEmail(
+  _prevState: AuthState,
+  formData: FormData
+): Promise<AuthState> {
+  const email = String(formData.get("new_email") ?? "")
+    .trim()
+    .toLowerCase();
+
+  if (!email || email.length > 254 || !EMAIL_PATTERN.test(email)) {
+    return { error: "Please enter a valid email address." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "You must be logged in." };
+  }
+  if (email === (user.email ?? "").toLowerCase()) {
+    return { error: "That is already your login email." };
+  }
+
+  const origin = await getOrigin();
+  const { error } = await supabase.auth.updateUser(
+    { email },
+    {
+      emailRedirectTo: `${origin}/auth/callback?next=${encodeURIComponent(
+        "/settings?email=changed"
+      )}`,
+    }
+  );
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  return { success: EMAIL_CHANGE_SENT };
+}

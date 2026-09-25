@@ -75,7 +75,7 @@ export default function SettingsForm({
               className={`${inputClass} bg-slate-50 text-slate-400`}
             />
             <p className="mt-1 text-xs text-slate-400">
-              Email changes aren&apos;t supported yet.
+              To change it, use &quot;Login email&quot; below.
             </p>
           </div>
         </div>

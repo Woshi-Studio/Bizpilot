@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { requireUserAndBusiness } from "@/lib/data";
 import { getStripe, stripeConfigured, siteUrl, proPriceId } from "@/lib/stripe";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Starts a Stripe Checkout session for the Pro plan and redirects to it.
 export async function startCheckout() {
@@ -10,7 +11,7 @@ export async function startCheckout() {
     redirect("/settings?billing=unconfigured");
   }
 
-  const { supabase, user, business } = await requireUserAndBusiness();
+  const { user, business } = await requireUserAndBusiness();
 
   let checkoutUrl: string;
   try {
@@ -27,10 +28,21 @@ export async function startCheckout() {
         metadata: { business_id: business.id },
       });
       customerId = customer.id;
-      await supabase
+      // stripe_customer_id is billing-only (0011): users can't write it,
+      // so save it with the service-role client. business.id comes from
+      // requireUserAndBusiness(), so it is this user's own business.
+      const admin = createAdminClient();
+      if (!admin) {
+        redirect("/settings?billing=unconfigured");
+      }
+      const { error: saveError } = await admin
         .from("businesses")
         .update({ stripe_customer_id: customerId })
-        .eq("id", business.id);
+        .eq("id", business.id)
+        .eq("owner_id", user.id);
+      if (saveError) {
+        throw new Error(`Could not save Stripe customer: ${saveError.message}`);
+      }
     }
 
     const session = await stripe.checkout.sessions.create({

@@ -24,6 +24,8 @@ export default async function AppLayout({
       .select("id, name, onboarding_completed")
       .eq("owner_id", user.id)
       .eq("onboarding_completed", true)
+      .order("created_at", { ascending: true })
+      .limit(1)
       .maybeSingle(),
   ]);
 

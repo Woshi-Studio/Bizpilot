@@ -29,6 +29,20 @@ export async function completeOnboarding(
     redirect("/login");
   }
 
+  // One business per account: requireUserAndBusiness() reads a single
+  // row, so a second business caused a redirect loop. If one exists
+  // already, send them to it instead of creating another.
+  const { data: existing } = await supabase
+    .from("businesses")
+    .select("id")
+    .eq("owner_id", user.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (existing) {
+    redirect("/dashboard");
+  }
+
   const { error: profileError } = await supabase
     .from("profiles")
     .update({ full_name: fullName })

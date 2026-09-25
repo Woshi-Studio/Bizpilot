@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUserAndBusiness } from "@/lib/data";
+import { requireUserAndBusiness, belongsToBusiness } from "@/lib/data";
 import { TASK_STATUSES } from "@/lib/types";
 
 export type TaskFormState = {
@@ -31,6 +31,13 @@ export async function createTask(
   }
 
   const { supabase, business } = await requireUserAndBusiness();
+
+  if (customerId && !(await belongsToBusiness(supabase, "customers", customerId, business.id))) {
+    return { error: "That customer wasn't found." };
+  }
+  if (serviceId && !(await belongsToBusiness(supabase, "services", serviceId, business.id))) {
+    return { error: "That service wasn't found." };
+  }
 
   const { error } = await supabase.from("tasks").insert({
     business_id: business.id,

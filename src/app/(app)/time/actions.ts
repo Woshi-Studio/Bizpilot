@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUserAndBusiness } from "@/lib/data";
+import { requireUserAndBusiness, belongsToBusiness } from "@/lib/data";
 
 export type TimeFormState = {
   error?: string;
@@ -24,6 +24,13 @@ export async function logTime(
   }
 
   const { supabase, business } = await requireUserAndBusiness();
+
+  if (customerId && !(await belongsToBusiness(supabase, "customers", customerId, business.id))) {
+    return { error: "That customer wasn't found." };
+  }
+  if (taskId && !(await belongsToBusiness(supabase, "tasks", taskId, business.id))) {
+    return { error: "That task wasn't found." };
+  }
 
   const { error } = await supabase.from("time_entries").insert({
     business_id: business.id,

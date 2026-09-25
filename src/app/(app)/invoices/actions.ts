@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireUserAndBusiness } from "@/lib/data";
+import { requireUserAndBusiness, belongsToBusiness } from "@/lib/data";
 
 export type InvoiceFormState = {
   error?: string;
@@ -58,6 +58,10 @@ export async function createInvoice(
   }
 
   const { supabase, business } = await requireUserAndBusiness();
+
+  if (customerId && !(await belongsToBusiness(supabase, "customers", customerId, business.id))) {
+    return { error: "That customer wasn't found." };
+  }
 
   // Sequential number per document type: INV-0001 / QUO-0001
   const { count } = await supabase

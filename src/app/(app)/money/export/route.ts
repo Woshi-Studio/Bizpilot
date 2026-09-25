@@ -23,6 +23,8 @@ export async function GET(request: Request) {
     .select("id, name, currency")
     .eq("owner_id", user.id)
     .eq("onboarding_completed", true)
+    .order("created_at", { ascending: true })
+    .limit(1)
     .maybeSingle();
 
   if (!business) {

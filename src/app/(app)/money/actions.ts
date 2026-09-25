@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUserAndBusiness } from "@/lib/data";
+import { requireUserAndBusiness, belongsToBusiness } from "@/lib/data";
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from "@/lib/types";
 import { addMonths } from "@/lib/recurring";
 
@@ -52,6 +52,10 @@ export async function createTransaction(
     : validCategories[validCategories.length - 1].value;
 
   const { supabase, user, business } = await requireUserAndBusiness();
+
+  if (customerId && !(await belongsToBusiness(supabase, "customers", customerId, business.id))) {
+    return { error: "That customer wasn't found." };
+  }
 
   // Upload the receipt first (if provided) so we can store its path
   let receiptPath: string | null = null;

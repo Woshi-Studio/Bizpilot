@@ -19,6 +19,8 @@ export default async function OnboardingPage() {
     .select("id, onboarding_completed")
     .eq("owner_id", user.id)
     .eq("onboarding_completed", true)
+    .order("created_at", { ascending: true })
+    .limit(1)
     .maybeSingle();
 
   if (business) {

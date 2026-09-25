@@ -16,6 +16,11 @@ export type Business = {
   currency: string;
   onboarding_completed: boolean;
   plan: string;
+  goal_customers: number | null;
+  goal_monthly_revenue: number | null;
+  savings_goal_label: string | null;
+  savings_current: number | null;
+  savings_target: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -40,15 +45,87 @@ export type CustomerNote = {
   created_at: string;
 };
 
+export type TaskStatus = "todo" | "inprogress" | "review" | "done";
+
+export const TASK_STATUSES: { value: TaskStatus; label: string }[] = [
+  { value: "todo", label: "To Do" },
+  { value: "inprogress", label: "In Progress" },
+  { value: "review", label: "Review" },
+  { value: "done", label: "Done" },
+];
+
 export type Task = {
   id: string;
   business_id: string;
   customer_id: string | null;
+  service_id: string | null;
   title: string;
+  description: string | null;
+  value: number | null;
+  status: TaskStatus;
   due_date: string | null;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type ServiceUnit = "project" | "mo" | "hr" | "word" | "min";
+
+export const SERVICE_UNITS: { value: ServiceUnit; label: string }[] = [
+  { value: "project", label: "Per project" },
+  { value: "mo", label: "Per month" },
+  { value: "hr", label: "Per hour" },
+  { value: "word", label: "Per word" },
+  { value: "min", label: "Per minute" },
+];
+
+export type Service = {
+  id: string;
+  business_id: string;
+  name: string;
+  rate: number;
+  unit: ServiceUnit;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TimeEntry = {
+  id: string;
+  business_id: string;
+  customer_id: string | null;
+  task_id: string | null;
+  description: string | null;
+  hours: number;
+  entry_date: string;
+  billed: "unbilled" | "billed" | "included";
+  created_at: string;
+};
+
+export type Win = {
+  id: string;
+  business_id: string;
+  title: string;
+  category: "client" | "revenue" | "delivery" | "personal" | "other";
+  details: string | null;
+  created_at: string;
+};
+
+export const WIN_CATEGORIES = [
+  { value: "client", label: "New client" },
+  { value: "revenue", label: "Revenue milestone" },
+  { value: "delivery", label: "Great delivery" },
+  { value: "personal", label: "Personal" },
+  { value: "other", label: "Other" },
+] as const;
+
+export type PaymentMethod = {
+  id: string;
+  business_id: string;
+  label: string;
+  value: string;
+  position: number;
+  created_at: string;
 };
 
 export type CustomerStatus = "lead" | "active" | "past";
@@ -162,6 +239,35 @@ export const INVOICE_STATUS_META: Record<
   },
 };
 
+export type LeadChannel =
+  | "email"
+  | "upwork"
+  | "linkedin"
+  | "freelancer"
+  | "referral"
+  | "inbound"
+  | "other";
+
+export const LEAD_CHANNELS: { value: LeadChannel; label: string }[] = [
+  { value: "inbound", label: "Public page (inbound)" },
+  { value: "email", label: "Cold email" },
+  { value: "upwork", label: "Upwork" },
+  { value: "linkedin", label: "LinkedIn" },
+  { value: "freelancer", label: "Freelancer.com" },
+  { value: "referral", label: "Referral" },
+  { value: "other", label: "Other" },
+];
+
+export type LeadStatus = "new" | "contacted" | "meeting" | "converted" | "declined";
+
+export const LEAD_STATUSES: { value: LeadStatus; label: string; badgeClass: string }[] = [
+  { value: "new", label: "New", badgeClass: "bg-amber-50 text-amber-700 border-amber-200" },
+  { value: "contacted", label: "Contacted", badgeClass: "bg-blue-50 text-blue-700 border-blue-200" },
+  { value: "meeting", label: "Meeting booked", badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+  { value: "converted", label: "Converted", badgeClass: "bg-green-50 text-green-700 border-green-200" },
+  { value: "declined", label: "Declined", badgeClass: "bg-slate-100 text-slate-500 border-slate-200" },
+];
+
 export type Lead = {
   id: string;
   business_id: string;
@@ -169,7 +275,9 @@ export type Lead = {
   email: string | null;
   phone: string | null;
   message: string | null;
-  status: "new" | "converted";
+  channel: LeadChannel;
+  follow_up_date: string | null;
+  status: LeadStatus;
   created_at: string;
 };
 

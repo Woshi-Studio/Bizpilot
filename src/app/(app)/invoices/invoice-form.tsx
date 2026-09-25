@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { formatMoney } from "@/lib/types";
+import { formatMoney, type PaymentMethod } from "@/lib/types";
 import { createInvoice, type InvoiceFormState } from "./actions";
 
 const initialState: InvoiceFormState = {};
@@ -14,9 +14,11 @@ type Row = { description: string; quantity: string; unit_price: string };
 export default function InvoiceForm({
   customers,
   currency,
+  paymentMethods,
 }: {
   customers: { id: string; name: string }[];
   currency: string;
+  paymentMethods: PaymentMethod[];
 }) {
   const [state, formAction, pending] = useActionState(
     createInvoice,
@@ -25,6 +27,30 @@ export default function InvoiceForm({
   const [rows, setRows] = useState<Row[]>([
     { description: "", quantity: "1", unit_price: "" },
   ]);
+  const [notes, setNotes] = useState("");
+  const [checkedMethods, setCheckedMethods] = useState<Set<string>>(
+    new Set()
+  );
+
+  function toggleMethod(m: PaymentMethod) {
+    const line = `${m.label}: ${m.value}`;
+    setCheckedMethods((prev) => {
+      const next = new Set(prev);
+      if (next.has(m.id)) {
+        next.delete(m.id);
+        setNotes((n) =>
+          n
+            .split("\n")
+            .filter((l) => l !== line)
+            .join("\n")
+        );
+      } else {
+        next.add(m.id);
+        setNotes((n) => (n ? `${n}\n${line}` : line));
+      }
+      return next;
+    });
+  }
 
   const updateRow = (idx: number, patch: Partial<Row>) =>
     setRows((rs) => rs.map((r, i) => (i === idx ? { ...r, ...patch } : r)));
@@ -162,6 +188,30 @@ export default function InvoiceForm({
         + Add line
       </button>
 
+      {paymentMethods.length > 0 && (
+        <div className="mt-4">
+          <p className="block text-sm font-medium text-slate-700">
+            Attach payment methods
+          </p>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {paymentMethods.map((m) => (
+              <label
+                key={m.id}
+                className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-600 has-[:checked]:border-indigo-400 has-[:checked]:bg-indigo-50 has-[:checked]:text-indigo-700"
+              >
+                <input
+                  type="checkbox"
+                  checked={checkedMethods.has(m.id)}
+                  onChange={() => toggleMethod(m)}
+                  className="h-3.5 w-3.5"
+                />
+                {m.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-4">
         <label
           htmlFor="notes"
@@ -169,7 +219,14 @@ export default function InvoiceForm({
         >
           Notes <span className="text-slate-400">(payment details, terms...)</span>
         </label>
-        <textarea id="notes" name="notes" rows={2} className={inputClass} />
+        <textarea
+          id="notes"
+          name="notes"
+          rows={3}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className={inputClass}
+        />
       </div>
 
       <div className="mt-6 flex items-center justify-between">

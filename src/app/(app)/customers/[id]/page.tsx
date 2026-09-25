@@ -6,6 +6,7 @@ import CustomerForm from "../customer-form";
 import { updateCustomer, setFollowUpIn } from "../actions";
 import NotesSection from "./notes-section";
 import DeleteCustomerButton from "./delete-button";
+import WeeklyReport from "./weekly-report";
 
 export const metadata = { title: "Customer" };
 
@@ -28,17 +29,24 @@ export default async function CustomerDetailPage({
     notFound();
   }
 
-  const [{ data: notes }, { data: customerTxs }] = await Promise.all([
-    supabase
-      .from("customer_notes")
-      .select("*")
-      .eq("customer_id", id)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("transactions")
-      .select("type, amount")
-      .eq("customer_id", id),
-  ]);
+  const [{ data: notes }, { data: customerTxs }, { data: doneTasks }] =
+    await Promise.all([
+      supabase
+        .from("customer_notes")
+        .select("*")
+        .eq("customer_id", id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("transactions")
+        .select("type, amount")
+        .eq("customer_id", id),
+      supabase
+        .from("tasks")
+        .select("title, description, completed_at")
+        .eq("customer_id", id)
+        .eq("status", "done")
+        .order("completed_at", { ascending: false }),
+    ]);
 
   const revenue = (customerTxs ?? [])
     .filter((t) => t.type === "income")
@@ -127,6 +135,15 @@ export default async function CustomerDetailPage({
         <NotesSection
           customerId={customer.id}
           notes={(notes ?? []) as CustomerNote[]}
+        />
+      </div>
+
+      <div className="mt-6">
+        <WeeklyReport
+          customerName={customer.name}
+          businessName={business.name}
+          notes={(notes ?? []) as CustomerNote[]}
+          doneTasks={doneTasks ?? []}
         />
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { requireUserAndBusiness } from "@/lib/data";
+import type { Service } from "@/lib/types";
 import TaskComposer from "./task-composer";
 import TaskRow, { type TaskWithCustomer } from "./task-row";
 
@@ -7,23 +8,32 @@ export const metadata = { title: "Tasks" };
 export default async function TasksPage() {
   const { supabase, business } = await requireUserAndBusiness();
 
-  const [{ data: tasks }, { data: customers }] = await Promise.all([
-    supabase
-      .from("tasks")
-      .select("id, title, due_date, completed_at, customers(id, name)")
-      .eq("business_id", business.id)
-      .order("due_date", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("customers")
-      .select("id, name")
-      .eq("business_id", business.id)
-      .order("name"),
-  ]);
+  const [{ data: tasks }, { data: customers }, { data: services }] =
+    await Promise.all([
+      supabase
+        .from("tasks")
+        .select(
+          "id, title, description, value, status, due_date, completed_at, customers(id, name)"
+        )
+        .eq("business_id", business.id)
+        .order("due_date", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("customers")
+        .select("id, name")
+        .eq("business_id", business.id)
+        .order("name"),
+      supabase
+        .from("services")
+        .select("*")
+        .eq("business_id", business.id)
+        .order("name"),
+    ]);
 
   const allTasks = (tasks ?? []) as unknown as TaskWithCustomer[];
-  const openTasks = allTasks.filter((t) => !t.completed_at);
-  const doneTasks = allTasks.filter((t) => t.completed_at).slice(0, 15);
+  const openTasks = allTasks.filter((t) => t.status !== "done");
+  const doneTasks = allTasks.filter((t) => t.status === "done").slice(0, 15);
+  const cur = business.currency;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -33,7 +43,10 @@ export default async function TasksPage() {
       </p>
 
       <div className="mt-6">
-        <TaskComposer customers={customers ?? []} />
+        <TaskComposer
+          customers={customers ?? []}
+          services={(services ?? []) as Service[]}
+        />
       </div>
 
       <div className="mt-6">
@@ -48,7 +61,7 @@ export default async function TasksPage() {
         ) : (
           <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             {openTasks.map((t) => (
-              <TaskRow key={t.id} task={t} />
+              <TaskRow key={t.id} task={t} currency={cur} />
             ))}
           </ul>
         )}
@@ -61,7 +74,7 @@ export default async function TasksPage() {
           </h2>
           <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             {doneTasks.map((t) => (
-              <TaskRow key={t.id} task={t} />
+              <TaskRow key={t.id} task={t} currency={cur} />
             ))}
           </ul>
         </div>

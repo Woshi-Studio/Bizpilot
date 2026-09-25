@@ -100,3 +100,53 @@ export async function updatePublicPage(
   revalidatePath("/leads");
   return { success: "Public page saved." };
 }
+
+export async function addPaymentMethod(
+  _prevState: SettingsState,
+  formData: FormData
+): Promise<SettingsState> {
+  const label = String(formData.get("label") ?? "").trim();
+  const value = String(formData.get("value") ?? "").trim();
+
+  if (!label || !value) {
+    return { error: "Both a label and a value are required." };
+  }
+
+  const { supabase, business } = await requireUserAndBusiness();
+
+  const { count } = await supabase
+    .from("payment_methods")
+    .select("id", { count: "exact", head: true })
+    .eq("business_id", business.id);
+
+  const { error } = await supabase.from("payment_methods").insert({
+    business_id: business.id,
+    label,
+    value,
+    position: count ?? 0,
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/invoices/new");
+  return { success: "Payment method added." };
+}
+
+export async function deletePaymentMethod(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const { supabase, business } = await requireUserAndBusiness();
+
+  await supabase
+    .from("payment_methods")
+    .delete()
+    .eq("id", id)
+    .eq("business_id", business.id);
+
+  revalidatePath("/settings");
+  revalidatePath("/invoices/new");
+}

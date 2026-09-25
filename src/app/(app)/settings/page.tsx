@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { stripeConfigured } from "@/lib/stripe";
 import SettingsForm from "./settings-form";
 import PublicPageForm from "./public-page-form";
+import PaymentMethodsForm from "./payment-methods-form";
+import type { PaymentMethod } from "@/lib/types";
 import { startCheckout, openBillingPortal } from "./billing-actions";
 
 export const metadata = { title: "Settings" };
@@ -32,17 +34,18 @@ export default async function SettingsPage({
     redirect("/login");
   }
 
-  const [{ data: profile }, { data: business }, planResult, publicResult] =
+  const { data: business } = await supabase
+    .from("businesses")
+    .select("id, name, business_type, description, currency")
+    .eq("owner_id", user.id)
+    .maybeSingle();
+
+  const [{ data: profile }, planResult, publicResult, paymentMethodsResult] =
     await Promise.all([
       supabase
         .from("profiles")
         .select("full_name")
         .eq("id", user.id)
-        .maybeSingle(),
-      supabase
-        .from("businesses")
-        .select("name, business_type, description, currency")
-        .eq("owner_id", user.id)
         .maybeSingle(),
       supabase
         .from("businesses")
@@ -54,7 +57,18 @@ export default async function SettingsPage({
         .select("slug, public_page_enabled, tagline, services")
         .eq("owner_id", user.id)
         .maybeSingle(),
+      business
+        ? supabase
+            .from("payment_methods")
+            .select("*")
+            .eq("business_id", business.id)
+            .order("position")
+        : Promise.resolve({ data: null, error: null }),
     ]);
+
+  const paymentMethods = paymentMethodsResult.error
+    ? []
+    : ((paymentMethodsResult.data ?? []) as PaymentMethod[]);
 
   // The `plan` column ships in migration 0006 — until the user runs it,
   // fall back to "free" instead of breaking the whole settings page.
@@ -157,6 +171,12 @@ export default async function SettingsPage({
               services: publicPage.services ?? "",
             }}
           />
+        </div>
+      )}
+
+      {business && (
+        <div className="mt-8">
+          <PaymentMethodsForm methods={paymentMethods} />
         </div>
       )}
 

@@ -1,14 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { toggleTask, deleteTask } from "./actions";
+import { TASK_STATUSES, formatMoney, type TaskStatus } from "@/lib/types";
+import { setTaskStatus, deleteTask } from "./actions";
 
 export type TaskWithCustomer = {
   id: string;
   title: string;
+  description: string | null;
+  value: number | null;
+  status: TaskStatus;
   due_date: string | null;
   completed_at: string | null;
   customers: { id: string; name: string } | null;
+};
+
+const STATUS_CLASS: Record<TaskStatus, string> = {
+  todo: "border-slate-300 text-slate-500",
+  inprogress: "border-amber-300 text-amber-600",
+  review: "border-indigo-300 text-indigo-600",
+  done: "border-green-300 text-green-600",
 };
 
 function dueLabel(dateStr: string | null, done: boolean) {
@@ -32,35 +43,31 @@ function dueLabel(dateStr: string | null, done: boolean) {
   );
 }
 
-export default function TaskRow({ task }: { task: TaskWithCustomer }) {
-  const done = !!task.completed_at;
+export default function TaskRow({
+  task,
+  currency,
+}: {
+  task: TaskWithCustomer;
+  currency: string;
+}) {
+  const done = task.status === "done";
 
   return (
     <li className="group flex items-center gap-3 px-5 py-3">
-      <form action={toggleTask}>
+      <form action={setTaskStatus}>
         <input type="hidden" name="id" value={task.id} />
-        <input type="hidden" name="completed" value={String(!done)} />
-        <button
-          type="submit"
-          aria-label={done ? "Mark as not done" : "Mark as done"}
-          className={`flex h-5 w-5 items-center justify-center rounded-full border transition-colors ${
-            done
-              ? "border-indigo-600 bg-indigo-600 text-white"
-              : "border-slate-300 hover:border-indigo-400"
-          }`}
+        <select
+          name="status"
+          defaultValue={task.status}
+          onChange={(e) => e.currentTarget.form?.requestSubmit()}
+          className={`rounded-md border bg-white px-1.5 py-1 text-xs font-medium ${STATUS_CLASS[task.status]}`}
         >
-          {done && (
-            <svg
-              className="h-3 w-3"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={3}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          )}
-        </button>
+          {TASK_STATUSES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
       </form>
 
       <div className="min-w-0 flex-1">
@@ -80,6 +87,12 @@ export default function TaskRow({ task }: { task: TaskWithCustomer }) {
           </Link>
         )}
       </div>
+
+      {task.value != null && (
+        <span className="text-xs font-semibold text-indigo-600">
+          {formatMoney(task.value, currency)}
+        </span>
+      )}
 
       {dueLabel(task.due_date, done)}
 

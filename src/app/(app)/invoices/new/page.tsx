@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireUserAndBusiness } from "@/lib/data";
+import type { PaymentMethod } from "@/lib/types";
 import InvoiceForm from "../invoice-form";
 
 export const metadata = { title: "New invoice" };
@@ -7,11 +8,22 @@ export const metadata = { title: "New invoice" };
 export default async function NewInvoicePage() {
   const { supabase, business } = await requireUserAndBusiness();
 
-  const { data: customers } = await supabase
-    .from("customers")
-    .select("id, name")
-    .eq("business_id", business.id)
-    .order("name");
+  const [{ data: customers }, paymentMethodsResult] = await Promise.all([
+    supabase
+      .from("customers")
+      .select("id, name")
+      .eq("business_id", business.id)
+      .order("name"),
+    supabase
+      .from("payment_methods")
+      .select("*")
+      .eq("business_id", business.id)
+      .order("position"),
+  ]);
+
+  const paymentMethods = paymentMethodsResult.error
+    ? []
+    : ((paymentMethodsResult.data ?? []) as PaymentMethod[]);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -32,6 +44,7 @@ export default async function NewInvoicePage() {
         <InvoiceForm
           customers={customers ?? []}
           currency={business.currency}
+          paymentMethods={paymentMethods}
         />
       </div>
     </div>

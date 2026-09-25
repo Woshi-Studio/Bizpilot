@@ -1,6 +1,25 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-export const AI_MODEL = "claude-opus-4-8";
+// One place for every model id and output cap.
+// - main:  the full model, for advice that needs judgement
+//          (coach, decisions, launchpad plan rewrite)
+// - small: a cheaper model for short, templated writing
+//          (message drafts, the daily plan)
+// Output is capped so one request can't run up a large bill.
+// Thinking is off on these calls: with a small cap it would eat the
+// answer's token budget.
+export const AI_CONFIG = {
+  models: {
+    main: "claude-opus-4-8",
+    small: "claude-haiku-4-5",
+  },
+  MAX_OUTPUT_TOKENS: 1500,
+  // The launchpad rewrites a whole business plan; 1500 would cut it off.
+  LONG_OUTPUT_TOKENS: 3000,
+} as const;
+
+// Kept for anything that still imports the old name.
+export const AI_MODEL = AI_CONFIG.models.main;
 
 export function aiConfigured() {
   return !!process.env.ANTHROPIC_API_KEY;

@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness } from "@/lib/data";
-import { checkAiQuota, recordAiUse } from "@/lib/ai-quota";
-import { aiConfigured, createAiClient, AI_MODEL } from "@/lib/ai";
+import { consumeAiCredit, aiCreditError } from "@/lib/ai-quota";
+import { aiConfigured, createAiClient, AI_CONFIG } from "@/lib/ai";
 import {
   scoreDecision,
   QUESTIONS,
@@ -145,11 +145,9 @@ export async function getDecisionAdvice(
     };
   }
 
-  const quota = await checkAiQuota(supabase, business);
+  const quota = await consumeAiCredit(supabase, business);
   if (!quota.ok) {
-    return {
-      error: `You've used all ${quota.limit} AI generations included this month.`,
-    };
+    return { error: aiCreditError(quota) };
   }
 
   const result = scoreDecision(type, answers);
@@ -205,9 +203,8 @@ export async function getDecisionAdvice(
   const client = createAiClient();
   try {
     const response = await client.messages.create({
-      model: AI_MODEL,
-      max_tokens: 8000,
-      thinking: { type: "adaptive" },
+      model: AI_CONFIG.models.main,
+      max_tokens: AI_CONFIG.MAX_OUTPUT_TOKENS,
       system: `You are Jephelen's Decision Advisor — a sharp, honest business partner for "${business.name}", a freelance ${business.business_type} business. You advise on ONE specific decision, grounded in this owner's REAL numbers and the outcomes of their PAST decisions of the same kind.
 
 Rules:
@@ -245,7 +242,6 @@ Given my real numbers and my past ${typeLabel.toLowerCase()} decisions above, wh
       return { error: "The AI returned an empty response — try again." };
     }
 
-    await recordAiUse(supabase, business.id);
     return { advice: text };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";

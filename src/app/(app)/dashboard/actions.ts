@@ -1,8 +1,8 @@
 "use server";
 
 import { requireUserAndBusiness } from "@/lib/data";
-import { checkAiQuota, recordAiUse } from "@/lib/ai-quota";
-import { aiConfigured, createAiClient, AI_MODEL } from "@/lib/ai";
+import { consumeAiCredit, aiCreditError } from "@/lib/ai-quota";
+import { aiConfigured, createAiClient, AI_CONFIG } from "@/lib/ai";
 
 export type PlanState = {
   error?: string;
@@ -21,11 +21,9 @@ export async function generateDailyPlan(
 
   const { supabase, business } = await requireUserAndBusiness();
 
-  const quota = await checkAiQuota(supabase, business);
+  const quota = await consumeAiCredit(supabase, business);
   if (!quota.ok) {
-    return {
-      error: `You've used all ${quota.limit} AI generations included this month. Your counter resets on the 1st.`,
-    };
+    return { error: aiCreditError(quota) };
   }
 
   const today = new Date().toISOString().slice(0, 10);
@@ -57,9 +55,8 @@ export async function generateDailyPlan(
 
   try {
     const response = await client.messages.create({
-      model: AI_MODEL,
-      max_tokens: 8000,
-      thinking: { type: "adaptive" },
+      model: AI_CONFIG.models.small,
+      max_tokens: AI_CONFIG.MAX_OUTPUT_TOKENS,
       system: `You are Jephelen, the AI copilot for "${business.name}", a freelance ${business.business_type} business. You give short, practical daily plans.
 
 Rules:
@@ -122,7 +119,6 @@ What should I focus on today?`,
       return { error: "The AI returned an empty response — try again." };
     }
 
-    await recordAiUse(supabase, business.id);
     return { plan: text };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";

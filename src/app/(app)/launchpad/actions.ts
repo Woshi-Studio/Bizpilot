@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness } from "@/lib/data";
-import { checkAiQuota, recordAiUse } from "@/lib/ai-quota";
-import { aiConfigured, createAiClient, AI_MODEL } from "@/lib/ai";
+import { consumeAiCredit, aiCreditError } from "@/lib/ai-quota";
+import { aiConfigured, createAiClient, AI_CONFIG } from "@/lib/ai";
 import {
   buildTemplatePlan,
   roadmapWithDates,
@@ -97,13 +97,6 @@ export async function upgradePlanWithAi(
 
   const { supabase, business } = await requireUserAndBusiness();
 
-  const quota = await checkAiQuota(supabase, business);
-  if (!quota.ok) {
-    return {
-      error: `You've used all ${quota.limit} AI generations included this month.`,
-    };
-  }
-
   const { data: plan } = await supabase
     .from("business_plans")
     .select("id, content, inputs")
@@ -114,6 +107,11 @@ export async function upgradePlanWithAi(
     return { error: "Create your plan first — then the AI can personalize it." };
   }
 
+  const quota = await consumeAiCredit(supabase, business);
+  if (!quota.ok) {
+    return { error: aiCreditError(quota) };
+  }
+
   const typeLabel =
     BUSINESS_TYPES.find((t) => t.value === business.business_type)?.label ??
     business.business_type;
@@ -122,9 +120,8 @@ export async function upgradePlanWithAi(
 
   try {
     const response = await client.messages.create({
-      model: AI_MODEL,
-      max_tokens: 8000,
-      thinking: { type: "adaptive" },
+      model: AI_CONFIG.models.main,
+      max_tokens: AI_CONFIG.LONG_OUTPUT_TOKENS,
       system: `You are Jephelen's business planning coach. You write practical, encouraging, concrete business plans for first-time entrepreneurs. Plain language, no jargon, no fluff. Use markdown headings (#, ##). Include a short "Legal & money checklist" section that is explicitly educational, not legal advice, and tells them to check local requirements. Keep the whole plan under 700 words.`,
       messages: [
         {
@@ -149,13 +146,16 @@ ${plan.content}`,
     if (!text) {
       return { error: "The AI returned an empty response — try again." };
     }
+    if (response.stop_reason === "max_tokens") {
+      // Don't overwrite the saved plan with a cut-off one.
+      return { error: "The AI's plan came out too long and was cut off — try again." };
+    }
 
     await supabase
       .from("business_plans")
       .update({ content: text, ai_generated: true })
       .eq("id", plan.id);
 
-    await recordAiUse(supabase, business.id);
     revalidatePath("/launchpad");
     return { success: "Your plan has been personalized by the AI." };
   } catch (err) {

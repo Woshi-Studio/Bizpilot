@@ -1,11 +1,11 @@
 "use server";
 
 import { requireUserAndBusiness } from "@/lib/data";
-import { checkAiQuota, recordAiUse } from "@/lib/ai-quota";
+import { consumeAiCredit, aiCreditError } from "@/lib/ai-quota";
 import {
   aiConfigured,
   createAiClient,
-  AI_MODEL,
+  AI_CONFIG,
   MESSAGE_TYPES,
   TONES,
 } from "@/lib/ai";
@@ -42,11 +42,9 @@ export async function generateMessage(
 
   const { supabase, user, business } = await requireUserAndBusiness();
 
-  const quota = await checkAiQuota(supabase, business);
+  const quota = await consumeAiCredit(supabase, business);
   if (!quota.ok) {
-    return {
-      error: `You've used all ${quota.limit} AI messages included this month. Your counter resets on the 1st.`,
-    };
+    return { error: aiCreditError(quota, "AI messages") };
   }
 
   const { data: profile } = await supabase
@@ -90,9 +88,8 @@ ${
 
   try {
     const response = await client.messages.create({
-      model: AI_MODEL,
-      max_tokens: 8000,
-      thinking: { type: "adaptive" },
+      model: AI_CONFIG.models.small,
+      max_tokens: AI_CONFIG.MAX_OUTPUT_TOKENS,
       system: `You are the AI communication assistant inside Jephelen, writing on behalf of ${
         profile?.full_name ?? "the owner"
       }, who runs "${business.name}", a freelance ${
@@ -125,7 +122,6 @@ Write ready-to-send messages. Rules:
       return { error: "The AI returned an empty response — try again." };
     }
 
-    await recordAiUse(supabase, business.id);
     return { message: text };
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";

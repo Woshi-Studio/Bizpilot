@@ -9,10 +9,15 @@ import {
 } from "@/lib/types";
 import { setInvoiceStatus, deleteInvoice } from "../actions";
 import PrintButton from "./print-button";
+import { DeleteButton } from "@/components/row-actions";
+import { invoiceTotals } from "@/lib/line-settings";
 
 export const metadata = { title: "Invoice" };
 
 type FullInvoice = Invoice & {
+  currency?: string | null;
+  tax_label?: string | null;
+  tax_rate?: number | null;
   customers: { name: string; company: string | null; email: string | null } | null;
   invoice_items: InvoiceItem[];
 };
@@ -40,10 +45,11 @@ export default async function InvoiceDetailPage({
   const items = [...invoice.invoice_items].sort(
     (a, b) => a.position - b.position
   );
-  const total = items.reduce(
-    (sum, i) => sum + Number(i.quantity) * Number(i.unit_price),
-    0
-  );
+  // Currency and tax are kept on the invoice (0017); older ones use the
+  // business currency and have no tax.
+  const currency = invoice.currency || business.currency;
+  const taxRate = Number(invoice.tax_rate ?? 0);
+  const { subtotal, tax, total } = invoiceTotals(items, taxRate);
   const meta = INVOICE_STATUS_META[invoice.status];
   const isQuote = invoice.doc_type === "quote";
 
@@ -100,16 +106,15 @@ export default async function InvoiceDetailPage({
               </button>
             </form>
           )}
+          <Link href={`/invoices/${invoice.id}/edit`} className="btn-secondary">
+            Edit
+          </Link>
           <PrintButton />
-          <form action={deleteInvoice}>
-            <input type="hidden" name="id" value={invoice.id} />
-            <button
-              type="submit"
-              className="rounded-md border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50"
-            >
-              Delete
-            </button>
-          </form>
+          <DeleteButton
+            action={deleteInvoice}
+            id={invoice.id}
+            what={`${isQuote ? "quote" : "invoice"} ${invoice.number}`}
+          />
         </div>
       </div>
 
@@ -182,24 +187,40 @@ export default async function InvoiceDetailPage({
                   {Number(item.quantity)}
                 </td>
                 <td className="py-2.5 text-right text-slate-600">
-                  {formatMoney(Number(item.unit_price), business.currency)}
+                  {formatMoney(Number(item.unit_price), currency)}
                 </td>
                 <td className="py-2.5 text-right font-medium text-slate-800">
                   {formatMoney(
                     Number(item.quantity) * Number(item.unit_price),
-                    business.currency
+                    currency
                   )}
                 </td>
               </tr>
             ))}
           </tbody>
           <tfoot>
+            {taxRate > 0 && (
+              <>
+                <tr>
+                  <td colSpan={3} className="pt-4 text-right text-slate-600">
+                    Subtotal
+                  </td>
+                  <td className="pt-4 text-right text-slate-700">{formatMoney(subtotal, currency)}</td>
+                </tr>
+                <tr>
+                  <td colSpan={3} className="pt-1 text-right text-slate-600">
+                    {invoice.tax_label ?? "Tax"} {taxRate}%
+                  </td>
+                  <td className="pt-1 text-right text-slate-700">{formatMoney(tax, currency)}</td>
+                </tr>
+              </>
+            )}
             <tr>
               <td colSpan={3} className="pt-4 text-right font-semibold text-slate-800">
-                Total
+                Total ({currency})
               </td>
               <td className="pt-4 text-right text-lg font-bold text-slate-900">
-                {formatMoney(total, business.currency)}
+                {formatMoney(total, currency)}
               </td>
             </tr>
           </tfoot>

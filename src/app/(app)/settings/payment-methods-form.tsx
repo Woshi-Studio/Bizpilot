@@ -6,6 +6,17 @@ import { addPaymentMethod, deletePaymentMethod, type SettingsState } from "./act
 
 const initialState: SettingsState = {};
 
+// What customers can pick from on an invoice. The text shows on the
+// invoice under "How to pay".
+const PRESETS = [
+  { label: "Interac e-Transfer", hint: "Send to: you@example.com (auto-deposit on)" },
+  { label: "Bank transfer / EFT", hint: "Bank, transit, institution and account number" },
+  { label: "PayPal", hint: "paypal.me/yourname or your PayPal email" },
+  { label: "Zelle", hint: "Your Zelle email or phone" },
+  { label: "Cash / cheque", hint: "Payable to …" },
+  { label: "Other", hint: "How to pay you" },
+];
+
 const inputClass =
   "mt-1 input";
 
@@ -36,6 +47,7 @@ export default function PaymentMethodsForm({
     initialState
   );
   const formRef = useRef<HTMLFormElement>(null);
+  const [kind, setKind] = useState(PRESETS[0].label);
 
   useEffect(() => {
     if (state.success) formRef.current?.reset();
@@ -89,17 +101,23 @@ export default function PaymentMethodsForm({
           </p>
         )}
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <select name="label" defaultValue="PayPal" className={inputClass}>
-            <option value="PayPal">PayPal</option>
-            <option value="E-Transfer">E-Transfer</option>
-            <option value="Bank Transfer">Bank Transfer</option>
-            <option value="Custom">Custom</option>
+          <select
+            name="label"
+            value={kind}
+            onChange={(e) => setKind(e.target.value)}
+            className={inputClass}
+          >
+            {PRESETS.map((p) => (
+              <option key={p.label} value={p.label}>
+                {p.label}
+              </option>
+            ))}
           </select>
           <input
             name="value"
             type="text"
             required
-            placeholder="paypal.me/you, email, account details..."
+            placeholder={PRESETS.find((p) => p.label === kind)?.hint ?? "Details"}
             className={`${inputClass} sm:col-span-2`}
           />
         </div>

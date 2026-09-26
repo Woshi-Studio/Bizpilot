@@ -13,6 +13,10 @@ import PaymentMethodsForm from "./payment-methods-form";
 import ChangeEmailForm from "./change-email-form";
 import AssistantAccess, { type ApiKeyRow, type AuditRow } from "./assistant-access";
 import PlanSection from "./plan-section";
+import LineSettingsForm from "./line-settings-form";
+import { loadBusinessLines } from "@/lib/activities";
+import { loadLineSettings } from "@/lib/services-data";
+import { settingsFor } from "@/lib/line-settings";
 import type { Business, PaymentMethod } from "@/lib/types";
 
 export const metadata = { title: "Settings" };
@@ -71,8 +75,16 @@ export default async function SettingsPage({
   const plan = normalizePlanValue(business?.plan);
   const paidFeatures = owner || plan !== "free";
 
-  const [{ data: profile }, paymentMethodsResult, planState, ai, keysResult, auditResult] =
-    await Promise.all([
+  const [
+    { data: profile },
+    paymentMethodsResult,
+    planState,
+    ai,
+    keysResult,
+    auditResult,
+    usedLines,
+    savedLineSettings,
+  ] = await Promise.all([
       supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
       business
         ? supabase
@@ -100,7 +112,12 @@ export default async function SettingsPage({
             .order("created_at", { ascending: false })
             .limit(50)
         : Promise.resolve(null),
+      business ? loadBusinessLines(supabase, business.id) : Promise.resolve([] as string[]),
+      business ? loadLineSettings(supabase, business.id) : Promise.resolve([]),
     ]);
+  const lineSettings = usedLines.map((l) =>
+    settingsFor(l, savedLineSettings, business?.currency ?? "USD")
+  );
 
   const agentReady = !!keysResult && !keysResult.error;
   const apiKeys = agentReady ? ((keysResult.data ?? []) as ApiKeyRow[]) : [];
@@ -134,6 +151,7 @@ export default async function SettingsPage({
     ["assistant", "Assistant"],
     ["public", "Public page"],
     ["payments", "Payments"],
+    ["lines", "Invoice settings"],
   ] as [string, string][];
 
   return (
@@ -241,6 +259,12 @@ export default async function SettingsPage({
       {business && (
         <div id="payments" className="mt-8 scroll-mt-24">
           <PaymentMethodsForm methods={paymentMethods} />
+        </div>
+      )}
+
+      {business && (
+        <div className="mt-8">
+          <LineSettingsForm settings={lineSettings} />
         </div>
       )}
     </div>

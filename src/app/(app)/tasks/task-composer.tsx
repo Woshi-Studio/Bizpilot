@@ -5,6 +5,8 @@ import type { Service } from "@/lib/types";
 import { createTask, type TaskFormState } from "./actions";
 import BusinessLineInput from "@/components/business-line-input";
 import FormError from "@/components/form-error";
+import ServicePicker, { type PickableService } from "@/components/service-picker";
+import Icon from "@/components/icons";
 
 const initialState: TaskFormState = {};
 
@@ -14,9 +16,11 @@ export default function TaskComposer({
   lines,
   defaultLine,
   defaultCustomerId,
+  currency = "USD",
 }: {
   customers: { id: string; name: string }[];
-  services: Service[];
+  services: (Service | PickableService)[];
+  currency?: string;
   lines?: string[];
   defaultLine?: string;
   defaultCustomerId?: string;
@@ -29,6 +33,8 @@ export default function TaskComposer({
   const [serviceId, setServiceId] = useState("");
   const [value, setValue] = useState("");
   const [description, setDescription] = useState("");
+  const [title, setTitle] = useState("");
+  const [line, setLine] = useState(defaultLine ?? "");
 
   // Clear the controlled fields while rendering (not in an effect) when a
   // new successful result arrives.
@@ -39,6 +45,7 @@ export default function TaskComposer({
       setServiceId("");
       setValue("");
       setDescription("");
+      setTitle("");
     }
   }
 
@@ -48,16 +55,14 @@ export default function TaskComposer({
     }
   }, [state]);
 
-  function onServiceChange(id: string) {
-    setServiceId(id);
-    const svc = services.find((s) => s.id === id);
-    if (svc) {
-      if (svc.unit === "project" || svc.unit === "mo") {
-        setValue(String(svc.rate));
-      }
-      if (svc.description) setDescription(svc.description);
-    }
+  // Picking a service fills the task: title (if empty), value, description.
+  function pickService(svc: PickableService) {
+    setServiceId(svc.id);
+    if (!title.trim()) setTitle(svc.name);
+    setValue(String(svc.rate));
+    if (svc.description) setDescription(svc.description);
   }
+  const picked = services.find((s) => s.id === serviceId);
 
   const inputClass =
     "input";
@@ -69,6 +74,8 @@ export default function TaskComposer({
           <input
             type="text"
             name="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             required
             placeholder="What needs doing? e.g. Send quote to John"
             className={`${inputClass} flex-1`}
@@ -92,38 +99,48 @@ export default function TaskComposer({
           </select>
         </div>
 
-        {services.length > 0 && (
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <select
-              name="service_id"
-              value={serviceId}
-              onChange={(e) => onServiceChange(e.target.value)}
-              className={`${inputClass} sm:flex-1`}
-            >
-              <option value="">No service (custom)</option>
-              {services.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              name="value"
-              step="0.01"
-              min="0"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder="Value $"
-              className={`${inputClass} sm:w-32`}
-            />
-          </div>
-        )}
+        <ServicePicker
+          services={services as PickableService[]}
+          line={line}
+          currency={currency}
+          onPick={pickService}
+          title="Pick from your services"
+        />
+
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <input type="hidden" name="service_id" value={serviceId} />
+          {picked ? (
+            <span className="inline-flex items-center gap-2 rounded-lg bg-accent-soft px-3 py-2 text-xs font-medium text-accent-text sm:flex-1">
+              Service: {picked.name}
+              <button
+                type="button"
+                onClick={() => setServiceId("")}
+                aria-label="Remove service"
+                className="ml-auto rounded p-0.5 hover:bg-surface"
+              >
+                <Icon name="x" className="h-3.5 w-3.5" />
+              </button>
+            </span>
+          ) : (
+            <span className="text-xs text-muted sm:flex-1">No service picked (a custom task).</span>
+          )}
+          <input
+            type="number"
+            name="value"
+            step="0.01"
+            min="0"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={`Value (${currency})`}
+            className={`${inputClass} sm:w-36`}
+          />
+        </div>
 
         <BusinessLineInput
           id="task_business_line"
           lines={lines}
-          defaultValue={defaultLine}
+          value={line}
+          onChange={setLine}
           showLabel={false}
           label="Business (empty = the customer's business)"
           className={inputClass}

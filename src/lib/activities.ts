@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isOwnerBusiness } from "@/lib/ai-quota";
 import { BUSINESS_LINES, NO_LINE, mergeLines } from "@/lib/business-lines";
 
 export type ActivityKind =
@@ -147,6 +148,11 @@ export async function loadBusinessLines(
     for (const row of (r.data ?? []) as { business_line: string | null }[]) {
       if (row.business_line) found.push(row.business_line);
     }
+  }
+  // The configured list (Woshi Studio, VWA, …) is the owner's own; other
+  // businesses only see the lines they use themselves.
+  if (!isOwnerBusiness(businessId)) {
+    return [...new Set(found)].sort((a, b) => a.localeCompare(b));
   }
   return found.length ? mergeLines(found) : BUSINESS_LINES.map((l) => l.value);
 }

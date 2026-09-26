@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { DeleteButton } from "@/components/row-actions";
+import { invoiceTotals } from "@/lib/line-settings";
+import { deleteInvoice } from "./actions";
 import { requireUserAndBusiness } from "@/lib/data";
 import {
   formatMoney,
@@ -48,12 +51,14 @@ export default async function InvoicesPage({
             Quotes and invoices — mark them paid and the money logs itself.
           </p>
         </div>
-        <Link
-          href="/invoices/new"
-          className="btn-primary"
-        >
-          + New
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/invoices/new?type=quote" className="btn-secondary">
+            + New quote
+          </Link>
+          <Link href="/invoices/new" className="btn-primary">
+            + New invoice
+          </Link>
+        </div>
       </div>
 
       <div className="mt-4">
@@ -69,16 +74,15 @@ export default async function InvoicesPage({
         ) : (
           <ul className="divide-y divide-slate-100 overflow-hidden card">
             {invoices.map((inv) => {
-              const total = inv.invoice_items.reduce(
-                (sum, i) => sum + Number(i.quantity) * Number(i.unit_price),
-                0
-              );
+              const extra = inv as { currency?: string | null; tax_rate?: number | null };
+              const { total } = invoiceTotals(inv.invoice_items, extra.tax_rate ?? 0);
+              const currency = extra.currency || business.currency;
               const meta = INVOICE_STATUS_META[inv.status];
               return (
-                <li key={inv.id}>
+                <li key={inv.id} className="flex items-center hover:bg-slate-50">
                   <Link
                     href={`/invoices/${inv.id}`}
-                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50"
+                    className="flex min-w-0 flex-1 items-center gap-4 py-3.5 pl-5 pr-2"
                   >
                     <span className="w-24 shrink-0 section-title">
                       {inv.number}
@@ -97,7 +101,7 @@ export default async function InvoicesPage({
                       </p>
                     </div>
                     <span className="shrink-0 text-sm font-semibold text-slate-900">
-                      {formatMoney(total, business.currency)}
+                      {formatMoney(total, currency)}
                     </span>
                     <span
                       className={`inline-block w-20 shrink-0 rounded-full border px-2.5 py-0.5 text-center text-xs font-medium ${meta.badgeClass}`}
@@ -105,6 +109,19 @@ export default async function InvoicesPage({
                       {meta.label}
                     </span>
                   </Link>
+                  <div className="flex shrink-0 items-center gap-0.5 pr-3">
+                    <Link
+                      href={`/invoices/${inv.id}/edit`}
+                      className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted hover:bg-surface-3 hover:text-ink"
+                    >
+                      Edit
+                    </Link>
+                    <DeleteButton
+                      action={deleteInvoice}
+                      id={inv.id}
+                      what={`${inv.doc_type === "quote" ? "quote" : "invoice"} ${inv.number}`}
+                    />
+                  </div>
                 </li>
               );
             })}

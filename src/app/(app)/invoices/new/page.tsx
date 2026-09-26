@@ -3,6 +3,7 @@ import { requireUserAndBusiness } from "@/lib/data";
 import type { PaymentMethod } from "@/lib/types";
 import InvoiceForm from "../invoice-form";
 import { loadBusinessLines } from "@/lib/activities";
+import { loadLineSettings, loadPickableServices } from "@/lib/services-data";
 
 const isId = (v?: string) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v : undefined);
 
@@ -11,15 +12,15 @@ export const metadata = { title: "New invoice" };
 export default async function NewInvoicePage({
   searchParams,
 }: {
-  searchParams: Promise<{ customer?: string }>;
+  searchParams: Promise<{ customer?: string; type?: string }>;
 }) {
-  const { customer } = await searchParams;
+  const { customer, type } = await searchParams;
   const { supabase, business } = await requireUserAndBusiness();
 
-  const [{ data: customers }, paymentMethodsResult, lines] = await Promise.all([
+  const [{ data: customers }, paymentMethodsResult, lines, services, lineSettings] = await Promise.all([
     supabase
       .from("customers")
-      .select("id, name")
+      .select("id, name, business_line")
       .eq("business_id", business.id)
       .order("name"),
     supabase
@@ -28,6 +29,8 @@ export default async function NewInvoicePage({
       .eq("business_id", business.id)
       .order("position"),
     loadBusinessLines(supabase, business.id),
+    loadPickableServices(supabase, business.id),
+    loadLineSettings(supabase, business.id),
   ]);
 
   const paymentMethods = paymentMethodsResult.error
@@ -43,7 +46,7 @@ export default async function NewInvoicePage({
         &larr; Back to invoices
       </Link>
       <h1 className="mt-2 page-title">
-        New invoice or quote
+        {type === "quote" ? "New quote" : "New invoice"}
       </h1>
       <p className="page-sub">
         Create it, print it as a PDF, get paid.
@@ -56,6 +59,9 @@ export default async function NewInvoicePage({
           currency={business.currency}
           paymentMethods={paymentMethods}
           lines={lines}
+          services={services}
+          lineSettings={lineSettings}
+          defaultDocType={type === "quote" ? "quote" : "invoice"}
         />
       </div>
     </div>

@@ -1,5 +1,5 @@
 import { requireUserAndBusiness } from "@/lib/data";
-import type { Service } from "@/lib/types";
+import { loadPickableServices } from "@/lib/services-data";
 import TaskComposer from "./task-composer";
 import TaskRow, { type TaskWithCustomer } from "./task-row";
 import BusinessLineFilter from "@/components/business-line-filter";
@@ -36,11 +36,7 @@ export default async function TasksPage({
         .select("id, name")
         .eq("business_id", business.id)
         .order("name"),
-      supabase
-        .from("services")
-        .select("*")
-        .eq("business_id", business.id)
-        .order("name"),
+      loadPickableServices(supabase, business.id).then((data) => ({ data })),
       loadBusinessLines(supabase, business.id),
     ]);
 
@@ -64,7 +60,8 @@ export default async function TasksPage({
         <TaskComposer
           defaultCustomerId={isId(params.customer)}
           customers={customers ?? []}
-          services={(services ?? []) as Service[]}
+          services={services ?? []}
+          currency={business.currency}
           lines={lines}
           defaultLine={line && line !== NO_LINE ? line : undefined}
         />

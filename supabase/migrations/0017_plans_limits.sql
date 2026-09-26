@@ -31,6 +31,13 @@
 --      storage.objects, so limits can't be skipped from the browser.
 --   6. consume_email_send() now uses the plan's daily number
 --      (0 / 50 / 200, owner unlimited) instead of a flat 50.
+--   7. services.image_path + a private 'service-images' bucket (JPG / PNG /
+--      WEBP, 2 MB, path <business_id>/<file>, owner only). Counts toward
+--      the storage limit.
+--   8. business_line_settings: per business line, the invoice currency,
+--      tax (e.g. HST 13%) and default days until due. Owner only.
+--   9. invoices.currency / tax_label / tax_rate: kept on each invoice so
+--      it prints the same later. Empty currency = the business currency.
 --
 -- Who the limits apply to: every request made with a user's session
 -- (the browser, server actions, the public lead form). Requests made
@@ -183,7 +190,7 @@ begin
   select b.owner_id into v_owner from public.businesses b where b.id = p_business;
   select coalesce(sum(coalesce((o.metadata ->> 'size')::bigint, 0)), 0) into v_bytes
   from storage.objects o
-  where (o.bucket_id = 'client-docs' and o.name like p_business::text || '/%')
+  where (o.bucket_id in ('client-docs', 'service-images') and o.name like p_business::text || '/%')
      or (v_owner is not null and o.bucket_id = 'receipts'
          and o.name like v_owner::text || '/%');
   return v_bytes;
@@ -525,6 +532,45 @@ create trigger documents_plan_storage
   before insert on public.documents
   for each row execute function public.enforce_plan_storage();
 
+-- ============================================================
+-- 5e. Service pictures
+-- ============================================================
+alter table public.services add column if not exists image_path text;
+alter table public.services drop constraint if exists services_image_path_len;
+alter table public.services add constraint services_image_path_len
+  check (image_path is null or (char_length(image_path) <= 600
+         and image_path like business_id::text || '/%'));
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('service-images', 'service-images', false, 2097152,
+        array['image/jpeg', 'image/png', 'image/webp'])
+on conflict (id) do update
+set public = false,
+    file_size_limit = excluded.file_size_limit,
+    allowed_mime_types = excluded.allowed_mime_types;
+
+-- Owner only: the first folder of the path is the business id.
+drop policy if exists "Owners manage own service images" on storage.objects;
+create policy "Owners manage own service images"
+  on storage.objects for all
+  to authenticated
+  using (
+    bucket_id = 'service-images'
+    and exists (
+      select 1 from public.businesses b
+      where b.id::text = (storage.foldername(objects.name))[1]
+        and b.owner_id = auth.uid()
+    )
+  )
+  with check (
+    bucket_id = 'service-images'
+    and exists (
+      select 1 from public.businesses b
+      where b.id::text = (storage.foldername(objects.name))[1]
+        and b.owner_id = auth.uid()
+    )
+  );
+
 -- Direct uploads: no new file once the business is at its limit. (The
 -- size of a new file isn't known yet when this runs, so one last file of
 -- up to 10 MB can go over.)
@@ -540,7 +586,7 @@ declare
   v_business uuid;
   v_limit    bigint;
 begin
-  if p_bucket not in ('client-docs', 'receipts') then
+  if p_bucket not in ('client-docs', 'receipts', 'service-images') then
     return true;
   end if;
 
@@ -549,7 +595,7 @@ begin
     return true; -- not a path the other policies accept anyway
   end if;
 
-  if p_bucket = 'client-docs' then
+  if p_bucket in ('client-docs', 'service-images') then
     v_business := v_first::uuid;
   else
     select b.id into v_business
@@ -638,3 +684,54 @@ $$;
 
 revoke all on function public.consume_email_send(uuid) from public, anon;
 grant execute on function public.consume_email_send(uuid) to authenticated;
+
+-- ============================================================
+-- 7. Per business line: currency, tax, days until due
+-- ============================================================
+create table if not exists public.business_line_settings (
+  business_id uuid not null references public.businesses (id) on delete cascade,
+  line text not null check (char_length(line) between 1 and 60),
+  currency text not null default 'USD'
+    check (currency in ('USD', 'CAD', 'EUR', 'GBP', 'AUD', 'MXN', 'DOP')),
+  tax_label text check (tax_label is null or char_length(tax_label) between 1 and 30),
+  tax_rate numeric(5, 2) not null default 0 check (tax_rate >= 0 and tax_rate <= 30),
+  due_days int not null default 14 check (due_days between 0 and 120),
+  updated_at timestamptz not null default now(),
+  primary key (business_id, line)
+);
+
+alter table public.business_line_settings enable row level security;
+
+drop policy if exists "Owners manage own line settings" on public.business_line_settings;
+create policy "Owners manage own line settings"
+  on public.business_line_settings for all
+  to authenticated
+  using (
+    exists (
+      select 1 from public.businesses b
+      where b.id = business_id and b.owner_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.businesses b
+      where b.id = business_id and b.owner_id = auth.uid()
+    )
+  );
+
+revoke all on public.business_line_settings from anon;
+
+-- ============================================================
+-- 8. Invoice currency + tax
+-- ============================================================
+alter table public.invoices add column if not exists currency text;
+alter table public.invoices add column if not exists tax_label text;
+alter table public.invoices add column if not exists tax_rate numeric(5, 2) not null default 0;
+
+alter table public.invoices drop constraint if exists invoices_currency_check;
+alter table public.invoices add constraint invoices_currency_check
+  check (currency is null or currency in ('USD', 'CAD', 'EUR', 'GBP', 'AUD', 'MXN', 'DOP'));
+alter table public.invoices drop constraint if exists invoices_tax_check;
+alter table public.invoices add constraint invoices_tax_check
+  check (tax_rate >= 0 and tax_rate <= 30
+         and (tax_label is null or char_length(tax_label) between 1 and 30));

@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireUserAndBusiness } from "@/lib/data";
+import { requireUserAndBusiness, isMissingColumnError } from "@/lib/data";
+import { normalizeLine } from "@/lib/business-lines";
+import { TAX_PRESETS, isCurrency } from "@/lib/line-settings";
 
 export type SettingsState = {
   error?: string;
@@ -149,4 +151,47 @@ export async function deletePaymentMethod(formData: FormData) {
 
   revalidatePath("/settings");
   revalidatePath("/invoices/new");
+}
+
+// Settings > Business lines: currency, tax and days until due for one
+// line (business_line_settings, migration 0017).
+export async function saveLineSettings(
+  _prevState: SettingsState,
+  formData: FormData
+): Promise<SettingsState> {
+  const line = normalizeLine(formData.get("line"));
+  const currency = String(formData.get("currency") ?? "");
+  const tax = String(formData.get("tax") ?? "none");
+  const dueDays = Number(formData.get("due_days") ?? 14);
+
+  if (!line) return { error: "Pick a business." };
+  if (!isCurrency(currency)) return { error: "Pick a currency." };
+  if (!Number.isInteger(dueDays) || dueDays < 0 || dueDays > 120) {
+    return { error: "Days until due must be 0 to 120." };
+  }
+  const preset = TAX_PRESETS.find((t) => `${t.label}|${t.rate}` === tax);
+
+  const { supabase, business } = await requireUserAndBusiness();
+  const { error } = await supabase.from("business_line_settings").upsert(
+    {
+      business_id: business.id,
+      line,
+      currency,
+      tax_label: preset?.label ?? null,
+      tax_rate: preset?.rate ?? 0,
+      due_days: dueDays,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "business_id,line" }
+  );
+  if (error) {
+    return {
+      error: isMissingColumnError(error) || /business_line_settings/.test(error.message)
+        ? "This needs a quick database update first (migration 0017)."
+        : error.message,
+    };
+  }
+  revalidatePath("/settings");
+  revalidatePath("/invoices/new");
+  return { success: `${line} saved.` };
 }

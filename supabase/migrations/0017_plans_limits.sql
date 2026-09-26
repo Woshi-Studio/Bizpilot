@@ -46,6 +46,10 @@
 --  11. message_templates: the user's own quick templates, and their changes
 --      to the built-in ones (the built-ins live in src/lib/templates.ts, in
 --      English and French, so every account starts with them). Owner only.
+--  12. Calendar: activities may also be 'reminder' or 'block' (personal /
+--      blocked time, which the public booking page will respect later);
+--      activities.ends_at (end of a meeting / block) and activities.done_at
+--      (Mark done).
 --
 -- Who the limits apply to: every request made with a user's session
 -- (the browser, server actions, the public lead form). Requests made
@@ -929,3 +933,40 @@ create policy "Owners manage own templates"
   );
 
 revoke all on public.message_templates from anon;
+
+-- ============================================================
+-- 11. Calendar entries: reminders, blocked time, end time, done
+--     (0014 created the kind check inline; Postgres named it
+--     activities_kind_check. Drop every check on activities that mentions
+--     kind, then add the wider one.)
+-- ============================================================
+do $$
+declare
+  c record;
+begin
+  for c in
+    select con.conname
+    from pg_constraint con
+    where con.conrelid = 'public.activities'::regclass
+      and con.contype = 'c'
+      and pg_get_constraintdef(con.oid) ilike '%kind%'
+  loop
+    execute format('alter table public.activities drop constraint %I', c.conname);
+  end loop;
+end;
+$$;
+
+alter table public.activities
+  add constraint activities_kind_check
+  check (kind in ('email_sent', 'email_reply', 'call', 'meeting', 'note', 'file',
+                  'invoice', 'task', 'reminder', 'block'));
+
+alter table public.activities add column if not exists ends_at timestamptz;
+alter table public.activities add column if not exists done_at timestamptz;
+
+alter table public.activities drop constraint if exists activities_ends_after_start;
+alter table public.activities add constraint activities_ends_after_start
+  check (ends_at is null or ends_at > occurred_at);
+
+create index if not exists activities_business_kind_time_idx
+  on public.activities (business_id, kind, occurred_at);

@@ -10,7 +10,9 @@ export type ActivityKind =
   | "note"
   | "file"
   | "invoice"
-  | "task";
+  | "task"
+  | "reminder"
+  | "block";
 
 export type Activity = {
   id: string;
@@ -36,6 +38,8 @@ export const ACTIVITY_KINDS: { value: ActivityKind; label: string; icon: string 
   { value: "file", label: "File", icon: "📎" },
   { value: "invoice", label: "Invoice", icon: "🧾" },
   { value: "task", label: "Task", icon: "✅" },
+  { value: "reminder", label: "Reminder", icon: "⏰" },
+  { value: "block", label: "Blocked time", icon: "⛔" },
 ];
 
 // Kinds the owner can log by hand from the "Add activity" form.

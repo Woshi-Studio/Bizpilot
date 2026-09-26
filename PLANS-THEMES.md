@@ -135,6 +135,19 @@ Date chips (Today 4pm · Tomorrow 10am · Next Monday 9am · In 3 days · In 1
 week · In 2 weeks) on the invoice due date, task due date, lead and customer
 follow-ups, meetings and timeline entries.
 
+## Calendar
+
+- **Month · Week · Day** views. Click any day (or an hour in Day view) or
+  **+ New** to add: Meeting, Call, Reminder, **Personal / blocked time**
+  (greyed; stored as activity kind `block` with `ends_at`, ready for the
+  booking page in Phase 5 — not built here), or Task due. Customer / lead
+  optional; date/time chips.
+- Click an entry → side panel: **Edit · Delete · Mark done · Open contact**,
+  and **Send confirmation** (the Meeting confirmation template, in-app or in
+  your own email) when it's linked to a contact with an email.
+- "Book meeting" on a contact opens the add dialog with that contact filled in.
+- 0017: activities kinds `reminder`, `block`; columns `ends_at`, `done_at`.
+
 ## Welcome tour and free help
 
 - 6 steps (Home → People → a contact's action bar → Work/Calendar → Money →
@@ -217,3 +230,6 @@ success toasts with Undo, "Save & add another" on customers and invoices.
 - [ ] Timeline → "Called: spoke, follow up in 3 days" → task due in 3 days
 - [ ] First login of a new account: tour starts; Skip; "?" replays it
 - [ ] Athena: "how do I add a customer?" → 📘 answer, credit count unchanged
+- [ ] Calendar: Day view; click 2 PM → add a Call with a customer → it shows;
+      click it → Mark done, Edit, Send confirmation, Delete all work
+- [ ] Calendar: add Personal / blocked time → shows greyed with dashed border

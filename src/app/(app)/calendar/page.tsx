@@ -2,14 +2,22 @@ import Link from "next/link";
 import { requireUserAndBusiness } from "@/lib/data";
 import BusinessLineFilter from "@/components/business-line-filter";
 import { loadBusinessLines, withLine } from "@/lib/activities";
-import { NO_LINE, lineFromParam } from "@/lib/business-lines";
-import CalendarGrid, { type CalendarItem } from "./calendar-grid";
-import MeetingForm from "./meeting-form";
+import { lineFromParam } from "@/lib/business-lines";
+import CalendarGrid, { type CalendarContact, type CalendarItem } from "./calendar-grid";
+import NewEntryButton from "./new-entry-button";
+import { emailStatus } from "@/lib/email";
 
 // Only a uuid can prefill the meeting form (from a contact page).
 const isId = (v?: string) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v : undefined);
 
 export const metadata = { title: "Calendar" };
+
+const KIND_TITLES: Record<string, string> = {
+  meeting: "Meeting",
+  call: "Call",
+  reminder: "Reminder",
+  block: "Busy",
+};
 
 // All date math here is on plain "YYYY-MM-DD" strings in UTC, so the
 // server's time zone can't shift a day.
@@ -29,7 +37,7 @@ export default async function CalendarPage({
   searchParams: Promise<{ view?: string; date?: string; line?: string; customer?: string; lead?: string }>;
 }) {
   const params = await searchParams;
-  const view = params.view === "week" ? "week" : "month";
+  const view = params.view === "week" ? "week" : params.view === "day" ? "day" : "month";
   const anchor = parseDay(params.date);
   const line = lineFromParam(params.line);
   const { supabase, business } = await requireUserAndBusiness();
@@ -40,7 +48,13 @@ export default async function CalendarPage({
   let prev: Date;
   let next: Date;
   let title: string;
-  if (view === "week") {
+  if (view === "day") {
+    start = anchor;
+    dayCount = 1;
+    prev = addDays(anchor, -1);
+    next = addDays(anchor, 1);
+    title = anchor.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
+  } else if (view === "week") {
     start = addDays(anchor, -anchor.getUTCDay());
     dayCount = 7;
     prev = addDays(anchor, -7);
@@ -87,26 +101,39 @@ export default async function CalendarPage({
       inRange("invoices", "id, number, due_date, status, doc_type, business_line")
         .gte("due_date", from)
         .lte("due_date", to),
-      inRange("activities", "id, subject, occurred_at, customer_id, lead_id, business_line")
-        .eq("kind", "meeting")
+      inRange("activities", "*")
+        .in("kind", ["meeting", "call", "reminder", "block"])
         .gte("occurred_at", fromTs)
         .lt("occurred_at", toTs),
       loadBusinessLines(supabase, business.id),
       supabase
         .from("customers")
-        .select("id, name")
+        .select("id, name, email")
         .eq("business_id", business.id)
         .order("name")
         .limit(1000),
       supabase
         .from("leads")
-        .select("id, name")
+        .select("id, name, email")
         .eq("business_id", business.id)
         .not("status", "in", "(converted,declined)")
         .order("name")
         .limit(1000),
     ]);
   const rows = (r: { data: unknown }) => (r.data ?? []) as Row[];
+
+  const contacts: CalendarContact[] = [
+    ...((customerList.data ?? []) as { id: string; name: string; email: string | null }[]).map(
+      (c) => ({ kind: "customer" as const, ...c })
+    ),
+    ...((leadList.data ?? []) as { id: string; name: string; email: string | null }[]).map(
+      (l) => ({ kind: "lead" as const, ...l })
+    ),
+  ];
+  const contactFor = (customerId?: string | null, leadId?: string | null) =>
+    contacts.find(
+      (c) => (customerId && c.kind === "customer" && c.id === customerId) || (leadId && c.kind === "lead" && c.id === leadId)
+    ) ?? null;
 
   const items: CalendarItem[] = [];
   for (const t of rows(tasks)) {
@@ -118,6 +145,9 @@ export default async function CalendarPage({
       href: t.customer_id ? `/customers/${t.customer_id}` : "/tasks",
       done: t.status === "done",
       line: t.business_line,
+      source: "task",
+      id: t.id ?? undefined,
+      contact: contactFor(t.customer_id),
     });
   }
   for (const l of rows(leads)) {
@@ -152,17 +182,24 @@ export default async function CalendarPage({
     });
   }
   for (const m of rows(meetings)) {
+    const kind = (["meeting", "call", "reminder", "block"].includes(m.kind ?? "") ? m.kind : "meeting") as CalendarItem["kind"];
     items.push({
-      key: `meet-${m.id}`,
-      kind: "meeting",
-      title: m.subject ?? "Meeting",
+      key: `act-${m.id}`,
+      kind,
+      title: m.subject ?? KIND_TITLES[kind] ?? "Meeting",
       at: m.occurred_at,
+      endsAt: m.ends_at ?? null,
       href: m.customer_id
         ? `/customers/${m.customer_id}`
         : m.lead_id
           ? `/leads/${m.lead_id}`
           : null,
       line: m.business_line,
+      source: "activity",
+      id: m.id ?? undefined,
+      notes: m.body,
+      done: !!m.done_at,
+      contact: contactFor(m.customer_id, m.lead_id),
     });
   }
 
@@ -180,10 +217,15 @@ export default async function CalendarPage({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="page-title">Calendar</h1>
-      <p className="page-sub">
-        Tasks, follow-ups, invoice due dates and meetings — all in one place.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="page-title">Calendar</h1>
+          <p className="page-sub">
+            Meetings, calls, reminders, tasks, follow-ups and invoice due dates. Click any day to add.
+          </p>
+        </div>
+        <NewEntryButton />
+      </div>
 
       <div className="mt-4">
         <BusinessLineFilter
@@ -215,7 +257,7 @@ export default async function CalendarPage({
           <h2 className="ml-2 text-lg font-semibold text-slate-800">{title}</h2>
         </div>
         <div className="flex gap-1.5">
-          {(["month", "week"] as const).map((v) => (
+          {(["month", "week", "day"] as const).map((v) => (
             <Link
               key={v}
               href={nav(anchor, v)}
@@ -235,20 +277,20 @@ export default async function CalendarPage({
         <CalendarGrid
           days={days}
           month={view === "month" ? ymd(anchor).slice(0, 7) : null}
+          view={view}
           items={items}
+          contacts={contacts}
+          businessName={business.name}
+          canSend={emailStatus(business).canSend}
+          prefillContact={
+            isId(params.customer) ? `customer:${params.customer}` : isId(params.lead) ? `lead:${params.lead}` : undefined
+          }
         />
       </div>
 
-      <div id="book" className="mt-6 scroll-mt-24">
-        <MeetingForm
-          defaultCustomerId={isId(params.customer)}
-          defaultLeadId={isId(params.lead)}
-          customers={(customerList.data ?? []) as { id: string; name: string }[]}
-          leads={(leadList.data ?? []) as { id: string; name: string }[]}
-          lines={lines}
-          defaultLine={line && line !== NO_LINE ? line : undefined}
-        />
-      </div>
+      <p id="book" className="mt-3 text-xs text-muted">
+        Tip: click a day (or an hour in Day view) to add a meeting, call, reminder, blocked time or task.
+      </p>
     </div>
   );
 }

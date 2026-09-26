@@ -184,3 +184,27 @@ export async function deleteActivity(formData: FormData) {
   revalidatePath("/calendar");
   revalidatePath("/dashboard");
 }
+
+export type RowEditState = { error?: string; success?: string; savedAt?: number };
+
+// Edit a timeline entry's title and text.
+export async function updateActivity(_prev: RowEditState, formData: FormData): Promise<RowEditState> {
+  const id = String(formData.get("id") ?? "");
+  const subject = String(formData.get("subject") ?? "").trim().slice(0, 300);
+  const body = String(formData.get("body") ?? "").trim().slice(0, MAX_ACTIVITY_BODY);
+  if (!id) return { error: "Missing entry." };
+  if (!subject && !body) return { error: "Write something." };
+
+  const { supabase, business } = await requireUserAndBusiness();
+  const { data, error } = await supabase
+    .from("activities")
+    .update({ subject: subject || null, body: body || null })
+    .eq("id", id)
+    .eq("business_id", business.id)
+    .select("customer_id, lead_id")
+    .maybeSingle();
+  if (error || !data) return { error: "Couldn't save." };
+  if (data.customer_id) revalidatePath(`/customers/${data.customer_id}`);
+  if (data.lead_id) revalidatePath(`/leads/${data.lead_id}`);
+  return { success: "Saved.", savedAt: Date.now() };
+}

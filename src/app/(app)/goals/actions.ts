@@ -83,3 +83,29 @@ export async function deleteWin(formData: FormData) {
 
   revalidatePath("/goals");
 }
+
+export type RowEditState = { error?: string; success?: string; savedAt?: number };
+
+// Edit a win's title, details and kind.
+export async function updateWin(_prev: RowEditState, formData: FormData): Promise<RowEditState> {
+  const id = String(formData.get("id") ?? "");
+  const title = String(formData.get("title") ?? "").trim().slice(0, 300);
+  const details = String(formData.get("details") ?? "").trim().slice(0, 2000);
+  const category = String(formData.get("category") ?? "other");
+  if (!id) return { error: "Missing win." };
+  if (!title) return { error: "What did you win?" };
+
+  const { supabase, business } = await requireUserAndBusiness();
+  const { error } = await supabase
+    .from("wins")
+    .update({
+      title,
+      details: details || null,
+      category: WIN_CATEGORIES.some((c) => c.value === category) ? category : "other",
+    })
+    .eq("id", id)
+    .eq("business_id", business.id);
+  if (error) return { error: error.message };
+  revalidatePath("/goals");
+  return { success: "Saved.", savedAt: Date.now() };
+}

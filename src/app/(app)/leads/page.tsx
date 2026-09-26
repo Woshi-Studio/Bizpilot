@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DeleteButton } from "@/components/row-actions";
 import { requireUserAndBusiness } from "@/lib/data";
 import { LEAD_CHANNELS, type Lead } from "@/lib/types";
 import { convertLead, deleteLead } from "./actions";
@@ -188,15 +189,13 @@ export default async function LeadsPage({
                           </button>
                         </form>
                       )}
-                      <form action={deleteLead}>
-                        <input type="hidden" name="id" value={lead.id} />
-                        <button
-                          type="submit"
-                          className="text-xs text-slate-300 hover:text-red-500"
-                        >
-                          delete
-                        </button>
-                      </form>
+                      <Link
+                        href={`/leads/${lead.id}#edit`}
+                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted hover:bg-surface-3 hover:text-ink"
+                      >
+                        Edit
+                      </Link>
+                      <DeleteButton action={deleteLead} id={lead.id} what={`the lead ${lead.name}`} />
                     </div>
                   </div>
                 </li>

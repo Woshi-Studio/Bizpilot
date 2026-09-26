@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useRef, useEffect, useState } from "react";
+import { DeleteButton } from "@/components/row-actions";
 import type { PaymentMethod } from "@/lib/types";
 import { addPaymentMethod, deletePaymentMethod, type SettingsState } from "./actions";
 
@@ -79,15 +80,7 @@ export default function PaymentMethodsForm({
               </div>
               <div className="flex shrink-0 items-center gap-3">
                 <CopyButton text={m.value} />
-                <form action={deletePaymentMethod}>
-                  <input type="hidden" name="id" value={m.id} />
-                  <button
-                    type="submit"
-                    className="text-xs font-medium text-slate-400 hover:text-red-600"
-                  >
-                    Delete
-                  </button>
-                </form>
+                <DeleteButton action={deletePaymentMethod} id={m.id} what={m.label} />
               </div>
             </div>
           ))}

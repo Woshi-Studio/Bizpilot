@@ -83,3 +83,26 @@ export async function setTimeBilled(formData: FormData) {
 
   revalidatePath("/time");
 }
+
+export type RowEditState = { error?: string; success?: string; savedAt?: number };
+
+// Edit a time entry: date, hours, description.
+export async function updateTimeEntry(_prev: RowEditState, formData: FormData): Promise<RowEditState> {
+  const id = String(formData.get("id") ?? "");
+  const date = String(formData.get("entry_date") ?? "").trim();
+  const hours = Number(formData.get("hours") ?? 0);
+  const description = String(formData.get("description") ?? "").trim().slice(0, 2000);
+  if (!id) return { error: "Missing entry." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Pick a date." };
+  if (!Number.isFinite(hours) || hours <= 0 || hours > 24) return { error: "Hours must be between 0 and 24." };
+
+  const { supabase, business } = await requireUserAndBusiness();
+  const { error } = await supabase
+    .from("time_entries")
+    .update({ entry_date: date, hours: Math.round(hours * 100) / 100, description: description || null })
+    .eq("id", id)
+    .eq("business_id", business.id);
+  if (error) return { error: error.message };
+  revalidatePath("/time");
+  return { success: "Saved.", savedAt: Date.now() };
+}

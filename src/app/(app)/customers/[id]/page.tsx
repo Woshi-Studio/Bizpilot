@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import OpenOnHash from "@/components/open-on-hash";
 import { requireUserAndBusiness } from "@/lib/data";
 import {
   CUSTOMER_STATUSES,
@@ -325,7 +326,8 @@ export default async function CustomerDetailPage({
         </div>
       </div>
 
-      <details className="card group p-5 sm:p-7">
+      <OpenOnHash id="edit" />
+      <details id="edit" className="card group scroll-mt-24 p-5 sm:p-7">
         <summary className="flex cursor-pointer list-none items-center justify-between">
           <span className="section-title">Edit details</span>
           <span className="text-sm text-muted group-open:hidden">Name, contact info, status, business</span>

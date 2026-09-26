@@ -1,7 +1,10 @@
 "use client";
 
+import { Fragment, useState } from "react";
 import type { TimeEntry } from "@/lib/types";
-import { deleteTimeEntry, setTimeBilled } from "./actions";
+import { deleteTimeEntry, setTimeBilled, updateTimeEntry } from "./actions";
+import InlineEditForm from "@/components/inline-edit";
+import { DeleteButton, EditButton } from "@/components/row-actions";
 
 const BILLED_META: Record<string, string> = {
   unbilled: "bg-amber-50 text-amber-700 border-amber-200",
@@ -18,6 +21,7 @@ export default function TimeList({
   customerNames: Record<string, string>;
   taskTitles: Record<string, string>;
 }) {
+  const [editing, setEditing] = useState<string | null>(null);
   if (!entries.length) {
     return (
       <div className="card-empty p-8 text-center text-sm text-slate-400">
@@ -42,7 +46,8 @@ export default function TimeList({
         </thead>
         <tbody className="divide-y divide-slate-100">
           {entries.map((e) => (
-            <tr key={e.id}>
+            <Fragment key={e.id}>
+            <tr>
               <td className="px-4 py-3 text-slate-500">{e.entry_date}</td>
               <td className="px-4 py-3 text-slate-700">
                 {e.customer_id ? customerNames[e.customer_id] ?? "—" : "—"}
@@ -72,17 +77,29 @@ export default function TimeList({
                 </form>
               </td>
               <td className="px-4 py-3 text-right">
-                <form action={deleteTimeEntry}>
-                  <input type="hidden" name="id" value={e.id} />
-                  <button
-                    type="submit"
-                    className="text-xs font-medium text-slate-400 hover:text-red-600"
-                  >
-                    Delete
-                  </button>
-                </form>
+                <div className="flex justify-end gap-0.5">
+                  <EditButton onClick={() => setEditing(editing === e.id ? null : e.id)} open={editing === e.id} />
+                  <DeleteButton action={deleteTimeEntry} id={e.id} what={`${e.hours}h on ${e.entry_date}`} />
+                </div>
               </td>
             </tr>
+            {editing === e.id && (
+              <tr>
+                <td colSpan={7} className="px-4 pb-3">
+                  <InlineEditForm
+                    action={updateTimeEntry}
+                    id={e.id}
+                    onDone={() => setEditing(null)}
+                    fields={[
+                      { name: "entry_date", label: "Date", type: "date", defaultValue: e.entry_date, required: true },
+                      { name: "hours", label: "Hours", type: "number", step: "0.25", defaultValue: e.hours, required: true },
+                      { name: "description", label: "Description", type: "text", defaultValue: e.description },
+                    ]}
+                  />
+                </td>
+              </tr>
+            )}
+            </Fragment>
           ))}
         </tbody>
       </table>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import OpenOnHash from "@/components/open-on-hash";
 import { notFound } from "next/navigation";
 import { requireUserAndBusiness } from "@/lib/data";
 import { LEAD_CHANNELS, LEAD_STATUSES, type Lead } from "@/lib/types";
@@ -185,7 +186,8 @@ export default async function LeadDetailPage({
         />
       </Section>
 
-      <details className="card group p-5 sm:p-7">
+      <OpenOnHash id="edit" />
+      <details id="edit" className="card group scroll-mt-24 p-5 sm:p-7">
         <summary className="flex cursor-pointer list-none items-center justify-between">
           <span className="section-title">Edit details</span>
           <span className="text-sm text-muted group-open:hidden">Name, contact info, channel, follow-up</span>

@@ -1,8 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import InlineEditForm from "@/components/inline-edit";
+import { DeleteButton, EditButton } from "@/components/row-actions";
 import { TASK_STATUSES, formatMoney, type TaskStatus } from "@/lib/types";
-import { setTaskStatus, deleteTask } from "./actions";
+import { setTaskStatus, deleteTask, updateTask } from "./actions";
 import { lineLabel } from "@/lib/business-lines";
 
 export type TaskWithCustomer = {
@@ -53,9 +56,11 @@ export default function TaskRow({
   currency: string;
 }) {
   const done = task.status === "done";
+  const [editing, setEditing] = useState(false);
 
   return (
-    <li className="group flex items-center gap-3 px-5 py-3">
+    <li className="px-5 py-3">
+    <div className="flex flex-wrap items-center gap-3">
       <form action={setTaskStatus}>
         <input type="hidden" name="id" value={task.id} />
         <select
@@ -103,16 +108,24 @@ export default function TaskRow({
 
       {dueLabel(task.due_date, done)}
 
-      <form action={deleteTask}>
-        <input type="hidden" name="id" value={task.id} />
-        <button
-          type="submit"
-          aria-label="Delete task"
-          className="text-slate-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
-        >
-          &times;
-        </button>
-      </form>
+      <div className="flex shrink-0 items-center gap-0.5">
+        <EditButton onClick={() => setEditing((e) => !e)} open={editing} />
+        <DeleteButton action={deleteTask} id={task.id} what={`the task "${task.title}"`} />
+      </div>
+    </div>
+    {editing && (
+      <InlineEditForm
+        action={updateTask}
+        id={task.id}
+        onDone={() => setEditing(false)}
+        fields={[
+          { name: "title", label: "Task", type: "text", defaultValue: task.title, required: true },
+          { name: "due_date", label: "Due", type: "date", defaultValue: task.due_date },
+          { name: "value", label: `Value (${currency})`, type: "number", step: "0.01", defaultValue: task.value },
+          { name: "description", label: "Description", type: "textarea", defaultValue: task.description },
+        ]}
+      />
+    )}
     </li>
   );
 }

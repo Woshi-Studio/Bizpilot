@@ -5,9 +5,12 @@ import {
   categoryLabel,
   formatMoney,
   type Transaction,
+  INCOME_CATEGORIES,
+  EXPENSE_CATEGORIES,
 } from "@/lib/types";
 import TransactionComposer from "./transaction-composer";
-import { deleteTransaction, deleteRecurring } from "./actions";
+import { deleteTransaction, deleteRecurring, updateTransaction, updateRecurring } from "./actions";
+import EditableRow from "@/components/editable-row";
 
 export const metadata = { title: "Money" };
 
@@ -185,9 +188,18 @@ export default async function MoneyPage({
           </h2>
           <ul className="mt-2 divide-y divide-slate-100 overflow-hidden card">
             {(recurring ?? []).map((r) => (
-              <li
+              <EditableRow
                 key={r.id}
-                className="group flex items-center gap-3 px-5 py-2.5"
+                id={r.id}
+                className="px-5 py-2.5"
+                updateAction={updateRecurring}
+                deleteAction={deleteRecurring}
+                what="this monthly repeat (past entries stay)"
+                fields={[
+                  { name: "amount", label: `Amount (${cur})`, type: "number", step: "0.01", defaultValue: r.amount, required: true },
+                  { name: "next_date", label: "Next on", type: "date", defaultValue: r.next_date, required: true },
+                  { name: "description", label: "Description", type: "text", defaultValue: r.description },
+                ]}
               >
                 <span
                   className={`w-24 shrink-0 text-sm font-semibold ${
@@ -205,17 +217,7 @@ export default async function MoneyPage({
                     next on {r.next_date}
                   </p>
                 </div>
-                <form action={deleteRecurring}>
-                  <input type="hidden" name="id" value={r.id} />
-                  <button
-                    type="submit"
-                    aria-label="Stop recurring"
-                    className="text-xs text-slate-300 transition-colors hover:text-red-500"
-                  >
-                    stop
-                  </button>
-                </form>
-              </li>
+              </EditableRow>
             ))}
           </ul>
         </div>
@@ -230,9 +232,25 @@ export default async function MoneyPage({
         ) : (
           <ul className="divide-y divide-slate-100 overflow-hidden card">
             {transactions.map((t) => (
-              <li
+              <EditableRow
                 key={t.id}
-                className="group flex items-center gap-3 px-5 py-3"
+                id={t.id}
+                className="px-5 py-3"
+                updateAction={updateTransaction}
+                deleteAction={deleteTransaction}
+                what={`this ${t.type === "income" ? "income" : "expense"}`}
+                fields={[
+                  { name: "amount", label: `Amount (${cur})`, type: "number", step: "0.01", defaultValue: t.amount, required: true },
+                  { name: "date", label: "Date", type: "date", defaultValue: t.date, required: true },
+                  {
+                    name: "category",
+                    label: "Category",
+                    type: "select",
+                    defaultValue: t.category,
+                    options: (t.type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES).map((c) => ({ value: c.value, label: c.label })),
+                  },
+                  { name: "description", label: "Description", type: "text", defaultValue: t.description, wide: true },
+                ]}
               >
                 <span
                   className={`w-24 shrink-0 text-sm font-semibold ${
@@ -264,17 +282,7 @@ export default async function MoneyPage({
                     )}
                   </p>
                 </div>
-                <form action={deleteTransaction}>
-                  <input type="hidden" name="id" value={t.id} />
-                  <button
-                    type="submit"
-                    aria-label="Delete transaction"
-                    className="text-slate-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
-                  >
-                    &times;
-                  </button>
-                </form>
-              </li>
+              </EditableRow>
             ))}
           </ul>
         )}

@@ -160,3 +160,62 @@ export async function deleteRecurring(formData: FormData) {
 
   revalidatePath("/money");
 }
+
+export type RowEditState = { error?: string; success?: string; savedAt?: number };
+
+// Edit an income / expense line.
+export async function updateTransaction(_prev: RowEditState, formData: FormData): Promise<RowEditState> {
+  const id = String(formData.get("id") ?? "");
+  const amount = Number(String(formData.get("amount") ?? "").replace(",", "."));
+  const category = String(formData.get("category") ?? "");
+  const description = String(formData.get("description") ?? "").trim().slice(0, 500);
+  const date = String(formData.get("date") ?? "").trim();
+  if (!id) return { error: "Missing entry." };
+  if (!Number.isFinite(amount) || amount <= 0) return { error: "Enter an amount greater than 0." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return { error: "Pick a date." };
+
+  const { supabase, business } = await requireUserAndBusiness();
+  const { data: tx } = await supabase
+    .from("transactions")
+    .select("type")
+    .eq("id", id)
+    .eq("business_id", business.id)
+    .maybeSingle();
+  if (!tx) return { error: "Entry not found." };
+  const valid = tx.type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
+  const { error } = await supabase
+    .from("transactions")
+    .update({
+      amount: Math.round(amount * 100) / 100,
+      category: valid.some((c) => c.value === category) ? category : valid[valid.length - 1].value,
+      description: description || null,
+      date,
+    })
+    .eq("id", id)
+    .eq("business_id", business.id);
+  if (error) return { error: error.message };
+  revalidatePath("/money");
+  revalidatePath("/dashboard");
+  return { success: "Saved.", savedAt: Date.now() };
+}
+
+// Edit a monthly repeat: amount, description, next date.
+export async function updateRecurring(_prev: RowEditState, formData: FormData): Promise<RowEditState> {
+  const id = String(formData.get("id") ?? "");
+  const amount = Number(String(formData.get("amount") ?? "").replace(",", "."));
+  const description = String(formData.get("description") ?? "").trim().slice(0, 500);
+  const next = String(formData.get("next_date") ?? "").trim();
+  if (!id) return { error: "Missing entry." };
+  if (!Number.isFinite(amount) || amount <= 0) return { error: "Enter an amount greater than 0." };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(next)) return { error: "Pick the next date." };
+
+  const { supabase, business } = await requireUserAndBusiness();
+  const { error } = await supabase
+    .from("recurring_transactions")
+    .update({ amount: Math.round(amount * 100) / 100, description: description || null, next_date: next })
+    .eq("id", id)
+    .eq("business_id", business.id);
+  if (error) return { error: error.message };
+  revalidatePath("/money");
+  return { success: "Saved.", savedAt: Date.now() };
+}

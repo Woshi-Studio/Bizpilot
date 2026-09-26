@@ -1,8 +1,10 @@
 "use client";
 
-import { useActionState, useRef, useEffect } from "react";
+import { useActionState, useRef, useEffect, useState } from "react";
 import { WIN_CATEGORIES, type Win } from "@/lib/types";
-import { addWin, deleteWin, type GoalsFormState } from "./actions";
+import { addWin, deleteWin, updateWin, type GoalsFormState } from "./actions";
+import InlineEditForm from "@/components/inline-edit";
+import { DeleteButton, EditButton } from "@/components/row-actions";
 import LocalTime from "@/components/local-time";
 
 const initialState: GoalsFormState = {};
@@ -13,6 +15,7 @@ const inputClass =
 export default function WinsPanel({ wins }: { wins: Win[] }) {
   const [state, formAction, pending] = useActionState(addWin, initialState);
   const formRef = useRef<HTMLFormElement>(null);
+  const [editing, setEditing] = useState<string | null>(null);
 
   useEffect(() => {
     if (state.success) formRef.current?.reset();
@@ -81,19 +84,26 @@ export default function WinsPanel({ wins }: { wins: Win[] }) {
                   <p className="mt-1 text-xs text-slate-500">{w.details}</p>
                 )}
               </div>
-              <form action={deleteWin}>
-                <input type="hidden" name="id" value={w.id} />
-                <button
-                  type="submit"
-                  className="shrink-0 text-xs font-medium text-slate-400 hover:text-red-600"
-                >
-                  &times;
-                </button>
-              </form>
+              <div className="flex shrink-0 gap-0.5">
+                <EditButton onClick={() => setEditing(editing === w.id ? null : w.id)} open={editing === w.id} />
+                <DeleteButton action={deleteWin} id={w.id} what={`the win "${w.title}"`} />
+              </div>
             </div>
             <p className="mt-1 text-[10px] uppercase tracking-wide text-slate-400">
               <LocalTime iso={w.created_at} mode="date" />
             </p>
+            {editing === w.id && (
+              <InlineEditForm
+                action={updateWin}
+                id={w.id}
+                onDone={() => setEditing(null)}
+                fields={[
+                  { name: "title", label: "Win", type: "text", defaultValue: w.title, required: true, wide: true },
+                  { name: "category", label: "Kind", type: "select", defaultValue: w.category, options: WIN_CATEGORIES.map((c) => ({ value: c.value, label: c.label })) },
+                  { name: "details", label: "Details", type: "textarea", defaultValue: w.details },
+                ]}
+              />
+            )}
           </div>
         ))}
       </div>

@@ -113,6 +113,7 @@ export default function ContactActions({
     actions.push({ key: "task", label: "Add task", icon: "check", href: `/tasks?customer=${id}` });
     actions.push({ key: "upload", label: "Upload file", icon: "upload", href: "#documents" });
   }
+  actions.push({ key: "edit", label: "Edit details", icon: "edit", href: "#edit" });
 
   return (
     <>

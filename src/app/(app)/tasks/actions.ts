@@ -146,3 +146,30 @@ export async function deleteTask(formData: FormData) {
   revalidatePath("/tasks");
   revalidatePath("/dashboard");
 }
+
+export type RowEditState = { error?: string; success?: string; savedAt?: number };
+
+// Edit a task's title, due date, value and description.
+export async function updateTask(_prev: RowEditState, formData: FormData): Promise<RowEditState> {
+  const id = String(formData.get("id") ?? "");
+  const title = String(formData.get("title") ?? "").trim().slice(0, 300);
+  const due = String(formData.get("due_date") ?? "").trim();
+  const valueRaw = String(formData.get("value") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim().slice(0, 5000);
+  const value = valueRaw === "" ? null : Number(valueRaw);
+  if (!id) return { error: "Missing task." };
+  if (!title) return { error: "Task title is required." };
+  if (value !== null && (!Number.isFinite(value) || value < 0)) return { error: "Value must be a number." };
+
+  const { supabase, business } = await requireUserAndBusiness();
+  const { error } = await supabase
+    .from("tasks")
+    .update({ title, due_date: due || null, value, description: description || null })
+    .eq("id", id)
+    .eq("business_id", business.id);
+  if (error) return { error: error.message };
+  revalidatePath("/tasks");
+  revalidatePath("/dashboard");
+  revalidatePath("/calendar");
+  return { success: "Saved.", savedAt: Date.now() };
+}

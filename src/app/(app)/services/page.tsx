@@ -1,5 +1,6 @@
 import { requireUserAndBusiness } from "@/lib/data";
 import type { Service } from "@/lib/types";
+import { withImageUrls } from "@/lib/services-data";
 import ServiceForm from "./service-form";
 import ServicesList from "./services-list";
 import BusinessLineFilter from "@/components/business-line-filter";
@@ -24,6 +25,11 @@ export default async function ServicesPage({
     loadBusinessLines(supabase, business.id),
   ]);
 
+  const withPictures = await withImageUrls(
+    supabase,
+    (services ?? []) as (Service & { image_path?: string | null })[]
+  );
+
   return (
     <div className="mx-auto max-w-6xl [&>*]:max-w-3xl">
       <h1 className="page-title">Pricing</h1>
@@ -45,8 +51,9 @@ export default async function ServicesPage({
 
       <div className="mt-6">
         <ServicesList
-          services={(services ?? []) as Service[]}
+          services={withPictures}
           currency={business.currency}
+          lines={lines}
         />
       </div>
     </div>

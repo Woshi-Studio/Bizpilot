@@ -4,7 +4,8 @@ import {
   type Activity,
 } from "@/lib/activities";
 import { lineLabel } from "@/lib/business-lines";
-import { deleteActivity } from "@/app/(app)/activities/actions";
+import { deleteActivity, updateActivity } from "@/app/(app)/activities/actions";
+import EditableRow from "./editable-row";
 import LocalTime from "./local-time";
 import AddActivityForm from "./add-activity-form";
 
@@ -73,9 +74,17 @@ export default function Timeline({
             const upcoming =
               new Date(a.occurred_at).getTime() > new Date(nowIso).getTime();
             return (
-              <li
+              <EditableRow
                 key={a.id}
-                className="group flex items-start gap-3 rounded-lg bg-slate-50 px-4 py-3"
+                id={a.id}
+                className="rounded-lg bg-slate-50 px-4 py-3"
+                updateAction={updateActivity}
+                deleteAction={deleteActivity}
+                what="this timeline entry"
+                fields={[
+                  { name: "subject", label: "Title", type: "text", defaultValue: a.subject, wide: true },
+                  { name: "body", label: "Text", type: "textarea", defaultValue: a.body },
+                ]}
               >
                 <span className="mt-0.5 text-base" aria-hidden>
                   {meta?.icon ?? "•"}
@@ -111,17 +120,7 @@ export default function Timeline({
                     {SOURCE_LABEL[a.source] && <> · {SOURCE_LABEL[a.source]}</>}
                   </p>
                 </div>
-                <form action={deleteActivity}>
-                  <input type="hidden" name="id" value={a.id} />
-                  <button
-                    type="submit"
-                    aria-label="Delete activity"
-                    className="text-slate-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
-                  >
-                    &times;
-                  </button>
-                </form>
-              </li>
+              </EditableRow>
             );
           })}
         </ol>

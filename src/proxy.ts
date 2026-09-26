@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isDemoMode } from "@/lib/demo";
 
 // Routes reachable without a session
 const PUBLIC_PATHS = [
@@ -14,6 +15,17 @@ const PUBLIC_PATHS = [
 ];
 
 export async function proxy(request: NextRequest) {
+  // DEMO MODE (dev only): no login, fake data. Never true in production.
+  if (isDemoMode()) {
+    const path = request.nextUrl.pathname;
+    if (path === "/" || path === "/login" || path === "/demo" || path.startsWith("/demo/")) {
+      const url = request.nextUrl.clone();
+      url.pathname = path.startsWith("/demo/") ? path.slice(5) : "/dashboard";
+      return NextResponse.redirect(url);
+    }
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(

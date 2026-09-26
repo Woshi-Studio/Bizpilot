@@ -5,6 +5,7 @@ import { useState } from "react";
 import Icon, { type IconName } from "@/components/icons";
 import SendEmailDialog from "@/components/send-email-dialog";
 import { SendDocDialog } from "@/components/send-doc-dialog";
+import type { TemplateVars } from "@/lib/templates";
 
 // An unsent invoice / quote the "Send invoice" menu offers.
 export type SendableDoc = {
@@ -13,6 +14,7 @@ export type SendableDoc = {
   subject: string;
   body: string; // with {link}
   status: string;
+  vars?: TemplateVars;
 };
 
 export type OpenInvoice = {
@@ -36,6 +38,7 @@ export default function ContactActions({
   sendNote,
   openInvoice,
   sendDocs = [],
+  businessName,
   leadConvert,
 }: {
   kind: "customer" | "lead";
@@ -202,6 +205,7 @@ export default function ContactActions({
           canSend={canSend}
           sendNote={sendNote}
           status={sending.doc.status}
+          vars={sending.doc.vars}
         />
       )}
       {dialog && (
@@ -212,6 +216,7 @@ export default function ContactActions({
           contact={{ kind, id, name, email }}
           subject={dialog.subject}
           body={dialog.body}
+          vars={{ business: businessName }}
         />
       )}
     </>

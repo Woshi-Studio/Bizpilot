@@ -78,6 +78,7 @@ export default async function MessagesPage({
           prefillDetails={params.details}
           canSend={send.canSend}
           sendNote={sendNote}
+          businessName={business.name}
         />
       </div>
     </div>

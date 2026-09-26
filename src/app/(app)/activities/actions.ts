@@ -115,11 +115,43 @@ export async function addActivity(
     return { error: error.message };
   }
 
+  // Quick types like "Called: spoke, follow up in 3 days" also set the
+  // next follow-up (a task for customers, the follow-up date for leads).
+  const followDays = Number(formData.get("followup_days") ?? 0);
+  let followNote = "";
+  if (Number.isInteger(followDays) && followDays > 0 && followDays <= 60) {
+    const due = new Date();
+    due.setDate(due.getDate() + followDays);
+    const dueDate = due.toISOString().slice(0, 10);
+    if (links.customerId) {
+      await supabase.from("tasks").insert({
+        business_id: business.id,
+        customer_id: links.customerId,
+        title: `Follow up${subject ? `: ${subject}` : ""}`.slice(0, 300),
+        due_date: dueDate,
+        business_line: links.line,
+      });
+      await supabase
+        .from("customers")
+        .update({ next_follow_up: dueDate })
+        .eq("id", links.customerId)
+        .eq("business_id", business.id);
+      revalidatePath("/tasks");
+    } else if (links.leadId) {
+      await supabase
+        .from("leads")
+        .update({ follow_up_date: dueDate })
+        .eq("id", links.leadId)
+        .eq("business_id", business.id);
+    }
+    followNote = ` Follow-up set for ${dueDate}.`;
+  }
+
   if (links.customerId) revalidatePath(`/customers/${links.customerId}`);
   if (links.leadId) revalidatePath(`/leads/${links.leadId}`);
   revalidatePath("/calendar");
   revalidatePath("/dashboard");
-  return { success: "Saved to the timeline." };
+  return { success: `Saved to the timeline.${followNote}` };
 }
 
 export async function addMeeting(

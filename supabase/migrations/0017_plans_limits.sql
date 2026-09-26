@@ -43,6 +43,9 @@
 --      Owners manage their links (revoke = set revoked_at). The public
 --      reads go ONLY through shared_invoice(token) / shared_document(token),
 --      SECURITY DEFINER, which return that one document and nothing else.
+--  11. message_templates: the user's own quick templates, and their changes
+--      to the built-in ones (the built-ins live in src/lib/templates.ts, in
+--      English and French, so every account starts with them). Owner only.
 --
 -- Who the limits apply to: every request made with a user's session
 -- (the browser, server actions, the public lead form). Requests made
@@ -890,3 +893,39 @@ $$;
 
 revoke all on function public.shared_document(text) from public;
 grant execute on function public.shared_document(text) to anon, authenticated;
+
+-- ============================================================
+-- 10. Quick templates
+-- ============================================================
+create table if not exists public.message_templates (
+  id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses (id) on delete cascade,
+  key text not null check (key ~ '^[a-z0-9_-]{1,60}$'),
+  lang text not null default 'en' check (lang in ('en', 'fr')),
+  name text not null check (char_length(name) between 1 and 60),
+  subject text not null default '' check (char_length(subject) <= 200),
+  body text not null default '' check (char_length(body) <= 5000),
+  updated_at timestamptz not null default now(),
+  unique (business_id, key, lang)
+);
+
+alter table public.message_templates enable row level security;
+
+drop policy if exists "Owners manage own templates" on public.message_templates;
+create policy "Owners manage own templates"
+  on public.message_templates for all
+  to authenticated
+  using (
+    exists (
+      select 1 from public.businesses b
+      where b.id = business_id and b.owner_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.businesses b
+      where b.id = business_id and b.owner_id = auth.uid()
+    )
+  );
+
+revoke all on public.message_templates from anon;

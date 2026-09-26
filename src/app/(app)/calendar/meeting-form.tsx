@@ -6,6 +6,7 @@ import {
   addMeeting,
   type ActivityFormState,
 } from "@/app/(app)/activities/actions";
+import DateChips, { setInputValue } from "@/components/date-chips";
 
 const initialState: ActivityFormState = {};
 
@@ -84,6 +85,14 @@ export default function MeetingForm({
           </label>
           <input id="meeting_time" name="time" type="time" className={inputClass} />
         </div>
+        <DateChips
+          withTime
+          className="sm:col-span-2"
+          onPick={(d, t) => {
+            setInputValue("meeting_date", d);
+            if (t) setInputValue("meeting_time", t);
+          }}
+        />
         <div>
           <label htmlFor="meeting_customer" className="label">
             Customer

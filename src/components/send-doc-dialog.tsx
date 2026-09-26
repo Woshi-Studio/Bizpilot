@@ -11,6 +11,8 @@ import {
   type ShareKind,
 } from "@/app/(app)/share/actions";
 import { setInvoiceStatus } from "@/app/(app)/invoices/actions";
+import TemplateChips from "./template-chips";
+import type { TemplateVars } from "@/lib/templates";
 
 const initial: SendDocState = {};
 
@@ -24,6 +26,7 @@ export type SendDocProps = {
   canSend: boolean;
   sendNote?: string;
   status?: string; // invoice status
+  vars?: TemplateVars; // for the quick templates
 };
 
 // Send an invoice / quote / file: in-app (with the file attached) when the
@@ -99,6 +102,18 @@ export function SendDocDialog({ open, onClose, ...p }: SendDocProps & { open: bo
               )}
             </p>
           </div>
+          <TemplateChips
+            only={
+              p.kind === "invoice"
+                ? ["invoice_attached", "quote_attached", "reminder_friendly", "reminder_firm", "follow_up"]
+                : ["follow_up", "quote_attached", "invoice_attached", "job_finished", "welcome"]
+            }
+            vars={{ first_name: p.to?.name.split(" ")[0], name: p.to?.name, ...p.vars, link: link ?? undefined }}
+            onPick={(s, b) => {
+              setSubject(s);
+              setBody(b);
+            }}
+          />
           <div>
             <label htmlFor={`sd-subject-${p.id}`} className="label">Subject</label>
             <input

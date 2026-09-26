@@ -5,6 +5,7 @@ import { CUSTOMER_STATUSES, type Customer } from "@/lib/types";
 import type { CustomerFormState } from "./actions";
 import BusinessLineInput from "@/components/business-line-input";
 import FormError from "@/components/form-error";
+import DateChips, { setInputValue } from "@/components/date-chips";
 
 const initialState: CustomerFormState = {};
 
@@ -163,6 +164,7 @@ export default function CustomerForm({
             defaultValue={customer?.next_follow_up ?? ""}
             className={inputClass}
           />
+          <DateChips className="mt-1.5" onPick={(d) => setInputValue("next_follow_up", d)} />
           <p className="mt-1 text-xs text-slate-400">
             We&apos;ll remind you on the dashboard when it&apos;s due.
           </p>

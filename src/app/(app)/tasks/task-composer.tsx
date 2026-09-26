@@ -7,6 +7,7 @@ import BusinessLineInput from "@/components/business-line-input";
 import FormError from "@/components/form-error";
 import ServicePicker, { type PickableService } from "@/components/service-picker";
 import Icon from "@/components/icons";
+import DateChips, { setInputValue } from "@/components/date-chips";
 
 const initialState: TaskFormState = {};
 
@@ -81,8 +82,10 @@ export default function TaskComposer({
             className={`${inputClass} flex-1`}
           />
           <input
+            id="task_due_date"
             type="date"
             name="due_date"
+            aria-label="Due date"
             className={`${inputClass} sm:w-40`}
           />
           <select
@@ -98,6 +101,8 @@ export default function TaskComposer({
             ))}
           </select>
         </div>
+
+        <DateChips onPick={(d) => setInputValue("task_due_date", d)} />
 
         <ServicePicker
           services={services as PickableService[]}

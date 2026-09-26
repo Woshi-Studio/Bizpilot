@@ -108,6 +108,13 @@ export default async function InvoiceDetailPage({
             canSend={send.canSend}
             sendNote={send.canSend ? undefined : emailNote(send)}
             status={invoice.status}
+            vars={{
+              business: business.name,
+              my_name: fromName,
+              invoice_number: invoice.number,
+              amount: formatMoney(total, currency),
+              due_date: invoice.due_date ?? undefined,
+            }}
           />
           {invoice.status === "draft" && (
             <form action={setInvoiceStatus}>

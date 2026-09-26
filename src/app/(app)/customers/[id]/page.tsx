@@ -171,6 +171,13 @@ export default async function CustomerDetailPage({
         subject: `${title} from ${business.name}`,
         body: invoiceEmailText(doc, "{link}", fromName),
         status: d.status,
+        vars: {
+          business: business.name,
+          my_name: fromName,
+          invoice_number: d.number,
+          amount: formatMoney(invoiceTotal(d), docCurrency(d)),
+          due_date: d.due_date ?? undefined,
+        },
       };
     });
 

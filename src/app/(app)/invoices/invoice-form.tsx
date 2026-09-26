@@ -19,6 +19,7 @@ import {
   settingsFor,
   type LineSettings,
 } from "@/lib/line-settings";
+import DateChips from "@/components/date-chips";
 
 const initialState: InvoiceFormState = {};
 
@@ -288,6 +289,13 @@ export default function InvoiceForm({
                 setDueDate(e.target.value);
               }}
               className={inputClass}
+            />
+            <DateChips
+              className="mt-1.5"
+              onPick={(d) => {
+                setDueTouched(true);
+                setDueDate(d);
+              }}
             />
           </div>
         </div>

@@ -5,6 +5,7 @@ import { LEAD_CHANNELS } from "@/lib/types";
 import { logOutreach, type OutreachFormState } from "./actions";
 import BusinessLineInput from "@/components/business-line-input";
 import FormError from "@/components/form-error";
+import DateChips, { setInputValue } from "@/components/date-chips";
 
 const initialState: OutreachFormState = {};
 
@@ -72,7 +73,8 @@ export default function OutreachForm({
           <label className="label">
             Follow-up date
           </label>
-          <input name="follow_up_date" type="date" className={inputClass} />
+          <input id="outreach_follow_up" name="follow_up_date" type="date" className={inputClass} />
+          <DateChips className="mt-1.5" onPick={(d) => setInputValue("outreach_follow_up", d)} />
         </div>
         <div>
           <label className="label">

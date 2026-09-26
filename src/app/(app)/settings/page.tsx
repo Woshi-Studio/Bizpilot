@@ -14,6 +14,8 @@ import ChangeEmailForm from "./change-email-form";
 import AssistantAccess, { type ApiKeyRow, type AuditRow } from "./assistant-access";
 import PlanSection from "./plan-section";
 import LineSettingsForm from "./line-settings-form";
+import TemplatesSection from "./templates-section";
+import { listTemplates } from "../templates/actions";
 import { loadBusinessLines } from "@/lib/activities";
 import { loadLineSettings } from "@/lib/services-data";
 import { settingsFor } from "@/lib/line-settings";
@@ -84,6 +86,7 @@ export default async function SettingsPage({
     auditResult,
     usedLines,
     savedLineSettings,
+    savedTemplates,
   ] = await Promise.all([
       supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
       business
@@ -114,6 +117,7 @@ export default async function SettingsPage({
         : Promise.resolve(null),
       business ? loadBusinessLines(supabase, business.id) : Promise.resolve([] as string[]),
       business ? loadLineSettings(supabase, business.id) : Promise.resolve([]),
+      business ? listTemplates() : Promise.resolve([]),
     ]);
   const lineSettings = usedLines.map((l) =>
     settingsFor(l, savedLineSettings, business?.currency ?? "USD")
@@ -152,6 +156,7 @@ export default async function SettingsPage({
     ["public", "Public page"],
     ["payments", "Payments"],
     ["lines", "Invoice settings"],
+    ["templates", "Templates"],
   ] as [string, string][];
 
   return (
@@ -265,6 +270,12 @@ export default async function SettingsPage({
       {business && (
         <div className="mt-8">
           <LineSettingsForm settings={lineSettings} />
+        </div>
+      )}
+
+      {business && (
+        <div className="mt-8">
+          <TemplatesSection saved={savedTemplates} />
         </div>
       )}
     </div>

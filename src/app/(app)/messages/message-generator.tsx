@@ -6,6 +6,7 @@ import { generateMessage, type GenerateState } from "./actions";
 import Icon from "@/components/icons";
 import SendEmailDialog, { type EmailContact } from "@/components/send-email-dialog";
 import { mailtoHref } from "@/lib/mailto";
+import TemplateChips from "@/components/template-chips";
 
 const initialState: GenerateState = {};
 
@@ -33,12 +34,14 @@ export default function MessageGenerator({
   prefillDetails,
   canSend,
   sendNote,
+  businessName,
 }: {
   contacts: ContactOption[];
   prefillContact?: string;
   prefillDetails?: string;
   canSend: boolean;
   sendNote: string;
+  businessName?: string;
 }) {
   const [state, formAction, pending] = useActionState(generateMessage, initialState);
   const [copied, setCopied] = useState(false);
@@ -50,11 +53,23 @@ export default function MessageGenerator({
   const emailContact: EmailContact | null = selected
     ? { kind: selected.kind, id: selected.id, name: selected.name, email: selected.email }
     : null;
-  const draft = state.message ? splitSubject(state.message) : null;
+  // A quick template (free) replaces the AI draft until the next Generate.
+  const [manual, setManual] = useState<{ subject: string; body: string; forState: unknown } | null>(null);
+  const showManual = manual && manual.forState === state;
+  const draft = showManual
+    ? { subject: manual.subject, body: manual.body }
+    : state.message
+      ? splitSubject(state.message)
+      : null;
+  const message = draft
+    ? draft.subject
+      ? `Subject: ${draft.subject}\n\n${draft.body}`
+      : draft.body
+    : "";
 
   async function copyMessage() {
-    if (!state.message) return;
-    await navigator.clipboard.writeText(state.message);
+    if (!message) return;
+    await navigator.clipboard.writeText(message);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -70,6 +85,11 @@ export default function MessageGenerator({
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
       <form action={formAction} className="card p-5 sm:p-6 lg:col-span-2">
+        <TemplateChips
+          className="mb-5 border-b border-line/70 pb-4"
+          vars={{ first_name: selected?.name.split(" ")[0], name: selected?.name, business: businessName }}
+          onPick={(subject, body) => setManual({ subject, body, forState: state })}
+        />
         <h2 className="section-title">What do you need?</h2>
 
         <div className="mt-5 space-y-4">
@@ -156,7 +176,7 @@ export default function MessageGenerator({
       <div className="card flex flex-col p-5 sm:p-6 lg:col-span-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="section-title">Your message</h2>
-          {state.message && (
+          {message && (
             <div className="flex gap-2">
               <button type="button" onClick={copyMessage} className="btn-secondary btn-sm">
                 <Icon name="copy" className="h-4 w-4" />
@@ -226,7 +246,7 @@ export default function MessageGenerator({
           </div>
         )}
 
-        {state.message && sendHint && (
+        {message && sendHint && (
           <p className="mt-3 text-xs text-muted">{sendHint}</p>
         )}
       </div>

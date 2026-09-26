@@ -172,10 +172,10 @@ export function ThemePicker({ plan, unlimited }: { plan: Plan; unlimited: boolea
           const tile = (
             <>
               <Preview id={t.id} />
-              <span className="mt-2 flex items-center justify-between gap-1 px-0.5">
+              <span className="mt-2 flex flex-wrap items-center justify-between gap-1 px-0.5">
                 <span className="text-sm font-semibold text-ink">{t.label}</span>
                 {!allowed ? (
-                  <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                  <span className="whitespace-nowrap rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
                     🔒 Hustle
                   </span>
                 ) : active ? (

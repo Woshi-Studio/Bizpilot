@@ -44,14 +44,14 @@ export default async function InvoicesPage({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="page-title">Invoices</h1>
           <p className="page-sub">
             Quotes and invoices — mark them paid and the money logs itself.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link href="/invoices/new?type=quote" className="btn-secondary">
             + New quote
           </Link>
@@ -80,14 +80,16 @@ export default async function InvoicesPage({
               const meta = INVOICE_STATUS_META[inv.status];
               return (
                 <li key={inv.id} className="flex items-center hover:bg-slate-50">
+                  {/* Phone: number · status · amount on one line, details
+                      below. Wider screens: one row. */}
                   <Link
                     href={`/invoices/${inv.id}`}
-                    className="flex min-w-0 flex-1 items-center gap-4 py-3.5 pl-5 pr-2"
+                    className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 py-3.5 pl-5 pr-2 sm:flex-nowrap sm:gap-4"
                   >
-                    <span className="w-24 shrink-0 section-title">
+                    <span className="order-1 shrink-0 section-title sm:order-none sm:w-24">
                       {inv.number}
                     </span>
-                    <div className="min-w-0 flex-1">
+                    <div className="order-4 min-w-0 basis-full sm:order-none sm:flex-1 sm:basis-auto">
                       <p className="truncate text-sm text-slate-700">
                         {inv.customers?.name ?? "No customer"}
                       </p>
@@ -100,16 +102,16 @@ export default async function InvoicesPage({
                           : ""}
                       </p>
                     </div>
-                    <span className="shrink-0 text-sm font-semibold text-slate-900">
+                    <span className="order-3 ml-auto shrink-0 text-sm font-semibold text-slate-900 sm:order-none sm:ml-0">
                       {formatMoney(total, currency)}
                     </span>
                     <span
-                      className={`inline-block w-20 shrink-0 rounded-full border px-2.5 py-0.5 text-center text-xs font-medium ${meta.badgeClass}`}
+                      className={`order-2 inline-block shrink-0 rounded-full border px-2.5 py-0.5 text-center text-xs font-medium sm:order-none sm:w-20 ${meta.badgeClass}`}
                     >
                       {meta.label}
                     </span>
                   </Link>
-                  <div className="flex shrink-0 items-center gap-0.5 pr-3">
+                  <div className="flex shrink-0 flex-col items-end gap-0.5 pr-3 sm:flex-row sm:items-center">
                     <Link
                       href={`/invoices/${inv.id}/edit`}
                       className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted hover:bg-surface-3 hover:text-ink"

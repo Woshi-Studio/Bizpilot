@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import FeedbackWidget from "./feedback-widget";
 import Icon from "./icons";
 import { ThemeToggleButton } from "./theme";
@@ -142,7 +143,13 @@ export default function AppShell({
                 </button>
                 {menuOpen && (
                   <>
-                    <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                    {/* The tap-anywhere-to-close layer lives in <body>: inside the
+                        blurred header, "fixed" would only cover the header. Below the
+                        header (z-30) so the menu itself stays clickable. */}
+                    {createPortal(
+                      <div className="fixed inset-0 z-[25]" onClick={() => setMenuOpen(false)} />,
+                      document.body
+                    )}
                     <div className="card absolute right-0 top-11 z-50 w-60 p-3 shadow-pop">
                       <p className="truncate text-sm font-semibold text-ink">{userName}</p>
                       <p className="truncate text-xs text-muted">{businessName}</p>
@@ -168,7 +175,7 @@ export default function AppShell({
           </div>
         </header>
 
-        <main className="flex-1 px-4 pb-32 pt-6 sm:px-6 lg:px-10 lg:pb-16 lg:pt-8 print:p-0">
+        <main className="flex-1 px-4 pb-40 pt-6 sm:px-6 lg:px-10 lg:pb-28 lg:pt-8 print:p-0">
           {/* Page tabs inside a group (e.g. People: Customers · Leads) */}
           {group && group.pages.length > 1 && (
             <div className="mx-auto mb-7 max-w-6xl print:hidden">

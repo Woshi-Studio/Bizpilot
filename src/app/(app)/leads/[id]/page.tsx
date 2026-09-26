@@ -187,7 +187,7 @@ export default async function LeadDetailPage({
       </Section>
 
       <OpenOnHash id="edit" />
-      <details id="edit" className="card group scroll-mt-24 p-5 sm:p-7">
+      <details id="edit" className="card group scroll-mt-36 p-5 sm:p-7">
         <summary className="flex cursor-pointer list-none items-center justify-between">
           <span className="section-title">Edit details</span>
           <span className="text-sm text-muted group-open:hidden">Name, contact info, channel, follow-up</span>

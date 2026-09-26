@@ -258,11 +258,12 @@ function SidePanel({
 
   return (
     <>
-      <div className="fixed inset-0 z-40 bg-black/20" onClick={onClose} />
+      {/* Above the Athena bubble (z-50) and the phone tab bar, so neither covers the panel buttons. */}
+      <div className="fixed inset-0 z-[60] bg-black/20" onClick={onClose} />
       <aside
         role="dialog"
         aria-label={item.title}
-        className="fixed inset-y-0 right-0 z-50 flex w-[min(24rem,100vw)] flex-col border-l border-line bg-surface p-5 shadow-pop"
+        className="fixed inset-y-0 right-0 z-[61] flex w-[min(24rem,100vw)] flex-col border-l border-line bg-surface p-5 shadow-pop"
       >
         <div className="flex items-start justify-between gap-2">
           <div>

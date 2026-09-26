@@ -236,11 +236,12 @@ export default function Athena({ firstName }: { firstName: string }) {
         data-tour="athena"
         aria-expanded={open}
         aria-label={open ? "Close Athena" : "Open Athena, your assistant"}
-        className="fixed bottom-[5.5rem] right-4 z-50 flex items-center gap-2 rounded-full bg-surface py-1.5 pl-1.5 pr-4 text-sm font-semibold text-ink shadow-pop ring-1 ring-line/70 transition-transform hover:-translate-y-0.5 sm:right-6 lg:bottom-6"
+        className="fixed bottom-[5.5rem] right-4 z-50 flex items-center gap-2 rounded-full bg-surface p-1.5 text-sm font-semibold text-ink shadow-pop ring-1 ring-line/70 transition-transform hover:-translate-y-0.5 sm:right-6 sm:pr-4 lg:bottom-6"
         style={open ? { display: "none" } : undefined}
       >
         <AthenaMark />
-        Athena
+        {/* Phones: just the round mark, so it covers less of the page. */}
+        <span className="hidden sm:inline">Athena</span>
       </button>
       {open && (
         <button

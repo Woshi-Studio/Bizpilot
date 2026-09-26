@@ -108,14 +108,14 @@ export default async function MoneyPage({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="page-title">Money</h1>
           <p className="page-sub">
             Income, expenses, and what&apos;s left over.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <a
             href={`/money/export?year=${month.slice(0, 4)}`}
             className="btn-secondary"

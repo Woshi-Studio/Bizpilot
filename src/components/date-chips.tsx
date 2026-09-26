@@ -21,7 +21,7 @@ export default function DateChips({
           key={q.label}
           type="button"
           onClick={() => onPick(q.date, withTime ? q.time : undefined)}
-          className="rounded-full border border-line px-2 py-0.5 text-[11px] font-medium text-muted hover:border-accent hover:text-accent-text"
+          className="rounded-full border border-line px-2.5 py-1 text-xs font-medium text-muted hover:border-accent hover:text-accent-text sm:px-2 sm:py-0.5 sm:text-[11px]"
         >
           {withTime ? q.label : q.label.replace(/ \d+(am|pm)$/, "")}
         </button>

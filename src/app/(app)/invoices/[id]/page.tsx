@@ -172,8 +172,8 @@ export default async function InvoiceDetailPage({
       </div>
 
       {/* The document itself — print-friendly */}
-      <div className="mt-4 card p-8 print:mt-0 print:rounded-none print:border-0 print:p-0 print:shadow-none">
-        <div className="flex items-start justify-between">
+      <div className="mt-4 card p-5 sm:p-8 print:mt-0 print:rounded-none print:border-0 print:p-0 print:shadow-none">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="page-title">
               {isQuote ? "Quote" : "Invoice"} {invoice.number}
@@ -190,7 +190,7 @@ export default async function InvoiceDetailPage({
           </span>
         </div>
 
-        <div className="mt-8 grid grid-cols-2 gap-8 text-sm">
+        <div className="mt-8 grid grid-cols-1 gap-6 text-sm sm:grid-cols-2 sm:gap-8 [overflow-wrap:anywhere]">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
               From
@@ -223,7 +223,7 @@ export default async function InvoiceDetailPage({
           </div>
         </div>
 
-        <table className="mt-8 w-full text-sm">
+        <table className="mt-8 w-full text-sm [&_td+td]:pl-3 [&_th+th]:pl-3">
           <thead>
             <tr className="border-b border-slate-200 text-left text-xs font-medium uppercase tracking-wide text-slate-400">
               <th className="pb-2">Description</th>
@@ -236,13 +236,13 @@ export default async function InvoiceDetailPage({
             {items.map((item) => (
               <tr key={item.id} className="border-b border-slate-100">
                 <td className="py-2.5 text-slate-700">{item.description}</td>
-                <td className="py-2.5 text-right text-slate-600">
+                <td className="py-2.5 text-right whitespace-nowrap text-slate-600">
                   {Number(item.quantity)}
                 </td>
-                <td className="py-2.5 text-right text-slate-600">
+                <td className="py-2.5 text-right whitespace-nowrap text-slate-600">
                   {formatMoney(Number(item.unit_price), currency)}
                 </td>
-                <td className="py-2.5 text-right font-medium text-slate-800">
+                <td className="py-2.5 text-right whitespace-nowrap font-medium text-slate-800">
                   {formatMoney(
                     Number(item.quantity) * Number(item.unit_price),
                     currency
@@ -272,7 +272,7 @@ export default async function InvoiceDetailPage({
               <td colSpan={3} className="pt-4 text-right font-semibold text-slate-800">
                 Total ({currency})
               </td>
-              <td className="pt-4 text-right text-lg font-bold text-slate-900">
+              <td className="pt-4 text-right whitespace-nowrap text-lg font-bold text-slate-900">
                 {formatMoney(total, currency)}
               </td>
             </tr>

@@ -39,8 +39,8 @@ export default async function SharedInvoicePage({
           <PrintButton />
         </div>
 
-        <div className="card p-8 print:rounded-none print:border-0 print:p-0 print:shadow-none">
-          <div className="flex items-start justify-between gap-4">
+        <div className="card p-5 sm:p-8 print:rounded-none print:border-0 print:p-0 print:shadow-none">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <h1 className="page-title">{docTitle(d)}</h1>
               <p className="page-sub">
@@ -55,7 +55,7 @@ export default async function SharedInvoicePage({
             )}
           </div>
 
-          <div className="mt-8 grid grid-cols-2 gap-8 text-sm">
+          <div className="mt-8 grid grid-cols-1 gap-6 text-sm sm:grid-cols-2 sm:gap-8 [overflow-wrap:anywhere]">
             <div>
               <p className="eyebrow">From</p>
               <p className="mt-1 font-semibold text-ink">{d.business_name}</p>
@@ -68,7 +68,7 @@ export default async function SharedInvoicePage({
             </div>
           </div>
 
-          <table className="mt-8 w-full text-sm">
+          <table className="mt-8 w-full text-sm [&_td+td]:pl-3 [&_th+th]:pl-3">
             <thead>
               <tr className="border-b border-line text-left text-xs font-medium uppercase tracking-wide text-subtle">
                 <th className="pb-2">Description</th>
@@ -81,9 +81,9 @@ export default async function SharedInvoicePage({
               {d.items.map((item, i) => (
                 <tr key={i} className="border-b border-line/60">
                   <td className="py-2.5 text-ink-2">{item.description}</td>
-                  <td className="py-2.5 text-right text-ink-2">{Number(item.quantity)}</td>
-                  <td className="py-2.5 text-right text-ink-2">{money(Number(item.unit_price), d.currency)}</td>
-                  <td className="py-2.5 text-right font-medium text-ink">
+                  <td className="py-2.5 text-right whitespace-nowrap text-ink-2">{Number(item.quantity)}</td>
+                  <td className="py-2.5 text-right whitespace-nowrap text-ink-2">{money(Number(item.unit_price), d.currency)}</td>
+                  <td className="py-2.5 text-right whitespace-nowrap font-medium text-ink">
                     {money(Number(item.quantity) * Number(item.unit_price), d.currency)}
                   </td>
                 </tr>
@@ -108,7 +108,7 @@ export default async function SharedInvoicePage({
                 <td colSpan={3} className="pt-4 text-right font-semibold text-ink">
                   Total ({d.currency})
                 </td>
-                <td className="pt-4 text-right text-lg font-bold text-ink">{money(t.total, d.currency)}</td>
+                <td className="pt-4 text-right whitespace-nowrap text-lg font-bold text-ink">{money(t.total, d.currency)}</td>
               </tr>
             </tfoot>
           </table>

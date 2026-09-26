@@ -4,6 +4,8 @@ import type { PaymentMethod } from "@/lib/types";
 import InvoiceForm from "../invoice-form";
 import { loadBusinessLines } from "@/lib/activities";
 import { loadLineSettings, loadPickableServices } from "@/lib/services-data";
+import FormError from "@/components/form-error";
+import { checkPlanLimit } from "@/lib/plan-limits";
 
 const isId = (v?: string) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v : undefined);
 
@@ -17,7 +19,7 @@ export default async function NewInvoicePage({
   const { customer, type } = await searchParams;
   const { supabase, business } = await requireUserAndBusiness();
 
-  const [{ data: customers }, paymentMethodsResult, lines, services, lineSettings] = await Promise.all([
+  const [{ data: customers }, paymentMethodsResult, lines, services, lineSettings, limited] = await Promise.all([
     supabase
       .from("customers")
       .select("id, name, business_line")
@@ -31,6 +33,8 @@ export default async function NewInvoicePage({
     loadBusinessLines(supabase, business.id),
     loadPickableServices(supabase, business.id),
     loadLineSettings(supabase, business.id),
+    // Already at the plan's invoice limit? Say so before they fill the form.
+    checkPlanLimit(supabase, business, "docs"),
   ]);
 
   const paymentMethods = paymentMethodsResult.error
@@ -51,6 +55,7 @@ export default async function NewInvoicePage({
       <p className="page-sub">
         Create it, print it as a PDF, get paid.
       </p>
+      {limited && <FormError className="mt-4" error={limited.error} upgrade={limited.upgrade} />}
 
       <div className="mt-6">
         <InvoiceForm

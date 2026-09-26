@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import Icon from "@/components/icons";
 import { bt, localeFor, locationLabel, type BookingKey } from "@/lib/booking-i18n";
 import { formatMoneyCents, type IntakeQuestion } from "@/lib/booking";
@@ -103,6 +103,12 @@ export default function BookingWidget({
   const [error, setError] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [reload, setReload] = useState(0);
+  // On a phone the times and the Continue button sit below the calendar,
+  // out of sight: bring them into view when the visitor picks a day / time.
+  const timesRef = useRef<HTMLDivElement>(null);
+  const continueRef = useRef<HTMLDivElement>(null);
+  const reveal = (ref: React.RefObject<HTMLDivElement | null>) =>
+    setTimeout(() => ref.current?.scrollIntoView({ block: "nearest", behavior: "smooth" }), 50);
 
   // Fetch the month (with a day of padding for time zones).
   const key = `${month}|${mode}|${reload}|${isClient ? "c" : "s"}`;
@@ -406,6 +412,7 @@ export default function BookingWidget({
                 onClick={() => {
                   setDay(c);
                   setSlot(null);
+                  reveal(timesRef);
                 }}
                 aria-pressed={selected}
                 className={`aspect-square rounded-full text-sm transition-colors ${
@@ -437,7 +444,7 @@ export default function BookingWidget({
         {zoneLine}
       </div>
 
-      <div>
+      <div ref={timesRef} className="scroll-mt-4">
         <h2 className="section-title">{shownDay ? dayFmt.format(new Date(`${shownDay}T12:00:00Z`)) : t("pick_time")}</h2>
         {!shownDay && !loading && firstFree && (
           <button type="button" onClick={() => setDay(firstFree)} className="link mt-3 text-sm">
@@ -449,7 +456,10 @@ export default function BookingWidget({
             <button
               key={s}
               type="button"
-              onClick={() => setSlot(s)}
+              onClick={() => {
+                setSlot(s);
+                reveal(continueRef);
+              }}
               aria-pressed={slot === s}
               className={slot === s ? "btn-primary justify-center" : "btn-secondary justify-center"}
             >
@@ -458,7 +468,7 @@ export default function BookingWidget({
           ))}
         </div>
         {slot && (
-          <div className="mt-4 space-y-2">
+          <div ref={continueRef} className="mt-4 space-y-2 scroll-mb-4">
             {error && <p className="alert-error text-sm">{error}</p>}
             {mode === "reschedule" ? (
               <button type="button" disabled={sending} onClick={() => submit(document.createElement("form"))} className="btn-primary w-full justify-center">

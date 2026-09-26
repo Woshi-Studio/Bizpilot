@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import Icon, { type IconName } from "@/components/icons";
 import SendEmailDialog from "@/components/send-email-dialog";
 import { SendDocDialog } from "@/components/send-doc-dialog";
@@ -54,7 +55,10 @@ export default function ContactActions({
   leadConvert?: React.ReactNode;
 }) {
   const [dialog, setDialog] = useState<{ n: number; subject: string; body: string } | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
+  // The "Send invoice" menu. Fixed position (measured from the button) so
+  // the scrolling action bar can't clip it.
+  const [menuAt, setMenuAt] = useState<{ top: number; left: number } | null>(null);
+  const menuOpen = menuAt !== null;
   const [sending, setSending] = useState<{ n: number; doc: SendableDoc } | null>(null);
   const contactParam = `${kind}=${id}`;
 
@@ -120,14 +124,26 @@ export default function ContactActions({
 
   return (
     <>
-      <div data-tour="contact-actions" className="sticky top-16 z-20 -mx-4 bg-canvas/85 px-4 py-3 backdrop-blur-md sm:mx-0 sm:rounded-2xl sm:px-0 print:hidden">
-        <div className="flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
+      {/* One row that scrolls sideways, full width of the page so nothing
+          peeks out from under it, and short so it hides as little as possible. */}
+      <div data-tour="contact-actions" className="sticky top-16 z-20 -mx-4 border-b border-line/60 bg-canvas/95 px-4 py-2.5 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10 print:hidden">
+        <div className="flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] sm:[scrollbar-width:thin]">
           {leadConvert}
           {sendDocs.length > 0 && (
             <div className="relative shrink-0">
               <button
                 type="button"
-                onClick={() => setMenuOpen((o) => !o)}
+                onClick={(e) => {
+                  if (menuOpen) return setMenuAt(null);
+                  const r = e.currentTarget.getBoundingClientRect();
+                  // Open upward when there's no room below (phone tab bar).
+                  const h = 44 + 38 * sendDocs.length;
+                  const below = r.bottom + 6 + h < window.innerHeight - 88;
+                  setMenuAt({
+                    top: below ? r.bottom + 6 : Math.max(8, r.top - 6 - h),
+                    left: Math.max(8, Math.min(r.left, window.innerWidth - 296)),
+                  });
+                }}
                 aria-expanded={menuOpen}
                 className="btn-secondary btn-sm"
               >
@@ -137,17 +153,25 @@ export default function ContactActions({
                   {sendDocs.length}
                 </span>
               </button>
-              {menuOpen && (
+              {/* In <body>: the bar's backdrop blur would otherwise turn
+                  "fixed" into "relative to the bar" and push the menu off-screen. */}
+              {menuOpen &&
+                createPortal(
                 <>
-                  <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
-                  <div className="card absolute left-0 top-10 z-50 w-72 p-1.5 shadow-pop">
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setMenuAt(null)}
+                    onWheel={() => setMenuAt(null)}
+                    onTouchMove={() => setMenuAt(null)}
+                  />
+                  <div className="card fixed z-50 w-72 p-1.5 shadow-pop" style={menuAt ?? undefined}>
                     <p className="px-2.5 py-1.5 text-xs text-muted">Not sent yet</p>
                     {sendDocs.map((d) => (
                       <button
                         key={d.id}
                         type="button"
                         onClick={() => {
-                          setMenuOpen(false);
+                          setMenuAt(null);
                           setSending((s) => ({ n: (s?.n ?? 0) + 1, doc: d }));
                         }}
                         className="block w-full rounded-lg px-2.5 py-2 text-left text-sm text-ink-2 hover:bg-surface-3 hover:text-ink"
@@ -156,8 +180,9 @@ export default function ContactActions({
                       </button>
                     ))}
                   </div>
-                </>
-              )}
+                </>,
+                  document.body
+                )}
             </div>
           )}
           {[...actions].sort((a, b) => Number(!!b.primary) - Number(!!a.primary)).map((a) => {

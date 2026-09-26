@@ -162,9 +162,8 @@ export default function ManageBooking({
         <dl className={`mt-6 space-y-3 text-sm ${cancelled ? "opacity-60 line-through" : ""}`}>
           <div>
             <dt className="eyebrow">{t("with")}</dt>
-            <dd className="mt-0.5 text-ink">
-              {booking.type_name} · {businessName}
-            </dd>
+            {/* The meeting name is already the heading; "With" is who. */}
+            <dd className="mt-0.5 text-ink">{businessName}</dd>
           </div>
           <div>
             <dt className="eyebrow">{t("when")}</dt>

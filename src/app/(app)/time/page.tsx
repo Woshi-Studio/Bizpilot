@@ -62,26 +62,26 @@ export default async function TimePage() {
         unbilled.
       </p>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="card p-5 text-center shadow-sm">
-          <p className="page-title">{weekHours}h</p>
-          <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">
+      <div className="mt-6 grid grid-cols-3 gap-2 sm:gap-4">
+        <div className="card px-2 py-4 text-center shadow-sm sm:p-5">
+          <p className="text-2xl font-bold text-slate-900 sm:text-3xl">{weekHours}h</p>
+          <p className="mt-1 text-[11px] uppercase tracking-wide text-slate-400 sm:text-xs">
             This week
           </p>
         </div>
-        <div className="card p-5 text-center shadow-sm">
-          <p className="text-2xl font-bold text-amber-600">
+        <div className="card px-2 py-4 text-center shadow-sm sm:p-5">
+          <p className="text-2xl font-bold text-amber-600 sm:text-3xl">
             {unbilledHours}h
           </p>
-          <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">
+          <p className="mt-1 text-[11px] uppercase tracking-wide text-slate-400 sm:text-xs">
             Unbilled hours
           </p>
         </div>
-        <div className="card p-5 text-center shadow-sm">
-          <p className="page-title">
+        <div className="card px-2 py-4 text-center shadow-sm sm:p-5">
+          <p className="text-2xl font-bold text-slate-900 sm:text-3xl">
             {(activeCustomers ?? []).length}
           </p>
-          <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">
+          <p className="mt-1 text-[11px] uppercase tracking-wide text-slate-400 sm:text-xs">
             Active customers
           </p>
         </div>

@@ -161,55 +161,67 @@ export function createDemoClient() {
     download: async () => ({ data: null, error: { message: "demo" } }),
   };
 
+  function rpcSync(fn: string, args: Record<string, unknown>): Result {
+    // Booking page (0018): pretend it worked; the demo booking is Olivia's.
+    if (fn === "booking_create" || fn === "booking_reschedule") {
+      const b = (db.bookings ?? [])[0];
+      const start = String(args.p_starts ?? b?.starts_at);
+      const end = new Date(Date.parse(start) + Number(b?.duration_min ?? 30) * 60_000).toISOString();
+      return {
+        data: { booking_id: b?.id, activity_id: b?.activity_id, lead_id: b?.lead_id, customer_id: null, starts_at: start, ends_at: end, old_starts_at: b?.starts_at, contact_saved: true },
+        error: null,
+      };
+    }
+    if (fn === "get_public_business") {
+      const biz = (db.businesses ?? []).find((b) => b.slug === args.page_slug && b.public_page_enabled);
+      return { data: biz ? [{ id: biz.id, name: biz.name, tagline: biz.tagline, services: biz.services, business_type: biz.business_type }] : [], error: null };
+    }
+    if (fn === "booking_cancel") return { data: { booking_id: (db.bookings ?? [])[0]?.id }, error: null };
+    if (fn === "owner_hub_scoreboard") return { data: demoScoreboard(db), error: null };
+    if (fn === "consume_ai_credit") return { data: { allowed: true, used: 8, limit: 100 }, error: null };
+    if (fn === "consume_email_send") return { data: { allowed: true, used: 3, limit: 50 }, error: null };
+    if (fn === "shared_invoice") {
+      const inv = (db.invoices ?? [])[0];
+      if (!inv) return { data: null, error: null };
+      const biz = (db.businesses ?? [])[0] ?? {};
+      const cust = (db.customers ?? []).find((c) => c.id === inv.customer_id);
+      return {
+        data: {
+          number: inv.number, doc_type: inv.doc_type, status: inv.status,
+          issue_date: inv.issue_date, due_date: inv.due_date, notes: inv.notes ?? "Interac e-Transfer: maya@example.com",
+          currency: "CAD", tax_label: "HST", tax_rate: 13,
+          business_name: biz.name, owner_name: "Maya Torres",
+          customer_name: cust?.name ?? null, customer_company: cust?.company ?? null,
+          items: (db.invoice_items ?? []).filter((i) => i.invoice_id === inv.id),
+        },
+        error: null,
+      };
+    }
+    if (fn === "plan_usage") {
+      const count = (t: string) => (db[t] ?? []).length;
+      const openLeads = (db.leads ?? []).filter((l) => l.status !== "converted").length;
+      return {
+        data: {
+          contacts: count("customers") + openLeads,
+          docs_28d: Math.min(count("invoices"), 7),
+          storage_bytes: 31_457_280,
+          email_today: 3,
+          business_lines: 1,
+        },
+        error: null,
+      };
+    }
+    return { data: null, error: { message: `rpc ${fn} not in demo` } };
+  }
+
   const client = {
     from: (table: string) => new Query(db, table),
-    rpc: async (fn: string, args: Record<string, unknown> = {}) => {
-      // Booking page (0018): pretend it worked; the demo booking is Olivia's.
-      if (fn === "booking_create" || fn === "booking_reschedule") {
-        const b = (db.bookings ?? [])[0];
-        const start = String(args.p_starts ?? b?.starts_at);
-        const end = new Date(Date.parse(start) + Number(b?.duration_min ?? 30) * 60_000).toISOString();
-        return {
-          data: { booking_id: b?.id, activity_id: b?.activity_id, lead_id: b?.lead_id, customer_id: null, starts_at: start, ends_at: end, old_starts_at: b?.starts_at, contact_saved: true },
-          error: null,
-        };
-      }
-      if (fn === "booking_cancel") return { data: { booking_id: (db.bookings ?? [])[0]?.id }, error: null };
-      if (fn === "owner_hub_scoreboard") return { data: demoScoreboard(db), error: null };
-      if (fn === "consume_ai_credit") return { data: { allowed: true, used: 8, limit: 100 }, error: null };
-      if (fn === "consume_email_send") return { data: { allowed: true, used: 3, limit: 50 }, error: null };
-      if (fn === "shared_invoice") {
-        const inv = (db.invoices ?? [])[0];
-        if (!inv) return { data: null, error: null };
-        const biz = (db.businesses ?? [])[0] ?? {};
-        const cust = (db.customers ?? []).find((c) => c.id === inv.customer_id);
-        return {
-          data: {
-            number: inv.number, doc_type: inv.doc_type, status: inv.status,
-            issue_date: inv.issue_date, due_date: inv.due_date, notes: inv.notes ?? "Interac e-Transfer: maya@example.com",
-            currency: "CAD", tax_label: "HST", tax_rate: 13,
-            business_name: biz.name, owner_name: "Maya Torres",
-            customer_name: cust?.name ?? null, customer_company: cust?.company ?? null,
-            items: (db.invoice_items ?? []).filter((i) => i.invoice_id === inv.id),
-          },
-          error: null,
-        };
-      }
-      if (fn === "plan_usage") {
-        const count = (t: string) => (db[t] ?? []).length;
-        const openLeads = (db.leads ?? []).filter((l) => l.status !== "converted").length;
-        return {
-          data: {
-            contacts: count("customers") + openLeads,
-            docs_28d: Math.min(count("invoices"), 7),
-            storage_bytes: 31_457_280,
-            email_today: 3,
-            business_lines: 1,
-          },
-          error: null,
-        };
-      }
-      return { data: null, error: { message: `rpc ${fn} not in demo` } };
+    // Real supabase.rpc() returns a builder: awaitable, and also has
+    // .single() / .maybeSingle(). Mirror that so every page works in demo.
+    rpc: (fn: string, args: Record<string, unknown> = {}) => {
+      const p = Promise.resolve(rpcSync(fn, args));
+      const one = () => p.then((r) => ({ ...r, data: Array.isArray(r.data) ? r.data[0] ?? null : r.data }));
+      return Object.assign(p, { single: one, maybeSingle: one });
     },
     auth: {
       getUser: async () => ({ data: { user }, error: null }),

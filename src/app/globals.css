@@ -22,8 +22,15 @@
   --border-soft: rgba(15, 23, 42, 0.06);
   --text: #0f172a;
   --text-2: #334155;
-  --muted: #64748b;
-  --subtle: #94a3b8;
+  /* muted / subtle pass WCAG AA (4.5:1) on white and on --bg; the old
+     #94a3b8 was 2.6:1 and small grey labels were hard to read. */
+  --muted: #5b6678;
+  --subtle: #667286;
+  /* Tailwind's slate-400 (used as caption text in older pages) — same fix. */
+  --color-slate-400: #667286;
+  /* green-600 / amber-600 text was ~3.2:1 on white; use the -700 shades. */
+  --color-green-600: #15803d;
+  --color-amber-600: #b45309;
 
   /* brand: the Jephelen purple (indigo-600) */
   --accent: oklch(51.1% 0.262 276.966);

@@ -45,7 +45,7 @@ function ServiceRow({
             {s.description && <p className="mt-0.5 truncate text-xs text-slate-500">{s.description}</p>}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           <span className="mr-2 text-sm font-semibold text-indigo-600">
             {formatMoney(Number(s.rate), currency)}
             {UNIT_SUFFIX[s.unit] ?? ""}

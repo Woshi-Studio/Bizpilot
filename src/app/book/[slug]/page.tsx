@@ -23,11 +23,13 @@ export default async function BookingHome({ params }: { params: Promise<{ slug: 
   return (
     <BookingShell theme={pb.theme} accent={pb.settings.accent} logo={pb.logo} businessName={pb.business.name} lang={lang}>
       <div className="mx-auto max-w-2xl">
-        <h1 className="page-title">{bt(lang, "pick_type")}</h1>
-        {pb.settings.intro && <p className="page-sub whitespace-pre-line">{pb.settings.intro}</p>}
         {pb.types.length === 0 ? (
+          // No live meeting types: don't ask the visitor to "pick" from nothing.
           <p className="card mt-6 p-6 text-sm text-muted">{bt(lang, "err_unavailable")}</p>
         ) : (
+          <>
+          <h1 className="page-title">{bt(lang, "pick_type")}</h1>
+          {pb.settings.intro && <p className="page-sub whitespace-pre-line">{pb.settings.intro}</p>}
           <ul className="mt-6 space-y-3">
             {pb.types.map((t) => (
               <li key={t.id}>
@@ -46,6 +48,7 @@ export default async function BookingHome({ params }: { params: Promise<{ slug: 
               </li>
             ))}
           </ul>
+          </>
         )}
       </div>
     </BookingShell>

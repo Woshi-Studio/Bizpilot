@@ -7,7 +7,7 @@ import {
   aiConfigured,
   aiNotConfiguredMessage,
   aiFailure,
-  createAiClient,
+  aiFor,
   AI_CONFIG,
   AI_BREAK_MESSAGE,
   MESSAGE_TYPES,
@@ -87,11 +87,11 @@ ${
     }
   }
 
-  const client = createAiClient();
+  const ai = aiFor(business);
 
   try {
-    const response = await client.messages.create({
-      model: AI_CONFIG.models.small,
+    const response = await ai.client.messages.create({
+      model: ai.models.small,
       max_tokens: AI_CONFIG.MAX_OUTPUT_TOKENS,
       system: `You are the AI communication assistant inside Jephelen, writing on behalf of ${
         profile?.full_name ?? "the owner"

@@ -7,7 +7,7 @@ import {
   aiConfigured,
   aiNotConfiguredMessage,
   aiFailure,
-  createAiClient,
+  aiFor,
   AI_CONFIG,
   AI_BREAK_MESSAGE,
 } from "@/lib/ai";
@@ -58,11 +58,11 @@ export async function generateDailyPlan(
         .limit(20),
     ]);
 
-  const client = createAiClient();
+  const ai = aiFor(business);
 
   try {
-    const response = await client.messages.create({
-      model: AI_CONFIG.models.small,
+    const response = await ai.client.messages.create({
+      model: ai.models.small,
       max_tokens: AI_CONFIG.MAX_OUTPUT_TOKENS,
       system: `You are Jephelen, the AI copilot for "${business.name}", a freelance ${business.business_type} business. You give short, practical daily plans.
 

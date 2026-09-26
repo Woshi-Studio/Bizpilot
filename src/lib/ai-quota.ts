@@ -3,11 +3,20 @@ import type { Business } from "@/lib/types";
 
 // DAILY AI credits per business, reset at midnight UTC.
 // The real cap is enforced in the database by consume_ai_credit()
-// (supabase/migrations/0012_daily_ai_credits.sql) — keep these numbers
+// (supabase/migrations/0013_pro_tier.sql) — keep these numbers
 // in sync with that file. These are only used for display and fallbacks.
 export const AI_DAILY_CREDITS: Record<string, number> = {
   free: 10,
   premium: 100,
+  pro: 500,
+};
+
+export type Plan = "free" | "premium" | "pro";
+
+export const PLAN_NAMES: Record<Plan, string> = {
+  free: "Free",
+  premium: "Premium",
+  pro: "Pro",
 };
 
 // Kept for anything that still imports the old name.
@@ -15,8 +24,18 @@ export const AI_LIMITS = AI_DAILY_CREDITS;
 
 export const AI_RESET_TEXT = "resets at midnight UTC";
 
-export function planOf(business: Business & { plan?: string }) {
-  return business.plan === "premium" ? "premium" : "free";
+// Any unknown value counts as free.
+export function normalizePlan(plan: string | null | undefined): Plan {
+  return plan === "premium" || plan === "pro" ? plan : "free";
+}
+
+export function planOf(business: Business & { plan?: string }): Plan {
+  return normalizePlan(business.plan);
+}
+
+// Premium and Pro both unlock the paid features.
+export function isPaidPlan(plan: string | null | undefined) {
+  return normalizePlan(plan) !== "free";
 }
 
 // The owner's own businesses (OWNER_BUSINESS_IDS, comma-separated
@@ -40,6 +59,7 @@ export type AiCredit = {
   used: number;
   limit: number;
   unlimited?: boolean;
+  plan?: Plan;
 };
 
 // Uses one AI credit for this business today, atomically, in the
@@ -50,10 +70,11 @@ export async function consumeAiCredit(
   supabase: SupabaseClient,
   business: Business & { plan?: string }
 ): Promise<AiCredit> {
-  const fallbackLimit = AI_DAILY_CREDITS[planOf(business)];
+  const plan = planOf(business);
+  const fallbackLimit = AI_DAILY_CREDITS[plan];
 
   if (isOwnerBusiness(business.id)) {
-    return { ok: true, used: 0, limit: fallbackLimit, unlimited: true };
+    return { ok: true, used: 0, limit: fallbackLimit, unlimited: true, plan };
   }
 
   const { data, error } = await supabase.rpc("consume_ai_credit", {
@@ -62,10 +83,10 @@ export async function consumeAiCredit(
 
   if (error || !data || typeof data !== "object") {
     console.error(
-      "consume_ai_credit failed (is migration 0012 applied?):",
+      "consume_ai_credit failed (is migration 0013 applied?):",
       error?.message ?? "no data"
     );
-    return { ok: false, used: 0, limit: fallbackLimit };
+    return { ok: false, used: 0, limit: fallbackLimit, plan };
   }
 
   const result = data as { allowed?: unknown; used?: unknown; limit?: unknown };
@@ -73,6 +94,7 @@ export async function consumeAiCredit(
     ok: result.allowed === true,
     used: Number(result.used ?? 0),
     limit: Number(result.limit ?? fallbackLimit),
+    plan,
   };
 }
 
@@ -82,10 +104,11 @@ export async function getAiCredits(
   supabase: SupabaseClient,
   business: Business & { plan?: string }
 ): Promise<AiCredit | null> {
-  const limit = AI_DAILY_CREDITS[planOf(business)];
+  const plan = planOf(business);
+  const limit = AI_DAILY_CREDITS[plan];
 
   if (isOwnerBusiness(business.id)) {
-    return { ok: true, used: 0, limit, unlimited: true };
+    return { ok: true, used: 0, limit, unlimited: true, plan };
   }
 
   const { data, error } = await supabase
@@ -101,13 +124,14 @@ export async function getAiCredits(
   }
 
   const used = Math.min(Number(data?.count ?? 0), limit);
-  return { ok: used < limit, used, limit };
+  return { ok: used < limit, used, limit, plan };
 }
 
-// "AI credits today: 7 of 25 · resets at midnight UTC"
+// "Pro plan · AI credits today: 7 of 500 · resets at midnight UTC"
 export function creditMeterText(credit: AiCredit) {
   if (credit.unlimited) return "AI credits today: unlimited (owner)";
-  return `AI credits today: ${credit.used} of ${credit.limit} · ${AI_RESET_TEXT}`;
+  const planName = credit.plan ? `${PLAN_NAMES[credit.plan]} plan · ` : "";
+  return `${planName}AI credits today: ${credit.used} of ${credit.limit} · ${AI_RESET_TEXT}`;
 }
 
 // The message to show when consumeAiCredit() says no.

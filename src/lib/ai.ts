@@ -11,6 +11,13 @@
 // much bigger free quota), again rotating keys. Key VALUES are never
 // logged — only their position in the list ("key #2").
 //
+// Pro plan: AI_PROVIDER_PRO (e.g. "anthropic") picks the provider for
+// businesses on the Pro plan. Unset (the default) = same as everyone else.
+// If it says "anthropic" but ANTHROPIC_API_KEY is missing, Pro quietly
+// uses the normal provider. Anthropic models can be set with
+// ANTHROPIC_MODEL (main) and ANTHROPIC_MODEL_SMALL. Use aiFor(business)
+// to get the right client and model ids for a business.
+//
 // Users never see a raw provider error: use aiFailure() in a catch block.
 
 export { MESSAGE_TYPES, TONES } from "@/lib/ai-options";
@@ -29,8 +36,8 @@ const MODELS = {
     small: "gemini-flash-lite-latest",
   },
   anthropic: {
-    main: "claude-sonnet-5",
-    small: "claude-haiku-4-5-20251001",
+    main: process.env.ANTHROPIC_MODEL?.trim() || "claude-sonnet-5",
+    small: process.env.ANTHROPIC_MODEL_SMALL?.trim() || "claude-haiku-4-5",
   },
 } as const;
 
@@ -137,11 +144,77 @@ export type AiClient = {
   messages: { create(req: AiRequest): Promise<AiResponse> };
 };
 
-export function createAiClient(): AiClient {
+export function createAiClient(
+  provider: AiProvider = AI_PROVIDER
+): AiClient {
   return {
     messages: {
       create: (req) =>
-        AI_PROVIDER === "anthropic" ? anthropicCreate(req) : geminiCreate(req),
+        provider === "anthropic" ? anthropicCreate(req) : geminiCreate(req),
+    },
+  };
+}
+
+// ------------------------------------------------------------------
+// Per-plan provider (Pro can use a stronger model)
+// ------------------------------------------------------------------
+
+function parseProvider(value: string | undefined): AiProvider | null {
+  const v = (value ?? "").trim().toLowerCase();
+  if (v === "anthropic" || v === "gemini") return v;
+  return null;
+}
+
+// Which provider a business on this plan uses.
+export function providerForPlan(plan: string | null | undefined): AiProvider {
+  if (plan === "pro") {
+    const pro = parseProvider(process.env.AI_PROVIDER_PRO);
+    if (pro === "anthropic" && process.env.ANTHROPIC_API_KEY) return "anthropic";
+    if (pro === "gemini" && geminiKeys().length > 0) return "gemini";
+  }
+  return AI_PROVIDER;
+}
+
+export type AiForBusiness = {
+  provider: AiProvider;
+  client: AiClient;
+  models: { main: string; small: string };
+};
+
+// The client and model ids to use for this business.
+//   const ai = aiFor(business);
+//   ai.client.messages.create({ model: ai.models.main, ... })
+// When Pro runs on Anthropic and that call fails, the request is retried
+// once on the normal provider, so a Pro user still gets an answer.
+export function aiFor(business: { plan?: string | null }): AiForBusiness {
+  const provider = providerForPlan(business.plan);
+  const models = MODELS[provider];
+
+  if (provider === AI_PROVIDER) {
+    return { provider, client: createAiClient(provider), models };
+  }
+
+  const primary = createAiClient(provider);
+  const fallback = createAiClient(AI_PROVIDER);
+  const fallbackModels = MODELS[AI_PROVIDER];
+  return {
+    provider,
+    models,
+    client: {
+      messages: {
+        async create(req) {
+          try {
+            return await primary.messages.create(req);
+          } catch (err) {
+            if (!aiConfigured()) throw err;
+            const detail = err instanceof Error ? err.message : String(err);
+            console.warn(`[ai] pro ${provider} failed, using ${AI_PROVIDER}: ${detail}`);
+            const model =
+              req.model === models.small ? fallbackModels.small : fallbackModels.main;
+            return fallback.messages.create({ ...req, model });
+          }
+        },
+      },
     },
   };
 }

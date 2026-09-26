@@ -1,6 +1,7 @@
 import AiCreditMeter from "@/components/ai-credit-meter";
 import { requireUserAndBusiness } from "@/lib/data";
 import { formatMoney } from "@/lib/types";
+import { isPaidPlan } from "@/lib/ai-quota";
 import {
   DECISION_TYPES,
   RISK_META,
@@ -33,7 +34,7 @@ const OUTCOME_META: Record<
 
 export default async function DecisionsPage() {
   const { supabase, business } = await requireUserAndBusiness();
-  const isPremium = (business as { plan?: string }).plan === "premium";
+  const isPremium = isPaidPlan((business as { plan?: string }).plan);
 
   const { data } = await supabase
     .from("decisions")

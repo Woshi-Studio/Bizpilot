@@ -22,7 +22,7 @@ const adviceInitial: AdviceState = {};
 const inputClass =
   "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
 
-// Pro-only panel: personalized AI advice grounded in real numbers + history.
+// Paid-plan panel (Premium or Pro): personalized AI advice grounded in real numbers + history.
 function AiAdvicePanel({
   type,
   title,
@@ -48,7 +48,7 @@ function AiAdvicePanel({
           <h3 className="text-sm font-semibold text-slate-800">
             🧠 Personalized AI advice{" "}
             <span className="ml-1 rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-              Pro
+              Premium
             </span>
           </h3>
           <p className="mt-0.5 text-xs text-slate-500">
@@ -86,7 +86,7 @@ function AiAdvicePanel({
       {state.locked && (
         <div className="mt-3 rounded-md bg-white px-3 py-3 text-sm">
           <p className="font-medium text-slate-700">
-            Personalized AI advice is a Pro feature.
+            Personalized AI advice comes with Premium and Pro.
           </p>
           <p className="mt-1 text-xs text-slate-500">
             Upgrade to get advice built around your real numbers and your
@@ -96,7 +96,7 @@ function AiAdvicePanel({
             href="/settings"
             className="mt-2 inline-block rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500"
           >
-            Upgrade to Pro
+            See plans
           </Link>
         </div>
       )}

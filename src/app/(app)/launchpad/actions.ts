@@ -7,7 +7,7 @@ import {
   aiConfigured,
   aiNotConfiguredMessage,
   aiFailure,
-  createAiClient,
+  aiFor,
   AI_CONFIG,
   AI_BREAK_MESSAGE,
 } from "@/lib/ai";
@@ -122,11 +122,11 @@ export async function upgradePlanWithAi(
     BUSINESS_TYPES.find((t) => t.value === business.business_type)?.label ??
     business.business_type;
 
-  const client = createAiClient();
+  const ai = aiFor(business);
 
   try {
-    const response = await client.messages.create({
-      model: AI_CONFIG.models.main,
+    const response = await ai.client.messages.create({
+      model: ai.models.main,
       max_tokens: AI_CONFIG.LONG_OUTPUT_TOKENS,
       system: `You are Jephelen's business planning coach. You write practical, encouraging, concrete business plans for first-time entrepreneurs. Plain language, no jargon, no fluff. Use markdown headings (#, ##). Include a short "Legal & money checklist" section that is explicitly educational, not legal advice, and tells them to check local requirements. Keep the whole plan under 700 words.`,
       messages: [

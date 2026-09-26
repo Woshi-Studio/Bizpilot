@@ -2,12 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness } from "@/lib/data";
-import { consumeAiCredit, aiCreditError } from "@/lib/ai-quota";
+import { consumeAiCredit, aiCreditError, isPaidPlan } from "@/lib/ai-quota";
 import {
   aiConfigured,
   aiNotConfiguredMessage,
   aiFailure,
-  createAiClient,
+  aiFor,
   AI_CONFIG,
   AI_BREAK_MESSAGE,
 } from "@/lib/ai";
@@ -27,7 +27,7 @@ export type SaveDecisionState = {
 export type AdviceState = {
   error?: string;
   advice?: string;
-  locked?: boolean; // free user hit the Pro wall
+  locked?: boolean; // free user hit the paid-plan wall
 };
 
 export async function saveDecision(
@@ -116,7 +116,7 @@ const OUTCOME_LABEL: Record<string, string> = {
   mixed: "was mixed",
 };
 
-// Pro-only: personalized AI advice grounded in the owner's real numbers
+// Paid plans only: personalized AI advice grounded in the owner's real numbers
 // and the outcomes of their past decisions of the same kind.
 export async function getDecisionAdvice(
   _prevState: AdviceState,
@@ -140,8 +140,8 @@ export async function getDecisionAdvice(
 
   const { supabase, business } = await requireUserAndBusiness();
 
-  // Pro gate — the AI advisor is a premium feature
-  if ((business as { plan?: string }).plan !== "premium") {
+  // Paid gate — the AI advisor needs Premium or Pro
+  if (!isPaidPlan((business as { plan?: string }).plan)) {
     return { locked: true };
   }
 
@@ -206,10 +206,10 @@ export async function getDecisionAdvice(
 
   const amount = amountRaw ? Number(amountRaw) : null;
 
-  const client = createAiClient();
+  const ai = aiFor(business);
   try {
-    const response = await client.messages.create({
-      model: AI_CONFIG.models.main,
+    const response = await ai.client.messages.create({
+      model: ai.models.main,
       max_tokens: AI_CONFIG.MAX_OUTPUT_TOKENS,
       system: `You are Jephelen's Decision Advisor — a sharp, honest business partner for "${business.name}", a freelance ${business.business_type} business. You advise on ONE specific decision, grounded in this owner's REAL numbers and the outcomes of their PAST decisions of the same kind.
 

@@ -7,7 +7,7 @@ import {
   aiConfigured,
   aiNotConfiguredMessage,
   aiFailure,
-  createAiClient,
+  aiFor,
   AI_CONFIG,
   AI_BREAK_MESSAGE,
 } from "@/lib/ai";
@@ -71,11 +71,11 @@ export async function askCoach(
     .filter((t) => t.type === "expense")
     .reduce((s, t) => s + Number(t.amount), 0);
 
-  const client = createAiClient();
+  const ai = aiFor(business);
 
   try {
-    const response = await client.messages.create({
-      model: AI_CONFIG.models.main,
+    const response = await ai.client.messages.create({
+      model: ai.models.main,
       max_tokens: AI_CONFIG.MAX_OUTPUT_TOKENS,
       system: `You are the Jephelen Coach — a practical small-business mentor inside the Jephelen app, advising the owner of "${business.name}", a freelance ${business.business_type} business.
 

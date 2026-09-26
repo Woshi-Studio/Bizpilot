@@ -46,6 +46,12 @@ export async function submitLead(
   });
 
   if (error) {
+    // The business is at its plan's contact limit (0017).
+    if (/plan_limit:/.test(error.message)) {
+      return {
+        error: "This business can't take new requests online right now. Please contact them directly.",
+      };
+    }
     if (/too many/i.test(error.message)) {
       return {
         error: "You've sent a few messages already — please try again in an hour.",

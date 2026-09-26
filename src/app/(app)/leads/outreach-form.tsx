@@ -4,6 +4,7 @@ import { useActionState, useRef, useEffect } from "react";
 import { LEAD_CHANNELS } from "@/lib/types";
 import { logOutreach, type OutreachFormState } from "./actions";
 import BusinessLineInput from "@/components/business-line-input";
+import FormError from "@/components/form-error";
 
 const initialState: OutreachFormState = {};
 
@@ -41,11 +42,7 @@ export default function OutreachForm({
         initiated. The public page already logs inbound leads for you.
       </p>
 
-      {state.error && (
-        <p className="mt-3 alert-error">
-          {state.error}
-        </p>
-      )}
+      <FormError error={state.error} upgrade={state.upgrade} className="mt-3" />
       {state.success && (
         <p className="mt-3 alert-success">
           {state.success}

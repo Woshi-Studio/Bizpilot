@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { formatMoney, type PaymentMethod } from "@/lib/types";
 import { createInvoice, type InvoiceFormState } from "./actions";
 import BusinessLineInput from "@/components/business-line-input";
+import FormError from "@/components/form-error";
 
 const initialState: InvoiceFormState = {};
 
@@ -256,11 +257,7 @@ export default function InvoiceForm({
         </button>
       </div>
 
-      {state.error && (
-        <p className="mt-3 alert-error">
-          {state.error}
-        </p>
-      )}
+      <FormError error={state.error} upgrade={state.upgrade} className="mt-3" />
     </form>
   );
 }

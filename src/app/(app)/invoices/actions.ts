@@ -5,9 +5,11 @@ import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness } from "@/lib/data";
 import { normalizeLine } from "@/lib/business-lines";
 import { logActivity } from "@/lib/activities";
+import { checkLineLimit, checkPlanLimit, planLimitFromError } from "@/lib/plan-limits";
 
 export type InvoiceFormState = {
   error?: string;
+  upgrade?: boolean;
 };
 
 type ItemInput = {
@@ -77,6 +79,11 @@ export async function createInvoice(
       (customer as { business_line?: string | null }).business_line ?? null;
   }
 
+  const limited =
+    (await checkPlanLimit(supabase, business, "docs")) ??
+    (await checkLineLimit(supabase, business, businessLine));
+  if (limited) return limited;
+
   // Sequential number per document type: INV-0001 / QUO-0001
   const { count } = await supabase
     .from("invoices")
@@ -103,7 +110,7 @@ export async function createInvoice(
     .single();
 
   if (error) {
-    return { error: error.message };
+    return planLimitFromError(error, business) ?? { error: error.message };
   }
 
   const { error: itemsError } = await supabase.from("invoice_items").insert(

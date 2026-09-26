@@ -5,10 +5,12 @@ import { requireUserAndBusiness, belongsToBusiness } from "@/lib/data";
 import { TASK_STATUSES } from "@/lib/types";
 import { normalizeLine } from "@/lib/business-lines";
 import { logActivity } from "@/lib/activities";
+import { checkLineLimit, planLimitFromError } from "@/lib/plan-limits";
 
 export type TaskFormState = {
   error?: string;
   success?: string;
+  upgrade?: boolean;
 };
 
 export async function createTask(
@@ -53,6 +55,9 @@ export async function createTask(
     return { error: "That service wasn't found." };
   }
 
+  const limited = await checkLineLimit(supabase, business, businessLine);
+  if (limited) return limited;
+
   const { error } = await supabase.from("tasks").insert({
     business_id: business.id,
     title,
@@ -65,7 +70,7 @@ export async function createTask(
   });
 
   if (error) {
-    return { error: error.message };
+    return planLimitFromError(error, business) ?? { error: error.message };
   }
 
   await logActivity(supabase, {

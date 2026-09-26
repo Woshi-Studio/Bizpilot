@@ -6,6 +6,7 @@ import { useState } from "react";
 import FeedbackWidget from "./feedback-widget";
 import Icon from "./icons";
 import { ThemeToggleButton } from "./theme";
+import { TOUR_EVENT } from "./tour";
 import { NAV_GROUPS, groupFor, pageFor } from "@/lib/nav";
 
 function initials(name: string) {
@@ -16,10 +17,10 @@ function initials(name: string) {
 function Logo() {
   return (
     <Link href="/dashboard" className="flex items-center gap-2.5">
-      <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-bold text-white shadow-sm">
+      <span className="brand-mark flex h-8 w-8 items-center justify-center rounded-[10px] bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-bold text-white shadow-sm">
         J
       </span>
-      <span className="text-[17px] font-semibold tracking-tight text-ink">
+      <span className="brand-name text-[17px] font-semibold tracking-tight text-ink">
         Jephelen
       </span>
     </Link>
@@ -31,12 +32,15 @@ export default function AppShell({
   userName,
   signOutAction,
   athena,
+  extras,
   children,
 }: {
   businessName: string;
   userName: string;
   signOutAction: () => Promise<void>;
   athena?: React.ReactNode;
+  // theme sync + welcome tour
+  extras?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -45,9 +49,9 @@ export default function AppShell({
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen w-full bg-canvas">
+    <div className="app-root flex min-h-screen w-full bg-canvas">
       {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line/70 bg-surface px-4 py-6 print:hidden lg:flex">
+      <aside className="app-sidebar sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line/70 bg-surface px-4 py-6 print:hidden lg:flex">
         <div className="px-2">
           <Logo />
         </div>
@@ -59,6 +63,7 @@ export default function AppShell({
               <Link
                 key={g.key}
                 href={g.href}
+                data-tour={`nav-${g.key}`}
                 aria-current={active ? "page" : undefined}
                 className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-colors ${
                   active
@@ -114,6 +119,15 @@ export default function AppShell({
               </div>
             </div>
             <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => window.dispatchEvent(new Event(TOUR_EVENT))}
+                aria-label="Show the welcome tour"
+                title="Show me around"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-[15px] font-bold text-muted transition-colors hover:bg-surface-3 hover:text-ink"
+              >
+                ?
+              </button>
               <FeedbackWidget />
               <ThemeToggleButton />
               <div className="relative lg:hidden">
@@ -198,6 +212,7 @@ export default function AppShell({
               <Link
                 key={g.key}
                 href={g.href}
+                data-tour={`nav-${g.key}`}
                 aria-current={active ? "page" : undefined}
                 className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
                   active ? "text-accent" : "text-muted"
@@ -218,6 +233,7 @@ export default function AppShell({
       </nav>
 
       {athena}
+      {extras}
     </div>
   );
 }

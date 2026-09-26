@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness, belongsToBusiness } from "@/lib/data";
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from "@/lib/types";
 import { addMonths } from "@/lib/recurring";
+import { checkPlanLimit } from "@/lib/plan-limits";
 
 const MAX_RECEIPT_BYTES = 10 * 1024 * 1024;
 
@@ -19,6 +20,7 @@ const RECEIPT_TYPES: Record<string, string[]> = {
 export type TransactionFormState = {
   error?: string;
   success?: string;
+  upgrade?: boolean;
 };
 
 export async function createTransaction(
@@ -70,6 +72,8 @@ export async function createTransaction(
     if (!allowedMimes || !allowedMimes.includes(receipt.type)) {
       return { error: "Receipts must be a JPG, PNG, WEBP or PDF file." };
     }
+    const limited = await checkPlanLimit(supabase, business, "storage", { bytes: receipt.size });
+    if (limited) return limited;
     const path = `${user.id}/${crypto.randomUUID()}.${ext}`;
     const { error: uploadError } = await supabase.storage
       .from("receipts")

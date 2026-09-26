@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness } from "@/lib/data";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isOwnerBusiness } from "@/lib/ai-quota";
+import { canUseAssistant } from "@/lib/plan-limits";
 import {
   generateKey,
   getPepper,
@@ -35,16 +37,21 @@ export async function createApiKey(
     return { error: "Tick at least one thing this key may do." };
   }
 
+  const { supabase, business } = await requireUserAndBusiness();
+
+  if (!canUseAssistant(business)) {
+    return { error: "Assistant access comes with Hustle and Boss. Upgrade in Settings → Plan." };
+  }
+
   const pepper = getPepper();
   const admin = createAdminClient();
   if (!pepper || !admin) {
     return {
-      error:
-        "Assistant access isn't switched on yet (AGENT_KEY_PEPPER or the service key is missing).",
+      error: isOwnerBusiness(business.id)
+        ? "Assistant access isn't switched on yet (AGENT_KEY_PEPPER or the service key is missing)."
+        : "Assistant access isn't ready yet. Please try again later.",
     };
   }
-
-  const { supabase, business } = await requireUserAndBusiness();
 
   const { count, error: countError } = await supabase
     .from("api_keys")
@@ -52,7 +59,11 @@ export async function createApiKey(
     .eq("business_id", business.id)
     .is("revoked_at", null);
   if (countError) {
-    return { error: "Run migration 0016 first." };
+    return {
+      error: isOwnerBusiness(business.id)
+        ? "Run migration 0016 first."
+        : "Assistant access isn't ready yet. Please try again later.",
+    };
   }
   if ((count ?? 0) >= MAX_ACTIVE_KEYS) {
     return { error: `You can have ${MAX_ACTIVE_KEYS} active keys. Revoke one first.` };

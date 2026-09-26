@@ -17,7 +17,7 @@ import LocalTime from "@/components/local-time";
 import Icon from "@/components/icons";
 import type { Activity } from "@/lib/activities";
 import { loadBusinessLines } from "@/lib/activities";
-import { emailStatus } from "@/lib/email";
+import { emailNote, emailStatus } from "@/lib/email";
 import ContactHeader, { FactCard, Section } from "@/components/contact/contact-header";
 import ContactActions, { type OpenInvoice } from "@/components/contact/contact-actions";
 
@@ -192,13 +192,7 @@ export default async function CustomerDetailPage({
         name={customer.name}
         email={customer.email}
         canSend={send.canSend}
-        sendNote={
-          send.canSend
-            ? undefined
-            : send.reason === "coming_soon"
-              ? "Sending from Jephelen is coming soon — “Send email” opens your own mail app for now."
-              : "Email sending isn't set up yet — “Send email” opens your mail app."
-        }
+        sendNote={send.canSend ? undefined : emailNote(send)}
         openInvoice={openInvoice}
         businessName={business.name}
       />

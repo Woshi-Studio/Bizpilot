@@ -3,6 +3,7 @@
 import { useActionState, useRef, useEffect } from "react";
 import { WIN_CATEGORIES, type Win } from "@/lib/types";
 import { addWin, deleteWin, type GoalsFormState } from "./actions";
+import LocalTime from "@/components/local-time";
 
 const initialState: GoalsFormState = {};
 
@@ -91,7 +92,7 @@ export default function WinsPanel({ wins }: { wins: Win[] }) {
               </form>
             </div>
             <p className="mt-1 text-[10px] uppercase tracking-wide text-slate-400">
-              {new Date(w.created_at).toLocaleDateString()}
+              <LocalTime iso={w.created_at} mode="date" />
             </p>
           </div>
         ))}

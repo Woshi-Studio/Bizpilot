@@ -2,6 +2,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { logActivity } from "@/lib/activities";
 import { normalizeLine } from "@/lib/business-lines";
 import type { AgentScope } from "@/lib/agent/keys";
+import { checkLineLimit, checkPlanLimit } from "@/lib/plan-limits";
+import { isOwnerBusiness } from "@/lib/ai-quota";
+import { PLAN_LIMITS, normalizePlanValue, type LimitKind } from "@/lib/plans";
 import {
   InputError,
   onlyFields,
@@ -20,7 +23,21 @@ import {
 // answers 404 either way, so the caller can't tell which.
 export class NotFoundError extends Error {}
 
-type Ctx = { db: SupabaseClient; businessId: string };
+// Thrown when the business's plan limit stops a create. The route answers
+// 402 with the friendly message.
+export class PlanLimitError extends Error {}
+
+type Ctx = { db: SupabaseClient; businessId: string; plan: string | null };
+
+// The agent API uses the service role, which the database plan triggers
+// let through, so the same limits are checked here.
+async function planCheck(ctx: Ctx, kind: LimitKind, line?: string | null) {
+  const biz = { id: ctx.businessId, plan: ctx.plan };
+  const block =
+    (kind === "lines" ? null : await checkPlanLimit(ctx.db, biz, kind)) ??
+    (await checkLineLimit(ctx.db, biz, line ?? null));
+  if (block) throw new PlanLimitError(block.error);
+}
 type Handler = (ctx: Ctx, input: Input) => Promise<unknown>;
 
 const LEAD_STATUSES = ["new", "contacted", "meeting", "converted", "declined"] as const;
@@ -78,6 +95,7 @@ const addCustomer: Handler = async (ctx, input) => {
     business_line: normalizeLine(str(input, "business_line", { max: 60 })),
   };
   const note = str(input, "note", { max: 5000 });
+  await planCheck(ctx, "contacts", row.business_line);
 
   const { data, error } = await ctx.db
     .from("customers")
@@ -112,6 +130,7 @@ const addLead: Handler = async (ctx, input) => {
     follow_up_date: date(input, "follow_up_date"),
     status: "new",
   };
+  await planCheck(ctx, "contacts", row.business_line);
   const { data, error } = await ctx.db
     .from("leads")
     .insert(row)
@@ -192,6 +211,7 @@ const addTask: Handler = async (ctx, input) => {
   const value = money(input, "value");
   let line = normalizeLine(str(input, "business_line", { max: 60 }));
   if (customerId) line = line ?? (await customerLine(ctx, customerId));
+  await planCheck(ctx, "lines", line);
 
   const { data, error } = await ctx.db
     .from("tasks")
@@ -385,6 +405,31 @@ const setLeadStatus: Handler = async (ctx, input) => {
   onlyFields(input, ["lead_id", "status"]);
   const leadId = uuid(input, "lead_id", true)!;
   const status = oneOf(input, "status", LEAD_STATUSES, true)!;
+
+  // With a contact limit, a converted lead stops counting, so it must
+  // really be a customer first (same rule as the database, 0017).
+  if (
+    status === "converted" &&
+    !isOwnerBusiness(ctx.businessId) &&
+    PLAN_LIMITS[normalizePlanValue(ctx.plan)].contacts !== null
+  ) {
+    const { data: lead } = await ctx.db
+      .from("leads")
+      .select("name")
+      .eq("id", leadId)
+      .eq("business_id", ctx.businessId)
+      .maybeSingle();
+    if (!lead) throw new NotFoundError("lead not found");
+    const { count } = await ctx.db
+      .from("customers")
+      .select("id", { count: "exact", head: true })
+      .eq("business_id", ctx.businessId)
+      .ilike("name", String(lead.name).replace(/[\\%_]/g, "\\$&"));
+    if (!count) {
+      throw new InputError("add this person with add_customer first, then mark the lead converted");
+    }
+  }
+
   const { data, error } = await ctx.db
     .from("leads")
     .update({ status })

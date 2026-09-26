@@ -10,10 +10,12 @@ import {
 import { CUSTOMER_STATUSES } from "@/lib/types";
 import { normalizeLine } from "@/lib/business-lines";
 import { logActivity } from "@/lib/activities";
+import { checkLineLimit, checkPlanLimit, planLimitFromError } from "@/lib/plan-limits";
 
 export type CustomerFormState = {
   error?: string;
   success?: string;
+  upgrade?: boolean;
 };
 
 function readCustomerForm(formData: FormData) {
@@ -56,6 +58,11 @@ export async function createCustomer(
 
   const { supabase, business } = await requireUserAndBusiness();
 
+  const limited =
+    (await checkPlanLimit(supabase, business, "contacts")) ??
+    (await checkLineLimit(supabase, business, values.business_line));
+  if (limited) return limited;
+
   const insert = (v: typeof values | ReturnType<typeof withoutExtras<typeof values>>) =>
     supabase
       .from("customers")
@@ -66,7 +73,7 @@ export async function createCustomer(
   if (isMissingColumnError(error)) ({ data, error } = await insert(withoutExtras(values)));
 
   if (error || !data) {
-    return { error: error?.message ?? "Couldn't save the customer." };
+    return planLimitFromError(error, business) ?? { error: error?.message ?? "Couldn't save the customer." };
   }
 
   revalidatePath("/customers");
@@ -89,13 +96,24 @@ export async function updateCustomer(
 
   const { supabase, business } = await requireUserAndBusiness();
 
+  const { data: before } = await supabase
+    .from("customers")
+    .select("business_line")
+    .eq("id", id)
+    .eq("business_id", business.id)
+    .maybeSingle();
+  if (values.business_line && values.business_line !== before?.business_line) {
+    const limited = await checkLineLimit(supabase, business, values.business_line);
+    if (limited) return limited;
+  }
+
   const update = (v: object) =>
     supabase.from("customers").update(v).eq("id", id).eq("business_id", business.id);
   let { error } = await update(values);
   if (isMissingColumnError(error)) ({ error } = await update(withoutExtras(values)));
 
   if (error) {
-    return { error: error.message };
+    return planLimitFromError(error, business) ?? { error: error.message };
   }
 
   revalidatePath("/customers");

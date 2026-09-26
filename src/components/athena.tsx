@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { askAthena, type AthenaTurn } from "@/app/(app)/athena/actions";
 import Icon from "./icons";
+import { FAQ_BADGE } from "@/lib/help-faq";
 
 const SUGGESTIONS = [
   "How do I send an invoice?",
@@ -83,7 +84,10 @@ export default function Athena({ firstName }: { firstName: string }) {
       try {
         const res = await askAthena(next.slice(-12), pathname);
         if (res.answer) {
-          setTurns((t) => [...t, { role: "assistant", content: res.answer! }]);
+          setTurns((t) => [
+            ...t,
+            { role: "assistant", content: res.answer!, faq: res.source === "faq" },
+          ]);
         } else {
           setError(res.error ?? "Hmm, that didn't work. Try again?");
         }
@@ -159,6 +163,11 @@ export default function Athena({ firstName }: { firstName: string }) {
                     <div className="whitespace-pre-wrap rounded-2xl rounded-tl-md bg-surface-2 px-3.5 py-2.5 text-sm leading-6 text-ink-2">
                       <Rich text={t.content} />
                     </div>
+                    {t.faq && (
+                      <p className="mt-1 px-1 text-[11px] font-medium text-muted">
+                        {FAQ_BADGE} · free, no credit used
+                      </p>
+                    )}
                     <button
                       type="button"
                       onClick={() => copy(i, t.content)}
@@ -224,6 +233,7 @@ export default function Athena({ firstName }: { firstName: string }) {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
+        data-tour="athena"
         aria-expanded={open}
         aria-label={open ? "Close Athena" : "Open Athena, your assistant"}
         className="fixed bottom-[5.5rem] right-4 z-50 flex items-center gap-2 rounded-full bg-surface py-1.5 pl-1.5 pr-4 text-sm font-semibold text-ink shadow-pop ring-1 ring-line/70 transition-transform hover:-translate-y-0.5 sm:right-6 lg:bottom-6"

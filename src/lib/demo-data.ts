@@ -321,7 +321,10 @@ export function buildDemoData(): Record<string, Row[]> {
       primary_goal: "all",
       currency: "USD",
       onboarding_completed: true,
-      plan: "premium",
+      // DEMO_PLAN=free|premium|pro to preview another plan (dev only)
+      plan: ["free", "premium", "pro"].includes(process.env.DEMO_PLAN ?? "")
+        ? process.env.DEMO_PLAN
+        : "premium",
       goal_customers: 12,
       goal_monthly_revenue: 5000,
       savings_goal_label: "New laptop",
@@ -342,6 +345,9 @@ export function buildDemoData(): Record<string, Row[]> {
       id: DEMO_USER_ID,
       full_name: "Maya Torres",
       avatar_url: null,
+      theme: null,
+      // DEMO_TOUR=1 shows the welcome tour on load
+      tour_done_at: process.env.DEMO_TOUR === "1" ? null : created,
       created_at: created,
       updated_at: created,
     },

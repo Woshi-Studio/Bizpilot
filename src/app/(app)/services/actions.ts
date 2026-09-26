@@ -4,10 +4,12 @@ import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness } from "@/lib/data";
 import { SERVICE_UNITS } from "@/lib/types";
 import { normalizeLine } from "@/lib/business-lines";
+import { checkLineLimit, planLimitFromError } from "@/lib/plan-limits";
 
 export type ServiceFormState = {
   error?: string;
   success?: string;
+  upgrade?: boolean;
 };
 
 export async function createService(
@@ -28,17 +30,21 @@ export async function createService(
 
   const { supabase, business } = await requireUserAndBusiness();
 
+  const line = normalizeLine(formData.get("business_line"));
+  const limited = await checkLineLimit(supabase, business, line);
+  if (limited) return limited;
+
   const { error } = await supabase.from("services").insert({
     business_id: business.id,
     name,
     rate,
     unit: SERVICE_UNITS.some((u) => u.value === unit) ? unit : "project",
     description: description || null,
-    business_line: normalizeLine(formData.get("business_line")),
+    business_line: line,
   });
 
   if (error) {
-    return { error: error.message };
+    return planLimitFromError(error, business) ?? { error: error.message };
   }
 
   revalidatePath("/services");

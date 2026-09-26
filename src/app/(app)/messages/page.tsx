@@ -1,7 +1,7 @@
 import AiCreditMeter from "@/components/ai-credit-meter";
 import { requireUserAndBusiness } from "@/lib/data";
 import { aiConfigured } from "@/lib/ai";
-import { emailStatus } from "@/lib/email";
+import { emailNote, emailStatus } from "@/lib/email";
 import MessageGenerator from "./message-generator";
 
 export const metadata = { title: "AI Messages" };
@@ -47,11 +47,7 @@ export default async function MessagesPage({
     (params.customer && /^[0-9a-f-]{36}$/i.test(params.customer) ? `customer:${params.customer}` : undefined);
 
   const send = emailStatus(business);
-  const sendNote = send.canSend
-    ? ""
-    : send.reason === "coming_soon"
-      ? "Sending straight from Jephelen is coming soon. For now, press Copy and paste it into your email."
-      : "Email sending isn't set up yet (EMAIL_PROVIDER). Copy works in the meantime.";
+  const sendNote = emailNote(send);
 
   return (
     <div className="mx-auto max-w-6xl">

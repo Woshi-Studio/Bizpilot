@@ -1,6 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getPepper, hashKey, looksLikeKey } from "@/lib/agent/keys";
-import { AGENT_ACTIONS, NotFoundError } from "@/lib/agent/actions";
+import { AGENT_ACTIONS, NotFoundError, PlanLimitError } from "@/lib/agent/actions";
+import { canUseAssistant } from "@/lib/plan-limits";
 import { InputError, redact, type Input } from "@/lib/agent/validate";
 
 // The agent API: an assistant holding a jph_live_ key can call
@@ -145,15 +146,34 @@ export async function POST(
     return reply(400, { ok: false, error: bodyError });
   }
 
-  // 5. Run it
+  // 5. Plan: assistant access is a Hustle / Boss feature (owner always).
+  const { data: biz } = await db
+    .from("businesses")
+    .select("plan")
+    .eq("id", businessId)
+    .maybeSingle();
+  const plan = (biz as { plan?: string | null } | null)?.plan ?? "free";
+  if (!canUseAssistant({ id: businessId, plan })) {
+    await audit(false, "plan");
+    return reply(403, {
+      ok: false,
+      error: "assistant access needs the Hustle or Boss plan",
+    });
+  }
+
+  // 6. Run it
   try {
-    const data = await handler.run({ db, businessId }, input);
+    const data = await handler.run({ db, businessId, plan }, input);
     await audit(true, "ok");
     return reply(200, { ok: true, data });
   } catch (err) {
     if (err instanceof InputError) {
       await audit(false, err.message);
       return reply(400, { ok: false, error: err.message });
+    }
+    if (err instanceof PlanLimitError) {
+      await audit(false, "plan limit");
+      return reply(402, { ok: false, error: err.message, upgrade: true });
     }
     if (err instanceof NotFoundError) {
       await audit(false, err.message);

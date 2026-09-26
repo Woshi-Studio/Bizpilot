@@ -5,6 +5,7 @@ import { MESSAGE_TYPES, TONES } from "@/lib/ai-options";
 import { generateMessage, type GenerateState } from "./actions";
 import Icon from "@/components/icons";
 import SendEmailDialog, { type EmailContact } from "@/components/send-email-dialog";
+import { mailtoHref } from "@/lib/mailto";
 
 const initialState: GenerateState = {};
 
@@ -161,6 +162,20 @@ export default function MessageGenerator({
                 <Icon name="copy" className="h-4 w-4" />
                 {copied ? "Copied!" : "Copy"}
               </button>
+              {draft && (
+                <a
+                  href={mailtoHref(selected?.email, draft.subject, draft.body)}
+                  className="btn-secondary btn-sm"
+                  title={
+                    selected?.email
+                      ? `Opens your own email app, addressed to ${selected.name}`
+                      : "Opens your own email app with this message"
+                  }
+                >
+                  <Icon name="mail" className="h-4 w-4" />
+                  Open in my email
+                </a>
+              )}
               {canSend && (
                 <button
                   type="button"

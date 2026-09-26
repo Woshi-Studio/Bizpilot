@@ -10,9 +10,11 @@ import {
   AI_CONFIG,
 } from "@/lib/ai";
 import { NAV_GROUPS, PAGE_HELP, groupFor, pageFor } from "@/lib/nav";
+import { matchFaq } from "@/lib/help-faq";
 
-export type AthenaTurn = { role: "user" | "assistant"; content: string };
-export type AthenaReply = { answer?: string; error?: string };
+// `faq` marks an answer that came from the free help guide (client only).
+export type AthenaTurn = { role: "user" | "assistant"; content: string; faq?: boolean };
+export type AthenaReply = { answer?: string; error?: string; source?: "faq" | "ai" };
 
 const MAX_TURNS = 12; // short memory: the last few messages only
 const MAX_CHARS = 1500;
@@ -43,12 +45,17 @@ export async function askAthena(
     return { error: "Ask me something first 🙂" };
   }
 
+  const { supabase, user, business } = await requireUserAndBusiness();
+
+  // Free first: a common "how do I…" question is answered from the help
+  // guide (lib/help-faq.ts). No AI call, no credit.
+  const faq = matchFaq(turns[turns.length - 1].content);
+  if (faq) return { answer: faq.entry.a, source: "faq" };
+
   if (!aiConfigured()) {
     aiNotConfiguredMessage("athena");
     return { error: FRIENDLY_BREAK };
   }
-
-  const { supabase, user, business } = await requireUserAndBusiness();
 
   const quota = await consumeAiCredit(supabase, business);
   if (!quota.ok) {
@@ -103,8 +110,10 @@ ${map}
 Feature guide:
 ${guide}
 - Every contact page has a sticky action bar: Add invoice, Send invoice, Send email, Write message (AI), Book meeting, Add task, Upload file. Below it: key facts, the Timeline, Documents.
-- Light/dark mode: Settings → Appearance, or the moon button in the top bar.
-- Sending email straight from Jephelen isn't switched on for every account yet. If there's no Send button, use Copy and paste it into their own email.
+- Themes (Clean, Dark, Woshi Neon, Retro): Settings → Theme. Neon and Retro come with Hustle and Boss. The moon button in the top bar flips light/dark.
+- Plans: Starter (free), Hustle ($5 every 4 weeks), Boss ($15 every 4 weeks). Settings → Plan shows limits and usage.
+- Sending email straight from Jephelen isn't on for every plan. If there's no Send button, use Copy or "Open in my email", which opens their own email app with the message filled in.
+- The "?" button in the top bar replays the welcome tour.
 
 They are on: ${where}.${hereHelp ? `\nThis page: ${hereHelp}` : ""}`;
 
@@ -122,7 +131,7 @@ They are on: ${where}.${hereHelp ? `\nThis page: ${hereHelp}` : ""}`;
       .join("\n")
       .trim();
     if (!text) return { error: FRIENDLY_BREAK };
-    return { answer: text };
+    return { answer: text, source: "ai" };
   } catch (err) {
     aiFailure(err, "athena");
     return { error: FRIENDLY_BREAK };

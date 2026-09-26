@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness } from "@/lib/data";
 import { logActivity } from "@/lib/activities";
+import { checkPlanLimit, planLimitFromError } from "@/lib/plan-limits";
 
 const MAX_DOC_BYTES = 10 * 1024 * 1024;
 const BUCKET = "client-docs";
@@ -31,6 +32,7 @@ const GENERIC_TYPES = ["", "application/octet-stream", "application/zip"];
 export type DocumentFormState = {
   error?: string;
   success?: string;
+  upgrade?: boolean;
 };
 
 function safeFileName(name: string) {
@@ -86,6 +88,9 @@ export async function uploadDocument(
     .maybeSingle();
   if (!customer) return { error: "Customer not found." };
 
+  const limited = await checkPlanLimit(supabase, business, "storage", { bytes: file.size });
+  if (limited) return limited;
+
   const displayName = file.name.slice(0, 255);
   const path = `${business.id}/${customer.id}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
 
@@ -107,7 +112,7 @@ export async function uploadDocument(
   if (error) {
     // Don't leave an orphan file behind
     await supabase.storage.from(BUCKET).remove([path]);
-    return { error: error.message };
+    return planLimitFromError(error, business) ?? { error: error.message };
   }
 
   await logActivity(supabase, {

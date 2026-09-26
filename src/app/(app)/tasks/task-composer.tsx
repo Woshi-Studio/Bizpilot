@@ -4,6 +4,7 @@ import { useActionState, useRef, useEffect, useState } from "react";
 import type { Service } from "@/lib/types";
 import { createTask, type TaskFormState } from "./actions";
 import BusinessLineInput from "@/components/business-line-input";
+import FormError from "@/components/form-error";
 
 const initialState: TaskFormState = {};
 
@@ -147,11 +148,7 @@ export default function TaskComposer({
           </button>
         </div>
       </form>
-      {state.error && (
-        <p className="mt-2 alert-error">
-          {state.error}
-        </p>
-      )}
+      <FormError error={state.error} upgrade={state.upgrade} className="mt-2" />
     </div>
   );
 }

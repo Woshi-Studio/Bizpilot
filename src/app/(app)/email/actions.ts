@@ -9,9 +9,11 @@ import {
   cleanSubject,
   consumeEmailSend,
   deliverEmail,
+  emailNote,
   emailStatus,
   loadRecipient,
 } from "@/lib/email";
+import { isOwnerBusiness } from "@/lib/ai-quota";
 
 export type SendEmailState = {
   error?: string;
@@ -39,12 +41,7 @@ export async function sendEmail(
 
   const status = emailStatus(business);
   if (!status.canSend) {
-    return {
-      error:
-        status.reason === "coming_soon"
-          ? "Sending from Jephelen is coming soon. Copy the message for now."
-          : "Email isn't set up yet — see CLEAN-UI.md (EMAIL_PROVIDER).",
-    };
+    return { error: emailNote(status) };
   }
 
   const recipient = await loadRecipient(supabase, business.id, kind ?? "", id ?? "");
@@ -54,7 +51,9 @@ export async function sendEmail(
   if (!quota.ok) {
     return {
       error: quota.missing
-        ? "Email sending needs a quick database update (migration 0015)."
+        ? isOwnerBusiness(business.id)
+          ? "Email sending needs a quick database update (migration 0015)."
+          : "Email sending isn't ready yet. Copy works in the meantime."
         : `You've sent ${quota.limit} emails today — that's the daily limit. It resets at midnight UTC.`,
     };
   }

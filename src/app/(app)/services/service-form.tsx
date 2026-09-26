@@ -4,6 +4,7 @@ import { useActionState, useRef, useEffect } from "react";
 import { SERVICE_UNITS } from "@/lib/types";
 import { createService, type ServiceFormState } from "./actions";
 import BusinessLineInput from "@/components/business-line-input";
+import FormError from "@/components/form-error";
 
 const initialState: ServiceFormState = {};
 
@@ -35,11 +36,7 @@ export default function ServiceForm({
     >
       <h2 className="section-title">Add a service</h2>
 
-      {state.error && (
-        <p className="mt-3 alert-error">
-          {state.error}
-        </p>
-      )}
+      <FormError error={state.error} upgrade={state.upgrade} className="mt-3" />
       {state.success && (
         <p className="mt-3 alert-success">
           {state.success}

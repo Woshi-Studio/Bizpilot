@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import Icon, { type IconName } from "@/components/icons";
 import SendEmailDialog from "@/components/send-email-dialog";
+import { mailtoHref } from "@/lib/mailto";
 
 export type OpenInvoice = {
   id: string;
@@ -63,13 +64,21 @@ export default function ContactActions({
               icon: "send",
               onClick: () => compose(`Invoice ${openInvoice.number} from ${businessName}`, invoiceBody),
             }
-          : {
-              key: "send-invoice",
-              label: "Send invoice",
-              icon: "send",
-              href: `/invoices/${openInvoice.id}`,
-              title: "Open the invoice to print or share it",
-            }
+          : email
+            ? {
+                key: "send-invoice",
+                label: "Send invoice",
+                icon: "send",
+                href: mailtoHref(email, `Invoice ${openInvoice.number} from ${businessName}`, invoiceBody),
+                title: "Opens your own email app with the invoice note filled in",
+              }
+            : {
+                key: "send-invoice",
+                label: "Send invoice",
+                icon: "send",
+                href: `/invoices/${openInvoice.id}`,
+                title: "Open the invoice to print or share it",
+              }
       );
     }
   }
@@ -116,7 +125,7 @@ export default function ContactActions({
 
   return (
     <>
-      <div className="sticky top-16 z-20 -mx-4 bg-canvas/85 px-4 py-3 backdrop-blur-md sm:mx-0 sm:rounded-2xl sm:px-0 print:hidden">
+      <div data-tour="contact-actions" className="sticky top-16 z-20 -mx-4 bg-canvas/85 px-4 py-3 backdrop-blur-md sm:mx-0 sm:rounded-2xl sm:px-0 print:hidden">
         <div className="flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
           {leadConvert}
           {[...actions].sort((a, b) => Number(!!b.primary) - Number(!!a.primary)).map((a) => {

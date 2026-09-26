@@ -12,8 +12,9 @@
 // Safety:
 //   - The recipient is never typed by the user: the server reads it from
 //     one of the business's own customers or leads (no open relay).
-//   - 50 emails a day per business, counted in the database by
-//     consume_email_send() (migration 0015). Fails closed.
+//   - Emails a day per business by plan (Starter 0, Hustle 50, Boss 200,
+//     owner unlimited), counted in the database by consume_email_send()
+//     (migrations 0015 + 0017). Fails closed.
 //   - Every sent email is logged on the contact's timeline (email_sent).
 //   - Secret values are never logged.
 
@@ -21,8 +22,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Business } from "@/lib/types";
 import { isOwnerBusiness } from "@/lib/ai-quota";
 import { isDemoMode } from "@/lib/demo";
+import { PLAN_LIMITS, normalizePlanValue } from "@/lib/plans";
 
-export const EMAIL_DAILY_LIMIT = 50; // keep in sync with 0015_clean_ui.sql
+// Before 0017 every business had 50 a day (0015). Now it's by plan.
+export const EMAIL_DAILY_LIMIT = 50;
+
+// Emails a day for this business. null = unlimited (owner).
+export function emailDailyLimit(business: { id: string; plan?: string | null }): number | null {
+  if (isOwnerBusiness(business.id)) return null;
+  return PLAN_LIMITS[normalizePlanValue(business.plan)].email;
+}
 export const MAX_SUBJECT = 200;
 export const MAX_BODY = 20_000;
 
@@ -45,10 +54,12 @@ function resendReady() {
 
 export type EmailStatus =
   | { canSend: true; provider: EmailProvider | "demo" }
-  | { canSend: false; reason: "coming_soon" | "not_configured" };
+  | { canSend: false; reason: "coming_soon" | "not_configured" | "plan" };
 
 // Can this business press "Send"?
-export function emailStatus(business: Pick<Business, "id">): EmailStatus {
+export function emailStatus(business: Pick<Business, "id"> & { plan?: string | null }): EmailStatus {
+  // Starter has no in-app sending (Copy / Open in my email instead).
+  if (emailDailyLimit(business) === 0) return { canSend: false, reason: "plan" };
   if (isDemoMode()) return { canSend: true, provider: "demo" };
   const provider = emailProvider();
   if (provider === "resend" && resendReady()) {
@@ -62,6 +73,19 @@ export function emailStatus(business: Pick<Business, "id">): EmailStatus {
     canSend: false,
     reason: isOwnerBusiness(business.id) ? "not_configured" : "coming_soon",
   };
+}
+
+// The line shown where Send would be. Never names a setting or env var.
+export function emailNote(status: EmailStatus): string {
+  if (status.canSend) return "";
+  switch (status.reason) {
+    case "not_configured":
+      return "Email sending isn't connected yet — ask Marlene to finish setup. Copy works in the meantime.";
+    case "plan":
+      return "Sending straight from Jephelen comes with Hustle (50 a day). Use Copy or Open in my email for now.";
+    default:
+      return "Sending straight from Jephelen is coming soon. Use Copy or Open in my email for now.";
+  }
 }
 
 // ------------------------------------------------------------------
@@ -137,7 +161,7 @@ export async function loadRecipient(
 export async function consumeEmailSend(
   supabase: SupabaseClient,
   businessId: string
-): Promise<{ ok: boolean; used: number; limit: number; missing?: boolean }> {
+): Promise<{ ok: boolean; used: number; limit: number | null; missing?: boolean }> {
   const { data, error } = await supabase.rpc("consume_email_send", {
     p_business: businessId,
   });
@@ -152,7 +176,8 @@ export async function consumeEmailSend(
   return {
     ok: r.allowed === true,
     used: Number(r.used ?? 0),
-    limit: Number(r.limit ?? EMAIL_DAILY_LIMIT),
+    // 0017: null = unlimited (owner)
+    limit: r.limit === null ? null : Number(r.limit ?? EMAIL_DAILY_LIMIT),
   };
 }
 

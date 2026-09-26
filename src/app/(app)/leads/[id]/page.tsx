@@ -4,7 +4,7 @@ import { requireUserAndBusiness } from "@/lib/data";
 import { LEAD_CHANNELS, LEAD_STATUSES, type Lead } from "@/lib/types";
 import type { Activity } from "@/lib/activities";
 import { loadBusinessLines } from "@/lib/activities";
-import { emailStatus } from "@/lib/email";
+import { emailNote, emailStatus } from "@/lib/email";
 import Timeline from "@/components/timeline";
 import LocalTime from "@/components/local-time";
 import Icon from "@/components/icons";
@@ -120,11 +120,7 @@ export default async function LeadDetailPage({
         name={lead.name}
         email={lead.email}
         canSend={send.canSend}
-        sendNote={
-          send.canSend
-            ? undefined
-            : "Sending from Jephelen is coming soon — “Send email” opens your own mail app for now."
-        }
+        sendNote={send.canSend ? undefined : emailNote(send)}
         businessName={business.name}
         leadConvert={convert}
       />

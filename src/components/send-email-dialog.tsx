@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef } from "react";
 import { sendEmail, type SendEmailState } from "@/app/(app)/email/actions";
 import Icon from "./icons";
+import { mailtoHref } from "@/lib/mailto";
 
 const initial: SendEmailState = {};
 
@@ -19,8 +20,8 @@ export default function SendEmailDialog({
   open,
   onClose,
   contact,
-  subject = "",
-  body = "",
+  subject: subject0 = "",
+  body: body0 = "",
 }: {
   open: boolean;
   onClose: () => void;
@@ -30,6 +31,15 @@ export default function SendEmailDialog({
 }) {
   const [state, action, pending] = useActionState(sendEmail, initial);
   const ref = useRef<HTMLDialogElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Same message, opened in the user's own email app instead.
+  function openInMyEmail() {
+    const f = formRef.current;
+    const subject = String((f?.elements.namedItem("subject") as HTMLInputElement | null)?.value ?? subject0);
+    const text = String((f?.elements.namedItem("body") as HTMLTextAreaElement | null)?.value ?? body0);
+    window.location.href = mailtoHref(contact?.email, subject, text);
+  }
 
   useEffect(() => {
     const d = ref.current;
@@ -46,7 +56,7 @@ export default function SendEmailDialog({
       onClose={onClose}
       className="m-auto w-[min(36rem,calc(100vw-2rem))] rounded-[var(--radius-card)] bg-surface p-0 text-ink shadow-pop backdrop:bg-black/40 backdrop:backdrop-blur-sm"
     >
-      <form action={action} className="flex flex-col">
+      <form ref={formRef} action={action} className="flex flex-col">
         <div className="flex items-center justify-between border-b border-line px-5 py-4">
           <h2 className="section-title flex items-center gap-2">
             <Icon name="send" className="h-4 w-4 text-accent" />
@@ -80,10 +90,10 @@ export default function SendEmailDialog({
           <div>
             <label htmlFor="email_subject" className="label">Subject</label>
             <input
-              key={`s-${subject}`}
+              key={`s-${subject0}`}
               id="email_subject"
               name="subject"
-              defaultValue={subject}
+              defaultValue={subject0}
               maxLength={200}
               required
               className="input mt-1"
@@ -92,11 +102,11 @@ export default function SendEmailDialog({
           <div>
             <label htmlFor="email_body" className="label">Message</label>
             <textarea
-              key={`b-${body.length}-${body.slice(0, 20)}`}
+              key={`b-${body0.length}-${body0.slice(0, 20)}`}
               id="email_body"
               name="body"
               rows={9}
-              defaultValue={body}
+              defaultValue={body0}
               required
               className="input mt-1 leading-6"
             />
@@ -107,7 +117,16 @@ export default function SendEmailDialog({
         </div>
 
         <div className="flex items-center justify-between gap-3 border-t border-line bg-surface-2 px-5 py-3.5">
-          <p className="text-xs text-muted">Logged on their timeline · 50 a day</p>
+          <button
+            type="button"
+            onClick={openInMyEmail}
+            disabled={!hasEmail}
+            className="btn-ghost btn-sm"
+            title="Open this in your own email app instead"
+          >
+            <Icon name="mail" className="h-4 w-4" />
+            Open in my email
+          </button>
           <div className="flex gap-2">
             <button type="button" onClick={onClose} className="btn-ghost">
               {state.success ? "Done" : "Cancel"}

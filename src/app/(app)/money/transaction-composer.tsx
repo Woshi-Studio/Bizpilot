@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { INCOME_CATEGORIES, EXPENSE_CATEGORIES } from "@/lib/types";
 import { createTransaction, type TransactionFormState } from "./actions";
+import FormError from "@/components/form-error";
 
 const initialState: TransactionFormState = {};
 
@@ -134,11 +135,7 @@ export default function TransactionComposer({
           </label>
         </div>
       </form>
-      {state.error && (
-        <p className="mt-2 alert-error">
-          {state.error}
-        </p>
-      )}
+      <FormError error={state.error} upgrade={state.upgrade} className="mt-2" />
     </div>
   );
 }

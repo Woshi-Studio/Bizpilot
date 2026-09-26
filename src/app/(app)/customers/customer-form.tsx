@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { CUSTOMER_STATUSES, type Customer } from "@/lib/types";
 import type { CustomerFormState } from "./actions";
 import BusinessLineInput from "@/components/business-line-input";
+import FormError from "@/components/form-error";
 
 const initialState: CustomerFormState = {};
 
@@ -30,11 +31,7 @@ export default function CustomerForm({
     <form action={formAction} className="space-y-4">
       {customer && <input type="hidden" name="id" value={customer.id} />}
 
-      {state.error && (
-        <p className="alert-error">
-          {state.error}
-        </p>
-      )}
+      <FormError error={state.error} upgrade={state.upgrade} />
       {state.success && (
         <p className="alert-success">
           {state.success}

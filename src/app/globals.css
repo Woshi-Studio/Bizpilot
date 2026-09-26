@@ -1,10 +1,14 @@
 @import "tailwindcss";
 
 /* ==================================================================
-   Jephelen design tokens — the ONE place for colors, radius, shadows.
-   Light is the default; `.dark` on <html> switches everything.
-   (The theme script in app/layout.tsx sets it from the saved choice
-   or the system setting before the page paints.)
+   Jephelen design tokens — the ONE place for colors, radius, shadows,
+   fonts. Four themes, all through these variables:
+     clean  (default, light)
+     dark   `.dark`
+     neon   `.dark` + [data-theme="neon"]   Woshi Neon
+     retro  `.dark` + [data-theme="retro"]  80s/90s computer
+   The theme script in app/layout.tsx sets the class + data-theme from
+   the saved choice (or the system setting) before the page paints.
    ================================================================== */
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -41,6 +45,10 @@
   --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 6px 20px -6px rgba(16, 24, 40, 0.08);
   --shadow-hover: 0 2px 4px rgba(16, 24, 40, 0.05), 0 12px 28px -8px rgba(16, 24, 40, 0.14);
   --shadow-pop: 0 18px 50px -12px rgba(16, 24, 40, 0.3);
+
+  /* headings (page titles, section titles, logo) */
+  --font-display: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --display-weight: 650;
 
   /* kept for older code */
   --background: var(--bg);
@@ -139,6 +147,259 @@
 .dark .bg-white { background-color: var(--surface); }
 .dark .border-white { border-color: var(--surface); }
 
+/* ==================================================================
+   WOSHI NEON — deep night purple, hot pink + electric cyan, glow.
+   Headings in Orbitron; body text stays Geist for reading.
+   ================================================================== */
+:root[data-theme="neon"] {
+  --bg: #0b0420;
+  --surface: #140a2c;
+  --surface-2: #1a0e38;
+  --surface-3: #251447;
+  --border: #3b2268;
+  --border-soft: rgba(255, 45, 160, 0.16);
+  --text: #f5eeff;
+  --text-2: #ddd0f7;
+  --muted: #ab98d2;
+  --subtle: #8470ad;
+
+  --accent: #e4168a;
+  --accent-hover: #ff2d9f;
+  --accent-soft: rgba(255, 45, 160, 0.14);
+  --accent-text: #ff7cc6;
+  --accent-contrast: #ffffff;
+  --neon-pink: #ff2d9f;
+  --neon-cyan: #19e6ff;
+  --ring: rgba(25, 230, 255, 0.38);
+
+  --success: #3dffae;
+  --success-soft: rgba(61, 255, 174, 0.12);
+  --danger: #ff5c80;
+  --danger-soft: rgba(255, 92, 128, 0.13);
+  --warn: #ffd84a;
+  --warn-soft: rgba(255, 216, 74, 0.12);
+
+  --shadow-card: 0 0 0 1px rgba(255, 45, 160, 0.16), 0 0 22px -8px rgba(255, 45, 160, 0.45),
+    0 12px 32px -14px rgba(0, 0, 0, 0.85);
+  --shadow-hover: 0 0 0 1px rgba(25, 230, 255, 0.4), 0 0 26px -6px rgba(25, 230, 255, 0.5),
+    0 14px 36px -14px rgba(0, 0, 0, 0.9);
+  --shadow-pop: 0 0 0 1px rgba(255, 45, 160, 0.3), 0 0 40px -10px rgba(255, 45, 160, 0.55),
+    0 24px 60px -12px rgba(0, 0, 0, 0.85);
+
+  --font-display: var(--font-orbitron), var(--font-geist-sans), ui-sans-serif, sans-serif;
+  --display-weight: 700;
+
+  /* Hard-coded Tailwind accents follow the theme: indigo -> pink,
+     violet -> cyan. */
+  --color-indigo-50: rgba(255, 45, 160, 0.1);
+  --color-indigo-100: rgba(255, 45, 160, 0.16);
+  --color-indigo-200: rgba(255, 45, 160, 0.32);
+  --color-indigo-300: #ff9fd6;
+  --color-indigo-400: #ff6cbc;
+  --color-indigo-500: #ff2d9f;
+  --color-indigo-600: #e4168a;
+  --color-indigo-700: #ff7cc6;
+  --color-indigo-800: #ffb3de;
+  --color-violet-500: #19e6ff;
+  --color-violet-600: #10b8e0;
+  --color-fuchsia-500: #b44dff;
+  --color-slate-50: #1a0e38;
+  --color-slate-100: #251447;
+  --color-slate-200: #3b2268;
+}
+
+:root[data-theme="neon"] .text-indigo-600,
+:root[data-theme="neon"] .hover\:text-indigo-600:hover { color: #ff7cc6; }
+:root[data-theme="neon"] .text-indigo-500 { color: #ff6cbc; }
+:root[data-theme="neon"] ::selection { background: rgba(25, 230, 255, 0.3); }
+
+:root[data-theme="neon"] .app-root {
+  background:
+    radial-gradient(1100px 560px at 85% -12%, rgba(255, 45, 160, 0.13), transparent 70%),
+    radial-gradient(900px 520px at -8% 108%, rgba(25, 230, 255, 0.1), transparent 70%),
+    var(--bg);
+}
+:root[data-theme="neon"] .app-sidebar {
+  border-right-color: rgba(255, 45, 160, 0.45);
+  box-shadow: 1px 0 0 rgba(25, 230, 255, 0.18), 6px 0 26px -12px rgba(255, 45, 160, 0.6);
+}
+:root[data-theme="neon"] .page-title {
+  font-size: 1.6rem;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 14px rgba(255, 45, 160, 0.45);
+  animation: neon-glitch 6s infinite;
+}
+:root[data-theme="neon"] .section-title {
+  font-size: 0.875rem;
+  letter-spacing: 0.04em;
+}
+:root[data-theme="neon"] .brand-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 10px rgba(255, 45, 160, 0.6);
+  animation: neon-glitch 6s infinite 1.3s;
+}
+:root[data-theme="neon"] .brand-mark {
+  box-shadow: 0 0 14px rgba(255, 45, 160, 0.7);
+  animation: neon-glitch 6s infinite 1.3s;
+}
+:root[data-theme="neon"] .btn-primary {
+  box-shadow: 0 0 0 1px rgba(255, 45, 160, 0.6), 0 0 16px -2px rgba(255, 45, 160, 0.75);
+}
+:root[data-theme="neon"] .btn-primary:hover {
+  box-shadow: 0 0 0 1px rgba(255, 45, 160, 0.9), 0 0 24px 0 rgba(255, 45, 160, 0.85);
+}
+:root[data-theme="neon"] .btn-secondary:hover {
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 14px -3px rgba(25, 230, 255, 0.6);
+}
+:root[data-theme="neon"] .card-hover:hover { transform: translateY(-2px); }
+:root[data-theme="neon"] .chip-active,
+:root[data-theme="neon"] .chip-active:hover {
+  background: var(--neon-cyan);
+  border-color: var(--neon-cyan);
+  color: #07021a;
+  box-shadow: 0 0 12px -2px rgba(25, 230, 255, 0.7);
+}
+
+/* A short RGB-split jitter, once every 6 s (about 200 ms of it). */
+@keyframes neon-glitch {
+  0%, 96.5%, 100% { transform: none; }
+  97% { transform: translate(-2px, 1px) skewX(-6deg);
+        text-shadow: -2px 0 var(--neon-pink), 2px 0 var(--neon-cyan); }
+  97.8% { transform: translate(2px, -1px);
+          text-shadow: 2px 0 var(--neon-pink), -2px 0 var(--neon-cyan); }
+  98.6% { transform: translate(-1px, 0) skewX(4deg);
+          text-shadow: -1px 0 var(--neon-cyan), 1px 0 var(--neon-pink); }
+  99.8% { transform: none; }
+}
+
+/* ==================================================================
+   RETRO — warm off-black CRT, phosphor green + amber, pixel headings,
+   faint scanlines, chunky square buttons with hard shadows.
+   ================================================================== */
+:root[data-theme="retro"] {
+  --bg: #14110d;
+  --surface: #1c1813;
+  --surface-2: #221d17;
+  --surface-3: #2c261e;
+  --border: #4b4133;
+  --border-soft: rgba(255, 176, 0, 0.16);
+  --text: #f1e8d0;
+  --text-2: #dccfb0;
+  --muted: #ab9c7c;
+  --subtle: #82745c;
+
+  --accent: #39ff7a;
+  --accent-hover: #72ff9f;
+  --accent-soft: rgba(57, 255, 122, 0.11);
+  --accent-text: #5dff95;
+  --accent-contrast: #07160c;
+  --amber: #ffb000;
+  --ring: rgba(255, 176, 0, 0.45);
+
+  --success: #5dff95;
+  --success-soft: rgba(57, 255, 122, 0.1);
+  --danger: #ff6b5b;
+  --danger-soft: rgba(255, 107, 91, 0.13);
+  --warn: #ffb000;
+  --warn-soft: rgba(255, 176, 0, 0.12);
+
+  --radius-card: 4px;
+  --radius-control: 2px;
+  --shadow-card: 4px 4px 0 #000;
+  --shadow-hover: 6px 6px 0 #000;
+  --shadow-pop: 6px 6px 0 #000, 0 0 0 2px var(--border);
+
+  --font-display: var(--font-vt323), var(--font-geist-mono), ui-monospace, monospace;
+  --display-weight: 400;
+
+  /* indigo -> phosphor green, violet -> amber */
+  --color-indigo-50: rgba(57, 255, 122, 0.08);
+  --color-indigo-100: rgba(57, 255, 122, 0.14);
+  --color-indigo-200: rgba(57, 255, 122, 0.3);
+  --color-indigo-300: #9dffbf;
+  --color-indigo-400: #72ff9f;
+  --color-indigo-500: #39ff7a;
+  --color-indigo-600: #1f9d4f;
+  --color-indigo-700: #5dff95;
+  --color-indigo-800: #a8ffc6;
+  --color-violet-500: #ffb000;
+  --color-violet-600: #d99400;
+  --color-fuchsia-500: #ff7a00;
+}
+
+:root[data-theme="retro"] .text-indigo-600,
+:root[data-theme="retro"] .hover\:text-indigo-600:hover { color: #5dff95; }
+:root[data-theme="retro"] .text-indigo-500 { color: #72ff9f; }
+:root[data-theme="retro"] ::selection { background: rgba(255, 176, 0, 0.35); }
+
+:root[data-theme="retro"] .page-title {
+  font-size: 2.6rem;
+  line-height: 2.6rem;
+  letter-spacing: 0.01em;
+  color: var(--accent-text);
+  text-shadow: 0 0 8px rgba(57, 255, 122, 0.45);
+}
+:root[data-theme="retro"] .section-title {
+  font-size: 1.4rem;
+  line-height: 1.6rem;
+  letter-spacing: 0.02em;
+  color: var(--amber);
+}
+:root[data-theme="retro"] .brand-name {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  color: var(--accent-text);
+  text-shadow: 0 0 6px rgba(57, 255, 122, 0.5);
+}
+:root[data-theme="retro"] .brand-mark { border-radius: 2px; box-shadow: 3px 3px 0 #000; }
+:root[data-theme="retro"] .card { border: 2px solid var(--border); }
+:root[data-theme="retro"] :is(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl) { border-radius: 3px; }
+:root[data-theme="retro"] :is(.btn, .btn-primary, .btn-secondary, .btn-ghost, .btn-danger) {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  letter-spacing: 0.02em;
+  border-radius: 2px;
+}
+:root[data-theme="retro"] :is(.btn-primary, .btn-secondary, .btn-danger) {
+  border: 2px solid #000;
+  box-shadow: 3px 3px 0 #000;
+}
+:root[data-theme="retro"] .btn-secondary { border-color: var(--border); }
+:root[data-theme="retro"] :is(.btn-primary, .btn-secondary, .btn-danger):active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+:root[data-theme="retro"] .chip { border-radius: 2px; border-width: 2px; }
+:root[data-theme="retro"] .input { border-width: 2px; }
+:root[data-theme="retro"] .app-sidebar { border-right: 2px solid var(--border); }
+
+/* faint CRT scanlines over the whole app (never catches clicks) */
+:root[data-theme="retro"] .app-root::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 2px,
+    rgba(0, 0, 0, 0.16) 3px,
+    transparent 4px
+  );
+  animation: crt-flicker 7s infinite;
+}
+@keyframes crt-flicker {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+@media print {
+  .app-root::after { display: none !important; }
+}
+
 @theme inline {
   --color-background: var(--bg);
   --color-foreground: var(--text);
@@ -182,9 +443,10 @@ body {
 @layer components {
   /* type scale */
   .page-title {
+    font-family: var(--font-display);
     font-size: 1.75rem;
     line-height: 2.25rem;
-    font-weight: 650;
+    font-weight: var(--display-weight);
     letter-spacing: -0.022em;
     color: var(--text);
   }
@@ -194,6 +456,7 @@ body {
     color: var(--muted);
   }
   .section-title {
+    font-family: var(--font-display);
     font-size: 0.9375rem;
     line-height: 1.5rem;
     font-weight: 600;
@@ -377,5 +640,9 @@ body {
   *, *::before, *::after {
     transition-duration: 0ms !important;
     animation-duration: 0ms !important;
+  }
+  /* no glitch, no scanline flicker */
+  .page-title, .brand-name, .brand-mark, .app-root::after {
+    animation: none !important;
   }
 }

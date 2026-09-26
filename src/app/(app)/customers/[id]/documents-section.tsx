@@ -7,6 +7,7 @@ import {
   deleteDocument,
   type DocumentFormState,
 } from "../document-actions";
+import FormError from "@/components/form-error";
 
 export type CustomerDocument = {
   id: string;
@@ -78,11 +79,7 @@ export default function DocumentsSection({
         PDF, JPG, PNG, WEBP, DOCX or XLSX · up to 10 MB · only you can see
         them.
       </p>
-      {state.error && (
-        <p className="mt-2 alert-error">
-          {state.error}
-        </p>
-      )}
+      <FormError error={state.error} upgrade={state.upgrade} className="mt-2" />
       {state.success && (
         <p className="mt-2 alert-success">
           {state.success}

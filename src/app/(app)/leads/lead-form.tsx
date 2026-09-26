@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { LEAD_CHANNELS, LEAD_STATUSES, type Lead } from "@/lib/types";
 import BusinessLineInput from "@/components/business-line-input";
 import { updateLead, type OutreachFormState } from "./actions";
+import FormError from "@/components/form-error";
 
 const initialState: OutreachFormState = {};
 
@@ -23,11 +24,7 @@ export default function LeadForm({
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="id" value={lead.id} />
 
-      {state.error && (
-        <p className="alert-error">
-          {state.error}
-        </p>
-      )}
+      <FormError error={state.error} upgrade={state.upgrade} />
       {state.success && (
         <p className="alert-success">
           {state.success}

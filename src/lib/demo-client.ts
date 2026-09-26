@@ -166,6 +166,20 @@ export function createDemoClient() {
       if (fn === "owner_hub_scoreboard") return { data: demoScoreboard(db), error: null };
       if (fn === "consume_ai_credit") return { data: { allowed: true, used: 8, limit: 100 }, error: null };
       if (fn === "consume_email_send") return { data: { allowed: true, used: 3, limit: 50 }, error: null };
+      if (fn === "plan_usage") {
+        const count = (t: string) => (db[t] ?? []).length;
+        const openLeads = (db.leads ?? []).filter((l) => l.status !== "converted").length;
+        return {
+          data: {
+            contacts: count("customers") + openLeads,
+            docs_28d: Math.min(count("invoices"), 7),
+            storage_bytes: 31_457_280,
+            email_today: 3,
+            business_lines: 1,
+          },
+          error: null,
+        };
+      }
       return { data: null, error: { message: `rpc ${fn} not in demo` } };
     },
     auth: {

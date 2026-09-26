@@ -2,6 +2,7 @@
 
 import { useActionState, useRef, useEffect } from "react";
 import type { CustomerNote } from "@/lib/types";
+import LocalTime from "@/components/local-time";
 import { addNote, deleteNote, type CustomerFormState } from "../actions";
 
 const initialState: CustomerFormState = {};
@@ -61,7 +62,9 @@ export default function NotesSection({
               <div>
                 <p className="text-sm text-slate-700">{note.body}</p>
                 <p className="mt-1 text-xs text-slate-400">
-                  {new Date(note.created_at).toLocaleString()}
+                  {/* server and browser render the same text first (no
+                      hydration mismatch, which also dropped the theme) */}
+                  <LocalTime iso={note.created_at} />
                 </p>
               </div>
               <form action={deleteNote}>

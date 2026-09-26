@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Business } from "@/lib/types";
+import { PLAN_LABELS } from "@/lib/plans";
 
 // DAILY AI credits per business, reset at midnight UTC.
 // The real cap is enforced in the database by consume_ai_credit()
@@ -13,11 +14,8 @@ export const AI_DAILY_CREDITS: Record<string, number> = {
 
 export type Plan = "free" | "premium" | "pro";
 
-export const PLAN_NAMES: Record<Plan, string> = {
-  free: "Free",
-  premium: "Premium",
-  pro: "Pro",
-};
+// UI names (DB values stay free / premium / pro): Starter / Hustle / Boss.
+export const PLAN_NAMES: Record<Plan, string> = PLAN_LABELS;
 
 // Kept for anything that still imports the old name.
 export const AI_LIMITS = AI_DAILY_CREDITS;

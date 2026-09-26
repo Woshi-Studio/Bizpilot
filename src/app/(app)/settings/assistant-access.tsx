@@ -59,10 +59,12 @@ export default function AssistantAccess({
   keys,
   audit,
   ready,
+  owner = false,
 }: {
   keys: ApiKeyRow[];
   audit: AuditRow[];
   ready: boolean;
+  owner?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(createApiKey, initialState);
   const keyNames = new Map(keys.map((k) => [k.id, k.name]));
@@ -78,7 +80,9 @@ export default function AssistantAccess({
 
       {!ready && (
         <p className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-sm text-slate-600">
-          Not set up yet: run migration 0016 in Supabase first.
+          {owner
+            ? "Not set up yet: run migration 0016 in Supabase first."
+            : "Assistant access isn't ready yet. Check back soon."}
         </p>
       )}
 

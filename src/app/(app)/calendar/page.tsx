@@ -6,6 +6,8 @@ import { lineFromParam } from "@/lib/business-lines";
 import CalendarGrid, { type CalendarContact, type CalendarItem } from "./calendar-grid";
 import NewEntryButton from "./new-entry-button";
 import { emailStatus } from "@/lib/email";
+import CopyBookingLink from "@/components/copy-booking-link";
+import { myBookingLink } from "@/lib/booking-server";
 
 // Only a uuid can prefill the meeting form (from a contact page).
 const isId = (v?: string) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v : undefined);
@@ -122,6 +124,18 @@ export default async function CalendarPage({
     ]);
   const rows = (r: { data: unknown }) => (r.data ?? []) as Row[];
 
+  // Meetings made on the booking page (0018): badge + Attended / No-show.
+  const bookedIds = rows(meetings).filter((m) => m.source === "booking").map((m) => m.id as string);
+  const [bookingRes, bookingLink] = await Promise.all([
+    bookedIds.length
+      ? supabase.from("bookings").select("id, activity_id, status").eq("business_id", business.id).in("activity_id", bookedIds)
+      : Promise.resolve({ data: [] as unknown[] }),
+    myBookingLink(supabase, business.id),
+  ]);
+  const bookingByActivity = new Map(
+    ((bookingRes.data ?? []) as { id: string; activity_id: string; status: string }[]).map((b) => [b.activity_id, b])
+  );
+
   const contacts: CalendarContact[] = [
     ...((customerList.data ?? []) as { id: string; name: string; email: string | null }[]).map(
       (c) => ({ kind: "customer" as const, ...c })
@@ -200,6 +214,13 @@ export default async function CalendarPage({
       notes: m.body,
       done: !!m.done_at,
       contact: contactFor(m.customer_id, m.lead_id),
+      booking:
+        m.source === "booking"
+          ? (() => {
+              const b = bookingByActivity.get(m.id ?? "");
+              return { id: b?.id ?? null, status: b?.status ?? "confirmed" };
+            })()
+          : undefined,
     });
   }
 
@@ -224,7 +245,10 @@ export default async function CalendarPage({
             Meetings, calls, reminders, tasks, follow-ups and invoice due dates. Click any day to add.
           </p>
         </div>
-        <NewEntryButton />
+        <div className="flex flex-wrap gap-2">
+          <CopyBookingLink url={bookingLink} />
+          <NewEntryButton />
+        </div>
       </div>
 
       <div className="mt-4">

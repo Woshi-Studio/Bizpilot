@@ -10,6 +10,7 @@ import { BUILT_IN, fillTemplate } from "@/lib/templates";
 import { deleteActivity } from "@/app/(app)/activities/actions";
 import { deleteTask } from "@/app/(app)/tasks/actions";
 import { markEntryDone, saveCalendarEntry, type CalendarState, type EntryType } from "./actions";
+import { setBookingStatus } from "@/app/(app)/bookings/actions";
 
 export type CalendarContact = { kind: "customer" | "lead"; id: string; name: string; email: string | null };
 
@@ -29,6 +30,15 @@ export type CalendarItem = {
   id?: string;
   notes?: string | null;
   contact?: CalendarContact | null;
+  // made on the public booking page (0018)
+  booking?: { id: string | null; status: string };
+};
+
+const BOOKING_STATUS: Record<string, string> = {
+  confirmed: "Booked",
+  attended: "Attended",
+  no_show: "No-show",
+  cancelled: "Cancelled",
 };
 
 export const CALENDAR_NEW_EVENT = "jephelen-calendar-new";
@@ -203,7 +213,7 @@ function EntryDialog({
           <textarea name="notes" rows={2} value={d.notes} onChange={(e) => set({ notes: e.target.value })} className="input mt-1" />
         </label>
         {d.type === "block" && (
-          <p className="text-xs text-muted">Blocked time shows greyed out. Later, your booking page won&apos;t offer these times.</p>
+          <p className="text-xs text-muted">Blocked time shows greyed out. Your booking page won&apos;t offer these times.</p>
         )}
         {state.error && <p className="alert-error text-sm">{state.error}</p>}
         <div className="flex justify-end gap-2 pt-1">
@@ -265,7 +275,15 @@ function SidePanel({
               {item.endsAt && ` – ${new Date(item.endsAt).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`}
               {item.line && ` · ${lineLabel(item.line)}`}
             </p>
-            {item.done && <p className="mt-1 text-xs font-semibold text-green-600">Done</p>}
+            {item.done && !item.booking && <p className="mt-1 text-xs font-semibold text-green-600">Done</p>}
+            {item.booking && (
+              <p className="mt-2 flex flex-wrap gap-1.5">
+                <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[11px] font-semibold text-accent-text">🌐 Booked online</span>
+                <span className="rounded-full bg-surface-3 px-2 py-0.5 text-[11px] font-semibold text-ink-2">
+                  {BOOKING_STATUS[item.booking.status] ?? item.booking.status}
+                </span>
+              </p>
+            )}
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="rounded-lg p-1.5 text-muted hover:bg-surface-3">
             <Icon name="x" className="h-4 w-4" />
@@ -274,14 +292,33 @@ function SidePanel({
         {item.contact && <p className="mt-4 text-sm text-ink-2">With {item.contact.name}</p>}
         {item.notes && <p className="mt-3 whitespace-pre-wrap rounded-xl bg-surface-2 p-3 text-sm text-ink-2">{item.notes}</p>}
 
+        {item.booking?.id && (
+          <div className="mt-5 flex flex-wrap gap-2">
+            {(["attended", "no_show"] as const)
+              .filter((st) => st !== item.booking!.status)
+              .map((st) => (
+                <form key={st} action={setBookingStatus} onSubmit={() => setTimeout(onClose, 50)}>
+                  <input type="hidden" name="id" value={item.booking!.id!} />
+                  <input type="hidden" name="status" value={st} />
+                  <button type="submit" className="btn-secondary btn-sm">
+                    {st === "attended" ? "✅ Attended" : "🚫 No-show"}
+                  </button>
+                </form>
+              ))}
+            <Link href="/bookings" className="btn-ghost btn-sm">
+              All bookings
+            </Link>
+          </div>
+        )}
+
         <div className="mt-5 flex flex-wrap gap-2">
-          {item.source === "activity" && (
+          {item.source === "activity" && !item.booking && (
             <button type="button" onClick={onEdit} className="btn-secondary btn-sm">
               <Icon name="edit" className="h-4 w-4" />
               Edit
             </button>
           )}
-          {deletable && !item.done && item.kind !== "block" && (
+          {deletable && !item.done && !item.booking && item.kind !== "block" && (
             <form action={markEntryDone} onSubmit={() => setTimeout(onClose, 50)}>
               <input type="hidden" name="source" value={item.source} />
               <input type="hidden" name="id" value={item.id} />
@@ -302,7 +339,7 @@ function SidePanel({
               Send confirmation
             </button>
           )}
-          {deletable && (
+          {deletable && !item.booking && (
             <form
               action={item.source === "task" ? deleteTask : deleteActivity}
               onSubmit={(e) => {
@@ -458,6 +495,7 @@ export default function CalendarGrid({
         }`}
       >
         {style.icon} {time && <b className="font-semibold">{time} </b>}
+        {item.booking && <span title="Booked online">🌐 </span>}
         {item.title}
       </button>
     );

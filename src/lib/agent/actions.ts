@@ -442,6 +442,48 @@ const setLeadStatus: Handler = async (ctx, input) => {
   return { lead: data };
 };
 
+// Bookings made on the public booking page (0018). Default: upcoming
+// confirmed bookings for the next 30 days.
+//   from / to: YYYY-MM-DD (UTC days) or ISO times with a zone
+//   status:    confirmed | cancelled | attended | no_show | all
+//   limit:     1-100 (default 50)
+const BOOKING_STATUSES = ["confirmed", "cancelled", "attended", "no_show", "all"] as const;
+
+const listBookings: Handler = async (ctx, input) => {
+  onlyFields(input, ["from", "to", "status", "limit"]);
+  const when = (field: string) => {
+    const v = input[field];
+    if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v.trim())) {
+      return `${date(input, field)}T00:00:00.000Z`;
+    }
+    return timestamp(input, field);
+  };
+  const now = Date.now();
+  const from = when("from") ?? new Date(now).toISOString();
+  const to = when("to") ?? new Date(Date.parse(from) + 30 * 86_400_000).toISOString();
+  if (Date.parse(to) <= Date.parse(from)) throw new InputError("to must be after from");
+  if (Date.parse(to) - Date.parse(from) > 366 * 86_400_000) throw new InputError("at most 366 days at a time");
+  const status = oneOf(input, "status", BOOKING_STATUSES) ?? "confirmed";
+  const rawLimit = input.limit;
+  const limit = rawLimit === undefined || rawLimit === null ? 50 : Number(rawLimit);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 100) throw new InputError("limit must be 1 to 100");
+
+  let q = ctx.db
+    .from("bookings")
+    .select(
+      "id, type_name, starts_at, ends_at, status, name, email, phone, note, answers, customer_id, lead_id, location_kind, location_detail, email_status, created_at"
+    )
+    .eq("business_id", ctx.businessId)
+    .gte("starts_at", from)
+    .lt("starts_at", to)
+    .order("starts_at")
+    .limit(limit);
+  if (status !== "all") q = q.eq("status", status);
+  const { data, error } = await q;
+  if (error) fail("could not load bookings (is migration 0018 run?)");
+  return { from, to, status, bookings: data ?? [] };
+};
+
 export const AGENT_ACTIONS: Record<string, { scope: AgentScope; run: Handler }> = {
   add_customer: { scope: "customers:write", run: addCustomer },
   add_lead: { scope: "leads:write", run: addLead },
@@ -452,4 +494,5 @@ export const AGENT_ACTIONS: Record<string, { scope: AgentScope; run: Handler }> 
   log_activity: { scope: "activities:write", run: logActivityAction },
   today: { scope: "contacts:read", run: today },
   set_lead_status: { scope: "leads:write", run: setLeadStatus },
+  list_bookings: { scope: "calendar:read", run: listBookings },
 };

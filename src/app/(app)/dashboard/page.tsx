@@ -9,6 +9,8 @@ import Scoreboard, { type DueItem, type ScoreRow } from "./scoreboard";
 import BusinessLineFilter from "@/components/business-line-filter";
 import { loadBusinessLines, withLine } from "@/lib/activities";
 import { NO_LINE, lineFromParam } from "@/lib/business-lines";
+import CopyBookingLink from "@/components/copy-booking-link";
+import { myBookingLink } from "@/lib/booking-server";
 
 export const metadata = { title: "Dashboard" };
 
@@ -64,6 +66,7 @@ export default async function DashboardPage({
     dueLeadsResult,
     dueCustomersResult,
     lines,
+    bookingLink,
   ] = await Promise.all([
       supabase
         .from("profiles")
@@ -137,6 +140,7 @@ export default async function DashboardPage({
         .order("next_follow_up")
         .limit(300),
       loadBusinessLines(supabase, business.id),
+      myBookingLink(supabase, business.id),
     ]);
 
   // Scoreboard: one card per business line (or just the chosen one)
@@ -326,6 +330,7 @@ export default async function DashboardPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <CopyBookingLink url={bookingLink} />
           <Link href="/customers/new" className="btn-secondary btn-sm">
             <Icon name="people" className="h-4 w-4" /> Add customer
           </Link>

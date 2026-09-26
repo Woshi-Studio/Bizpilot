@@ -15,6 +15,8 @@ import AssistantAccess, { type ApiKeyRow, type AuditRow } from "./assistant-acce
 import PlanSection from "./plan-section";
 import LineSettingsForm from "./line-settings-form";
 import TemplatesSection from "./templates-section";
+import CopyBookingLink from "@/components/copy-booking-link";
+import { myBookingLink } from "@/lib/booking-server";
 import { listTemplates } from "../templates/actions";
 import { loadBusinessLines } from "@/lib/activities";
 import { loadLineSettings } from "@/lib/services-data";
@@ -87,6 +89,7 @@ export default async function SettingsPage({
     usedLines,
     savedLineSettings,
     savedTemplates,
+    bookingLink,
   ] = await Promise.all([
       supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
       business
@@ -118,6 +121,7 @@ export default async function SettingsPage({
       business ? loadBusinessLines(supabase, business.id) : Promise.resolve([] as string[]),
       business ? loadLineSettings(supabase, business.id) : Promise.resolve([]),
       business ? listTemplates() : Promise.resolve([]),
+      business ? myBookingLink(supabase, business.id) : Promise.resolve(null),
     ]);
   const lineSettings = usedLines.map((l) =>
     settingsFor(l, savedLineSettings, business?.currency ?? "USD")
@@ -153,6 +157,7 @@ export default async function SettingsPage({
     ["plan", "Plan & usage"],
     ...(showEmailCard ? [["sending", "Email sending"]] : []),
     ["assistant", "Assistant"],
+    ["booking", "Booking"],
     ["public", "Public page"],
     ["payments", "Payments"],
     ["lines", "Invoice settings"],
@@ -254,6 +259,27 @@ export default async function SettingsPage({
           </div>
         )}
       </div>
+
+      {business && (
+        <section id="booking" className="card mt-8 scroll-mt-24 p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="section-title">📅 Booking page</h2>
+              <p className="mt-1 text-sm text-muted">
+                Your own booking link (instead of Calendly): weekly hours, meeting types, questions,
+                reminders and Google Calendar busy times.
+                {bookingLink ? "" : " Not switched on yet."}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <CopyBookingLink url={bookingLink} />
+              <Link href="/settings/booking" className="btn-primary btn-sm">
+                Booking settings
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
 
       {publicPage && (
         <div id="public" className="mt-8 scroll-mt-24">

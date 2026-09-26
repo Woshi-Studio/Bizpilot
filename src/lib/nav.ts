@@ -42,6 +42,7 @@ export const NAV_GROUPS: NavGroup[] = [
     pages: [
       { label: "Tasks", href: "/tasks" },
       { label: "Calendar", href: "/calendar" },
+      { label: "Bookings", href: "/bookings" },
     ],
   },
   {
@@ -99,6 +100,7 @@ export const PAGE_HELP: Record<string, string> = {
   "/leads": "People > Leads: log outreach, change lead status, turn a lead into a customer with 'Add to customers'.",
   "/tasks": "Work > Tasks: add a task at the top, then move it through To Do, In Progress, Review and Done.",
   "/calendar": "Work > Calendar: month or week view of tasks, follow-ups, invoices due and meetings; book a meeting from the form.",
+  "/bookings": "Work > Bookings: everyone who booked through your booking page; mark Attended or No-show, cancel, copy your booking link.",
   "/invoices": "Money > Invoices: create invoices and quotes, mark them sent or paid, print or save as PDF.",
   "/time": "Money > Time & Billing: log hours per customer and task, then bill them on an invoice.",
   "/services": "Money > Pricing: your services and rates, used when you build invoices.",
@@ -109,5 +111,6 @@ export const PAGE_HELP: Record<string, string> = {
   "/coach": "AI > Coach: ask business questions; it knows your numbers.",
   "/decisions": "AI > Decision Guard: run a big decision through a short checklist before you commit.",
   "/launchpad": "AI > Launchpad: build and rewrite a simple business plan.",
-  "/settings": "Settings: business profile, public page, payment methods, plan & billing, email, appearance (light/dark).",
+  "/settings/booking": "Settings > Booking: your booking link name, weekly hours, time zone, notice, buffers, meeting types, questions, logo, Google Calendar busy times.",
+  "/settings": "Settings: business profile, booking page, public page, payment methods, plan & billing, email, appearance (light/dark).",
 };

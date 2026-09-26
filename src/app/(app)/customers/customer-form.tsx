@@ -8,7 +8,7 @@ import BusinessLineInput from "@/components/business-line-input";
 const initialState: CustomerFormState = {};
 
 const inputClass =
-  "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "mt-1 input";
 
 export default function CustomerForm({
   action,
@@ -31,12 +31,12 @@ export default function CustomerForm({
       {customer && <input type="hidden" name="id" value={customer.id} />}
 
       {state.error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="alert-error">
           {state.error}
         </p>
       )}
       {state.success && (
-        <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p className="alert-success">
           {state.success}
         </p>
       )}
@@ -45,7 +45,7 @@ export default function CustomerForm({
         <div>
           <label
             htmlFor="name"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Name *
           </label>
@@ -62,7 +62,7 @@ export default function CustomerForm({
         <div>
           <label
             htmlFor="company"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Company
           </label>
@@ -77,7 +77,7 @@ export default function CustomerForm({
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Email
           </label>
@@ -92,7 +92,7 @@ export default function CustomerForm({
         <div>
           <label
             htmlFor="phone"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Phone
           </label>
@@ -105,9 +105,37 @@ export default function CustomerForm({
           />
         </div>
         <div>
+          <label htmlFor="address" className="label">
+            Address
+          </label>
+          <input
+            id="address"
+            name="address"
+            type="text"
+            maxLength={300}
+            defaultValue={customer?.address ?? ""}
+            placeholder="Street, city"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label htmlFor="website" className="label">
+            Website
+          </label>
+          <input
+            id="website"
+            name="website"
+            type="text"
+            maxLength={300}
+            defaultValue={customer?.website ?? ""}
+            placeholder="example.com"
+            className={inputClass}
+          />
+        </div>
+        <div>
           <label
             htmlFor="status"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Status
           </label>
@@ -127,7 +155,7 @@ export default function CustomerForm({
         <div>
           <label
             htmlFor="next_follow_up"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Next follow-up
           </label>
@@ -154,7 +182,7 @@ export default function CustomerForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+          className="btn-primary"
         >
           {pending ? "Saving..." : submitLabel}
         </button>

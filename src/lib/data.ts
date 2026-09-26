@@ -50,3 +50,32 @@ export async function requireUserAndBusiness() {
 
   return { supabase, user, business: business as Business };
 }
+
+// Columns added by migration 0015 (contact address / website, lead
+// company). Until 0015 is run they don't exist, so a save that includes
+// them fails with "column not found". Use this to retry without them.
+export const CONTACT_EXTRA_FIELDS = ["address", "website", "company"] as const;
+
+export function isMissingColumnError(error: { code?: string; message?: string } | null) {
+  if (!error) return false;
+  return (
+    error.code === "42703" ||
+    error.code === "PGRST204" ||
+    /column .* (does not exist|not find)|could not find the .* column/i.test(error.message ?? "")
+  );
+}
+
+// Reads an optional short text field; "" -> null.
+export function optionalText(formData: FormData, key: string, max: number) {
+  const v = String(formData.get(key) ?? "").trim().slice(0, max);
+  return v || null;
+}
+
+// Websites are stored as typed; shown as a link only if they look like one.
+export function websiteHref(value: string | null | undefined) {
+  if (!value) return null;
+  const v = value.trim();
+  if (/^https?:\/\/[^\s]+$/i.test(v)) return v;
+  if (/^[a-z0-9-]+(\.[a-z0-9-]+)+(\/[^\s]*)?$/i.test(v)) return `https://${v}`;
+  return null;
+}

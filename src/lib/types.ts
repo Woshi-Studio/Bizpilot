@@ -35,6 +35,9 @@ export type Customer = {
   status: CustomerStatus;
   next_follow_up: string | null;
   business_line?: string | null;
+  // migration 0015
+  address?: string | null;
+  website?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -283,6 +286,10 @@ export type Lead = {
   follow_up_date: string | null;
   status: LeadStatus;
   business_line?: string | null;
+  // migration 0015
+  company?: string | null;
+  address?: string | null;
+  website?: string | null;
   created_at: string;
 };
 

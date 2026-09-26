@@ -8,7 +8,7 @@ import { updateLead, type OutreachFormState } from "./actions";
 const initialState: OutreachFormState = {};
 
 const inputClass =
-  "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "mt-1 input";
 
 export default function LeadForm({
   lead,
@@ -24,19 +24,19 @@ export default function LeadForm({
       <input type="hidden" name="id" value={lead.id} />
 
       {state.error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="alert-error">
           {state.error}
         </p>
       )}
       {state.success && (
-        <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p className="alert-success">
           {state.success}
         </p>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="lead_name" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="lead_name" className="label">
             Name *
           </label>
           <input
@@ -56,7 +56,7 @@ export default function LeadForm({
           className={inputClass}
         />
         <div>
-          <label htmlFor="lead_email" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="lead_email" className="label">
             Email
           </label>
           <input
@@ -69,7 +69,7 @@ export default function LeadForm({
           />
         </div>
         <div>
-          <label htmlFor="lead_phone" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="lead_phone" className="label">
             Phone
           </label>
           <input
@@ -82,7 +82,49 @@ export default function LeadForm({
           />
         </div>
         <div>
-          <label htmlFor="lead_channel" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="lead_company" className="label">
+            Company
+          </label>
+          <input
+            id="lead_company"
+            name="company"
+            type="text"
+            maxLength={200}
+            defaultValue={lead.company ?? ""}
+            
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label htmlFor="lead_address" className="label">
+            Address
+          </label>
+          <input
+            id="lead_address"
+            name="address"
+            type="text"
+            maxLength={300}
+            defaultValue={lead.address ?? ""}
+            placeholder="Street, city"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label htmlFor="lead_website" className="label">
+            Website
+          </label>
+          <input
+            id="lead_website"
+            name="website"
+            type="text"
+            maxLength={300}
+            defaultValue={lead.website ?? ""}
+            placeholder="example.com"
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label htmlFor="lead_channel" className="label">
             Channel
           </label>
           <select
@@ -99,7 +141,7 @@ export default function LeadForm({
           </select>
         </div>
         <div>
-          <label htmlFor="lead_status" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="lead_status" className="label">
             Status
           </label>
           <select
@@ -116,7 +158,7 @@ export default function LeadForm({
           </select>
         </div>
         <div>
-          <label htmlFor="lead_follow_up" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="lead_follow_up" className="label">
             Follow-up date
           </label>
           <input
@@ -128,7 +170,7 @@ export default function LeadForm({
           />
         </div>
         <div className="sm:col-span-2">
-          <label htmlFor="lead_message" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="lead_message" className="label">
             Notes
           </label>
           <textarea
@@ -146,7 +188,7 @@ export default function LeadForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+          className="btn-primary"
         >
           {pending ? "Saving..." : "Save changes"}
         </button>

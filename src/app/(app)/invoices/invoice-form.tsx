@@ -8,7 +8,7 @@ import BusinessLineInput from "@/components/business-line-input";
 const initialState: InvoiceFormState = {};
 
 const inputClass =
-  "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "mt-1 input";
 
 type Row = { description: string; quantity: string; unit_price: string };
 
@@ -17,11 +17,13 @@ export default function InvoiceForm({
   currency,
   paymentMethods,
   lines,
+  defaultCustomerId,
 }: {
   customers: { id: string; name: string }[];
   currency: string;
   paymentMethods: PaymentMethod[];
   lines?: string[];
+  defaultCustomerId?: string;
 }) {
   const [state, formAction, pending] = useActionState(
     createInvoice,
@@ -75,7 +77,7 @@ export default function InvoiceForm({
   return (
     <form
       action={formAction}
-      className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="card p-6"
     >
       <input type="hidden" name="items" value={itemsJson} />
 
@@ -83,7 +85,7 @@ export default function InvoiceForm({
         <div>
           <label
             htmlFor="doc_type"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Document type
           </label>
@@ -95,14 +97,14 @@ export default function InvoiceForm({
         <div>
           <label
             htmlFor="customer_id"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Customer
           </label>
           <select
             id="customer_id"
             name="customer_id"
-            defaultValue=""
+            defaultValue={defaultCustomerId ?? ""}
             className={inputClass}
           >
             <option value="">No customer</option>
@@ -116,7 +118,7 @@ export default function InvoiceForm({
         <div>
           <label
             htmlFor="issue_date"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Issue date
           </label>
@@ -131,7 +133,7 @@ export default function InvoiceForm({
         <div>
           <label
             htmlFor="due_date"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Due date <span className="text-slate-400">(optional)</span>
           </label>
@@ -145,7 +147,7 @@ export default function InvoiceForm({
         />
       </div>
 
-      <h2 className="mt-6 text-sm font-semibold text-slate-800">Line items</h2>
+      <h2 className="mt-6 section-title">Line items</h2>
       <div className="mt-2 space-y-2">
         {rows.map((row, idx) => (
           <div key={idx} className="flex flex-col gap-2 sm:flex-row">
@@ -192,14 +194,14 @@ export default function InvoiceForm({
         onClick={() =>
           setRows((rs) => [...rs, { description: "", quantity: "1", unit_price: "" }])
         }
-        className="mt-2 text-sm font-medium text-indigo-600 hover:text-indigo-500"
+        className="mt-2 text-sm link"
       >
         + Add line
       </button>
 
       {paymentMethods.length > 0 && (
         <div className="mt-4">
-          <p className="block text-sm font-medium text-slate-700">
+          <p className="label">
             Attach payment methods
           </p>
           <div className="mt-1 flex flex-wrap gap-2">
@@ -224,7 +226,7 @@ export default function InvoiceForm({
       <div className="mt-4">
         <label
           htmlFor="notes"
-          className="block text-sm font-medium text-slate-700"
+          className="label"
         >
           Notes <span className="text-slate-400">(payment details, terms...)</span>
         </label>
@@ -248,14 +250,14 @@ export default function InvoiceForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+          className="btn-primary"
         >
           {pending ? "Creating..." : "Create"}
         </button>
       </div>
 
       {state.error && (
-        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-3 alert-error">
           {state.error}
         </p>
       )}

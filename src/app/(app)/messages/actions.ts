@@ -29,7 +29,13 @@ export async function generateMessage(
 
   const messageType = String(formData.get("message_type") ?? "");
   const tone = String(formData.get("tone") ?? "");
-  const customerId = String(formData.get("customer_id") ?? "");
+  // "customer:<id>" or "lead:<id>" (older links send customer_id)
+  const contact = String(formData.get("contact") ?? "");
+  const [contactKind, contactId] = contact.includes(":")
+    ? contact.split(":")
+    : ["customer", String(formData.get("customer_id") ?? "")];
+  const customerId = contactKind === "customer" ? contactId : "";
+  const leadId = contactKind === "lead" ? contactId : "";
   const details = String(formData.get("details") ?? "").trim();
 
   const typeLabel = MESSAGE_TYPES.find((t) => t.value === messageType)?.label;
@@ -84,6 +90,24 @@ ${
         .join("\n")}`
     : ""
 }`;
+    }
+  }
+
+  if (leadId) {
+    const { data: lead } = await supabase
+      .from("leads")
+      .select("name, company, status, message")
+      .eq("id", leadId)
+      .eq("business_id", business.id)
+      .maybeSingle();
+    if (lead) {
+      const l = lead as { name: string; company?: string | null; status: string; message: string | null };
+      customerContext = `
+Recipient (a lead, not yet a customer):
+- Name: ${l.name}
+- Company: ${l.company ?? "n/a"}
+- Lead status: ${l.status}
+${l.message ? `- What they told me: ${l.message.slice(0, 600)}` : ""}`;
     }
   }
 

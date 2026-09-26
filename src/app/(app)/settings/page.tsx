@@ -8,6 +8,7 @@ import {
   normalizePlan,
 } from "@/lib/ai-quota";
 import SettingsForm from "./settings-form";
+import AppearanceSection from "./appearance-section";
 import PublicPageForm from "./public-page-form";
 import PaymentMethodsForm from "./payment-methods-form";
 import ChangeEmailForm from "./change-email-form";
@@ -139,19 +140,21 @@ export default async function SettingsPage({
   const publicPage = publicResult.error ? null : publicResult.data;
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="text-2xl font-bold text-slate-900">Settings</h1>
-      <p className="mt-1 text-sm text-slate-500">
+    <div className="mx-auto max-w-6xl [&>*]:max-w-3xl">
+      <h1 className="page-title">Settings</h1>
+      <p className="page-sub">
         Manage your profile and business details.
       </p>
 
-      <div className="mt-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <AppearanceSection businessId={business?.id} />
+
+      <div className="mt-8 card p-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-800">
+            <h2 className="section-title">
               Your plan
             </h2>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="page-sub">
               You&apos;re on the{" "}
               <span className="font-medium text-slate-700">
                 {PLAN_NAMES[plan]}
@@ -183,7 +186,7 @@ export default async function SettingsPage({
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-slate-800">
+                  <p className="section-title">
                     {PLAN_NAMES[p.tier]}
                   </p>
                   {current && (
@@ -205,7 +208,7 @@ export default async function SettingsPage({
                     <input type="hidden" name="tier" value={p.tier} />
                     <button
                       type="submit"
-                      className="mt-3 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+                      className="mt-3 btn-primary"
                     >
                       {paid ? `Switch to ${PLAN_NAMES[p.tier]}` : `Upgrade to ${PLAN_NAMES[p.tier]}`}
                     </button>
@@ -222,7 +225,7 @@ export default async function SettingsPage({
           <form action={openBillingPortal}>
             <button
               type="submit"
-              className="mt-4 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              className="mt-4 btn-secondary"
             >
               Manage billing / cancel
             </button>

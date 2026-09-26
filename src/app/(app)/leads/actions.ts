@@ -1,7 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireUserAndBusiness } from "@/lib/data";
+import {
+  requireUserAndBusiness,
+  isMissingColumnError,
+  optionalText,
+} from "@/lib/data";
 import { LEAD_CHANNELS, LEAD_STATUSES } from "@/lib/types";
 import { normalizeLine } from "@/lib/business-lines";
 import { logActivity } from "@/lib/activities";
@@ -107,20 +111,26 @@ export async function updateLead(
 
   const { supabase, business } = await requireUserAndBusiness();
 
-  const { error } = await supabase
-    .from("leads")
-    .update({
-      name,
-      email: email || null,
-      phone: phone || null,
-      message: message || null,
-      channel: LEAD_CHANNELS.some((c) => c.value === channel) ? channel : "other",
-      status: LEAD_STATUSES.some((s) => s.value === status) ? status : "new",
-      follow_up_date: followUpDate || null,
-      business_line: normalizeLine(formData.get("business_line")),
-    })
-    .eq("id", id)
-    .eq("business_id", business.id);
+  const base = {
+    name,
+    email: email || null,
+    phone: phone || null,
+    message: message || null,
+    channel: LEAD_CHANNELS.some((c) => c.value === channel) ? channel : "other",
+    status: LEAD_STATUSES.some((s) => s.value === status) ? status : "new",
+    follow_up_date: followUpDate || null,
+    business_line: normalizeLine(formData.get("business_line")),
+  };
+  // 0015 columns; retried without them if the migration isn't run yet.
+  const extras = {
+    company: optionalText(formData, "company", 200),
+    address: optionalText(formData, "address", 300),
+    website: optionalText(formData, "website", 300),
+  };
+  const update = (v: object) =>
+    supabase.from("leads").update(v).eq("id", id).eq("business_id", business.id);
+  let { error } = await update({ ...base, ...extras });
+  if (isMissingColumnError(error)) ({ error } = await update(base));
 
   if (error) return { error: error.message };
 

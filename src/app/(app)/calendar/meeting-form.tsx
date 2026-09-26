@@ -10,18 +10,22 @@ import {
 const initialState: ActivityFormState = {};
 
 const inputClass =
-  "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "mt-1 input";
 
 export default function MeetingForm({
   customers,
   leads,
   lines,
   defaultLine,
+  defaultCustomerId,
+  defaultLeadId,
 }: {
   customers: { id: string; name: string }[];
   leads: { id: string; name: string }[];
   lines?: string[];
   defaultLine?: string;
+  defaultCustomerId?: string;
+  defaultLeadId?: string;
 }) {
   const [state, formAction, pending] = useActionState(addMeeting, initialState);
   const formRef = useRef<HTMLFormElement>(null);
@@ -38,24 +42,24 @@ export default function MeetingForm({
         formData.set("tz_offset", String(new Date().getTimezoneOffset()));
         formAction(formData);
       }}
-      className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="card p-6"
     >
-      <h2 className="text-sm font-semibold text-slate-800">🤝 Add meeting</h2>
+      <h2 className="section-title">🤝 Add meeting</h2>
 
       {state.error && (
-        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-3 alert-error">
           {state.error}
         </p>
       )}
       {state.success && (
-        <p className="mt-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p className="mt-3 alert-success">
           {state.success}
         </p>
       )}
 
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-4">
         <div className="sm:col-span-2">
-          <label htmlFor="meeting_title" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="meeting_title" className="label">
             Title *
           </label>
           <input
@@ -69,22 +73,22 @@ export default function MeetingForm({
           />
         </div>
         <div>
-          <label htmlFor="meeting_date" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="meeting_date" className="label">
             Date *
           </label>
           <input id="meeting_date" name="date" type="date" required className={inputClass} />
         </div>
         <div>
-          <label htmlFor="meeting_time" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="meeting_time" className="label">
             Time
           </label>
           <input id="meeting_time" name="time" type="time" className={inputClass} />
         </div>
         <div>
-          <label htmlFor="meeting_customer" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="meeting_customer" className="label">
             Customer
           </label>
-          <select id="meeting_customer" name="customer_id" defaultValue="" className={inputClass}>
+          <select id="meeting_customer" name="customer_id" defaultValue={defaultCustomerId ?? ""} className={inputClass}>
             <option value="">None</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>
@@ -94,10 +98,10 @@ export default function MeetingForm({
           </select>
         </div>
         <div>
-          <label htmlFor="meeting_lead" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="meeting_lead" className="label">
             Lead
           </label>
-          <select id="meeting_lead" name="lead_id" defaultValue="" className={inputClass}>
+          <select id="meeting_lead" name="lead_id" defaultValue={defaultLeadId ?? ""} className={inputClass}>
             <option value="">None</option>
             {leads.map((l) => (
               <option key={l.id} value={l.id}>
@@ -116,7 +120,7 @@ export default function MeetingForm({
           />
         </div>
         <div className="sm:col-span-4">
-          <label htmlFor="meeting_body" className="block text-sm font-medium text-slate-700">
+          <label htmlFor="meeting_body" className="label">
             Notes
           </label>
           <input
@@ -134,7 +138,7 @@ export default function MeetingForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+          className="btn-primary"
         >
           {pending ? "Saving..." : "Add meeting"}
         </button>

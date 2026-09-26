@@ -2,7 +2,11 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireUserAndBusiness } from "@/lib/data";
+import {
+  requireUserAndBusiness,
+  isMissingColumnError,
+  optionalText,
+} from "@/lib/data";
 import { CUSTOMER_STATUSES } from "@/lib/types";
 import { normalizeLine } from "@/lib/business-lines";
 import { logActivity } from "@/lib/activities";
@@ -28,7 +32,17 @@ function readCustomerForm(formData: FormData) {
     status: CUSTOMER_STATUSES.some((s) => s.value === status) ? status : "lead",
     next_follow_up: nextFollowUp || null,
     business_line: normalizeLine(formData.get("business_line")),
+    // 0015 columns — dropped again by withoutExtras() if not migrated yet
+    address: optionalText(formData, "address", 300),
+    website: optionalText(formData, "website", 300),
   };
+}
+
+function withoutExtras<T extends { address?: unknown; website?: unknown }>(v: T) {
+  const rest = { ...v };
+  delete rest.address;
+  delete rest.website;
+  return rest;
 }
 
 export async function createCustomer(
@@ -42,14 +56,17 @@ export async function createCustomer(
 
   const { supabase, business } = await requireUserAndBusiness();
 
-  const { data, error } = await supabase
-    .from("customers")
-    .insert({ ...values, business_id: business.id })
-    .select("id")
-    .single();
+  const insert = (v: typeof values | ReturnType<typeof withoutExtras<typeof values>>) =>
+    supabase
+      .from("customers")
+      .insert({ ...v, business_id: business.id })
+      .select("id")
+      .single();
+  let { data, error } = await insert(values);
+  if (isMissingColumnError(error)) ({ data, error } = await insert(withoutExtras(values)));
 
-  if (error) {
-    return { error: error.message };
+  if (error || !data) {
+    return { error: error?.message ?? "Couldn't save the customer." };
   }
 
   revalidatePath("/customers");
@@ -72,11 +89,10 @@ export async function updateCustomer(
 
   const { supabase, business } = await requireUserAndBusiness();
 
-  const { error } = await supabase
-    .from("customers")
-    .update(values)
-    .eq("id", id)
-    .eq("business_id", business.id);
+  const update = (v: object) =>
+    supabase.from("customers").update(v).eq("id", id).eq("business_id", business.id);
+  let { error } = await update(values);
+  if (isMissingColumnError(error)) ({ error } = await update(withoutExtras(values)));
 
   if (error) {
     return { error: error.message };

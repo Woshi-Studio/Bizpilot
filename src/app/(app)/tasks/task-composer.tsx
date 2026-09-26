@@ -12,11 +12,13 @@ export default function TaskComposer({
   services,
   lines,
   defaultLine,
+  defaultCustomerId,
 }: {
   customers: { id: string; name: string }[];
   services: Service[];
   lines?: string[];
   defaultLine?: string;
+  defaultCustomerId?: string;
 }) {
   const [state, formAction, pending] = useActionState(
     createTask,
@@ -57,10 +59,10 @@ export default function TaskComposer({
   }
 
   const inputClass =
-    "block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+    "input";
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="card p-4">
       <form ref={formRef} action={formAction} className="space-y-2">
         <div className="flex flex-col gap-2 sm:flex-row">
           <input
@@ -77,7 +79,7 @@ export default function TaskComposer({
           />
           <select
             name="customer_id"
-            defaultValue=""
+            defaultValue={defaultCustomerId ?? ""}
             className={`${inputClass} sm:w-44`}
           >
             <option value="">No customer</option>
@@ -139,14 +141,14 @@ export default function TaskComposer({
           <button
             type="submit"
             disabled={pending}
-            className="shrink-0 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+            className="shrink-0 btn-primary"
           >
             {pending ? "Adding..." : "Add task"}
           </button>
         </div>
       </form>
       {state.error && (
-        <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-2 alert-error">
           {state.error}
         </p>
       )}

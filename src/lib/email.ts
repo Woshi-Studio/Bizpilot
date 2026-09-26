@@ -195,6 +195,10 @@ export class EmailError extends Error {
 
 const SEND_FAILED = "The email didn't go out. Please try again in a minute.";
 
+export type EmailAttachment = { filename: string; content: Buffer; contentType: string };
+
+export const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+
 export async function deliverEmail(opts: {
   provider: EmailProvider | "demo";
   to: string;
@@ -202,7 +206,15 @@ export async function deliverEmail(opts: {
   text: string;
   fromName: string;
   replyTo: string | null;
+  attachments?: EmailAttachment[];
 }) {
+  const attachments = (opts.attachments ?? []).map((a) => ({
+    ...a,
+    filename: a.filename.replace(/[\r\n"\\/]/g, "").slice(0, 150) || "attachment",
+  }));
+  if (attachments.reduce((n, a) => n + a.content.length, 0) > MAX_ATTACHMENT_BYTES) {
+    throw new EmailError("The attachment is too large to email (max 10 MB). Send the link instead.");
+  }
   if (!isValidEmail(opts.to)) throw new EmailError("That email address doesn't look right.");
   const subject = cleanSubject(opts.subject);
   const text = opts.text.slice(0, MAX_BODY);
@@ -224,6 +236,14 @@ export async function deliverEmail(opts: {
         subject,
         text,
         ...(isValidEmail(opts.replyTo) ? { reply_to: opts.replyTo } : {}),
+        ...(attachments.length
+          ? {
+              attachments: attachments.map((a) => ({
+                filename: a.filename,
+                content: a.content.toString("base64"),
+              })),
+            }
+          : {}),
       }),
       signal: AbortSignal.timeout(20_000),
       cache: "no-store",
@@ -256,6 +276,7 @@ export async function deliverEmail(opts: {
       subject,
       text,
       ...(isValidEmail(opts.replyTo) ? { replyTo: opts.replyTo } : {}),
+      ...(attachments.length ? { attachments } : {}),
     });
   } catch (err) {
     const code = (err as { code?: string; responseCode?: number })?.code ?? "";

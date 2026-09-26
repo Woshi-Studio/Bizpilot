@@ -38,6 +38,11 @@
 --      tax (e.g. HST 13%) and default days until due. Owner only.
 --   9. invoices.currency / tax_label / tax_rate: kept on each invoice so
 --      it prints the same later. Empty currency = the business currency.
+--  10. share_links: a long random token per invoice/quote or document, so
+--      a customer can open it without a login (/i/<token>, /d/<token>).
+--      Owners manage their links (revoke = set revoked_at). The public
+--      reads go ONLY through shared_invoice(token) / shared_document(token),
+--      SECURITY DEFINER, which return that one document and nothing else.
 --
 -- Who the limits apply to: every request made with a user's session
 -- (the browser, server actions, the public lead form). Requests made
@@ -735,3 +740,153 @@ alter table public.invoices drop constraint if exists invoices_tax_check;
 alter table public.invoices add constraint invoices_tax_check
   check (tax_rate >= 0 and tax_rate <= 30
          and (tax_label is null or char_length(tax_label) between 1 and 30));
+
+-- ============================================================
+-- 9. Share links (view an invoice / a file without a login)
+-- ============================================================
+create table if not exists public.share_links (
+  token text primary key check (token ~ '^[A-Za-z0-9_-]{40,64}$'),
+  business_id uuid not null references public.businesses (id) on delete cascade,
+  invoice_id uuid references public.invoices (id) on delete cascade,
+  document_id uuid references public.documents (id) on delete cascade,
+  created_at timestamptz not null default now(),
+  revoked_at timestamptz,
+  check ((invoice_id is null) <> (document_id is null))
+);
+
+create index if not exists share_links_invoice_idx on public.share_links (invoice_id);
+create index if not exists share_links_document_idx on public.share_links (document_id);
+
+alter table public.share_links enable row level security;
+
+drop policy if exists "Owners manage own share links" on public.share_links;
+create policy "Owners manage own share links"
+  on public.share_links for all
+  to authenticated
+  using (
+    exists (
+      select 1 from public.businesses b
+      where b.id = business_id and b.owner_id = auth.uid()
+    )
+  )
+  with check (
+    exists (
+      select 1 from public.businesses b
+      where b.id = business_id and b.owner_id = auth.uid()
+    )
+    and (invoice_id is null or exists (
+      select 1 from public.invoices i
+      where i.id = invoice_id and i.business_id = share_links.business_id
+    ))
+    and (document_id is null or exists (
+      select 1 from public.documents d
+      where d.id = document_id and d.business_id = share_links.business_id
+    ))
+  );
+
+revoke all on public.share_links from anon;
+revoke delete on public.share_links from authenticated;
+
+-- A revoked link stays revoked.
+create or replace function public.share_links_stay_revoked()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if old.revoked_at is not null then
+    new.revoked_at := old.revoked_at;
+  end if;
+  new.token := old.token;
+  new.business_id := old.business_id;
+  new.invoice_id := old.invoice_id;
+  new.document_id := old.document_id;
+  return new;
+end;
+$$;
+
+drop trigger if exists share_links_stay_revoked on public.share_links;
+create trigger share_links_stay_revoked
+  before update on public.share_links
+  for each row execute function public.share_links_stay_revoked();
+
+-- The invoice / quote behind a link, for the public view page.
+create or replace function public.shared_invoice(p_token text)
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_invoice uuid;
+  v_result  jsonb;
+begin
+  if p_token is null or p_token !~ '^[A-Za-z0-9_-]{40,64}$' then
+    return null;
+  end if;
+
+  select l.invoice_id into v_invoice
+  from public.share_links l
+  where l.token = p_token and l.revoked_at is null and l.invoice_id is not null;
+
+  if v_invoice is null then
+    return null;
+  end if;
+
+  select jsonb_build_object(
+    'number', i.number,
+    'doc_type', i.doc_type,
+    'status', i.status,
+    'issue_date', i.issue_date,
+    'due_date', i.due_date,
+    'notes', i.notes,
+    'currency', coalesce(i.currency, b.currency),
+    'tax_label', i.tax_label,
+    'tax_rate', i.tax_rate,
+    'business_name', b.name,
+    'owner_name', p.full_name,
+    'customer_name', c.name,
+    'customer_company', c.company,
+    'items', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'description', it.description,
+        'quantity', it.quantity,
+        'unit_price', it.unit_price
+      ) order by it.position)
+      from public.invoice_items it
+      where it.invoice_id = i.id
+    ), '[]'::jsonb)
+  ) into v_result
+  from public.invoices i
+  join public.businesses b on b.id = i.business_id
+  left join public.profiles p on p.id = b.owner_id
+  left join public.customers c on c.id = i.customer_id
+  where i.id = v_invoice;
+
+  return v_result;
+end;
+$$;
+
+revoke all on function public.shared_invoice(text) from public;
+grant execute on function public.shared_invoice(text) to anon, authenticated;
+
+-- The file behind a link. The server turns the path into a 60-second
+-- download link with the service role.
+create or replace function public.shared_document(p_token text)
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select jsonb_build_object('path', d.path, 'name', d.name, 'mime', d.mime)
+  from public.share_links l
+  join public.documents d on d.id = l.document_id
+  where p_token ~ '^[A-Za-z0-9_-]{40,64}$'
+    and l.token = p_token
+    and l.revoked_at is null
+$$;
+
+revoke all on function public.shared_document(text) from public;
+grant execute on function public.shared_document(text) to anon, authenticated;

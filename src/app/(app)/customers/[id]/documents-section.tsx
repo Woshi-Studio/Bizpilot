@@ -1,10 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
+import SendDocButton from "@/components/send-doc-dialog";
+import { DeleteButton, EditButton } from "@/components/row-actions";
 import LocalTime from "@/components/local-time";
 import {
   uploadDocument,
   deleteDocument,
+  renameDocument,
   type DocumentFormState,
 } from "../document-actions";
 import FormError from "@/components/form-error";
@@ -25,14 +28,79 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+export type DocSendInfo = {
+  to: { name: string; email: string | null };
+  canSend: boolean;
+  sendNote?: string;
+  businessName: string;
+  fromName: string;
+};
+
+function DocRow({ d, customerId, send }: { d: CustomerDocument; customerId: string; send?: DocSendInfo }) {
+  const [editing, setEditing] = useState(false);
+  const [state, action, pending] = useActionState(renameDocument, initialState);
+  const first = send?.to.name.split(" ")[0] || "there";
+  return (
+    <li className="px-4 py-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="min-w-0">
+          <a href={`/customers/${customerId}/documents/${d.id}`} className="block truncate text-sm link">
+            {d.name}
+          </a>
+          <p className="text-xs text-slate-400">
+            {formatSize(d.size)} · <LocalTime iso={d.uploaded_at} />
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-0.5">
+          {send && (
+            <SendDocButton
+              kind="document"
+              id={d.id}
+              title={d.name}
+              to={send.to}
+              subject={`${d.name} from ${send.businessName}`}
+              body={`Hi ${first},
+
+Here is ${d.name}.
+
+You can also download it here: {link}
+
+Thank you!
+${send.fromName}`}
+              canSend={send.canSend}
+              sendNote={send.sendNote}
+              label="Send"
+              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-muted hover:bg-surface-3 hover:text-ink"
+            />
+          )}
+          <EditButton onClick={() => setEditing((e) => !e)} open={editing} label="Rename" />
+          <DeleteButton action={deleteDocument} id={d.id} what={d.name} />
+        </div>
+      </div>
+      {editing && (
+        <form action={action} className="mt-2 flex gap-2">
+          <input type="hidden" name="id" value={d.id} />
+          <input name="name" defaultValue={d.name} maxLength={255} required aria-label="File name" className="input" />
+          <button type="submit" disabled={pending} className="btn-primary btn-sm shrink-0">
+            Save
+          </button>
+          {state.error && <p className="alert-error text-xs">{state.error}</p>}
+        </form>
+      )}
+    </li>
+  );
+}
+
 export default function DocumentsSection({
   customerId,
   documents,
   missing,
+  send,
 }: {
   customerId: string;
   documents: CustomerDocument[];
   missing?: boolean;
+  send?: DocSendInfo;
 }) {
   const [state, formAction, pending] = useActionState(
     uploadDocument,
@@ -94,38 +162,7 @@ export default function DocumentsSection({
       ) : (
         <ul className="mt-4 divide-y divide-slate-100 rounded-lg border border-slate-200">
           {documents.map((d) => (
-            <li
-              key={d.id}
-              className="flex items-center justify-between gap-3 px-4 py-2.5"
-            >
-              <div className="min-w-0">
-                <a
-                  href={`/customers/${customerId}/documents/${d.id}`}
-                  className="block truncate text-sm link"
-                >
-                  {d.name}
-                </a>
-                <p className="text-xs text-slate-400">
-                  {formatSize(d.size)} · <LocalTime iso={d.uploaded_at} />
-                </p>
-              </div>
-              <form
-                action={deleteDocument}
-                onSubmit={(e) => {
-                  if (!confirm(`Delete ${d.name}? This can't be undone.`)) {
-                    e.preventDefault();
-                  }
-                }}
-              >
-                <input type="hidden" name="id" value={d.id} />
-                <button
-                  type="submit"
-                  className="text-xs font-medium text-slate-400 hover:text-red-600"
-                >
-                  Delete
-                </button>
-              </form>
-            </li>
+            <DocRow key={d.id} d={d} customerId={customerId} send={send} />
           ))}
         </ul>
       )}

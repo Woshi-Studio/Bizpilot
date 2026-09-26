@@ -151,3 +151,26 @@ export async function deleteDocument(formData: FormData) {
 
   revalidatePath(`/customers/${doc.customer_id}`);
 }
+
+// Renames a file (the stored file keeps its path).
+export async function renameDocument(
+  _prev: DocumentFormState,
+  formData: FormData
+): Promise<DocumentFormState> {
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").replace(/[\r\n]+/g, " ").trim().slice(0, 255);
+  if (!id) return { error: "Missing file." };
+  if (!name) return { error: "Give the file a name." };
+
+  const { supabase, business } = await requireUserAndBusiness();
+  const { data, error } = await supabase
+    .from("documents")
+    .update({ name })
+    .eq("id", id)
+    .eq("business_id", business.id)
+    .select("customer_id")
+    .maybeSingle();
+  if (error || !data) return { error: "Couldn't rename the file." };
+  revalidatePath(`/customers/${data.customer_id}`);
+  return { success: "Renamed." };
+}

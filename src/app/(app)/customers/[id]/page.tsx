@@ -19,18 +19,26 @@ import type { Activity } from "@/lib/activities";
 import { loadBusinessLines } from "@/lib/activities";
 import { emailNote, emailStatus } from "@/lib/email";
 import ContactHeader, { FactCard, Section } from "@/components/contact/contact-header";
-import ContactActions, { type OpenInvoice } from "@/components/contact/contact-actions";
+import ContactActions, { type OpenInvoice, type SendableDoc } from "@/components/contact/contact-actions";
+import { invoiceTotals } from "@/lib/line-settings";
+import { invoiceEmailText, type InvoiceDoc } from "@/lib/invoice-doc";
 
-export const metadata = { title: "Customer" };
-
-type InvoiceRow = {
+type SendRow = {
   id: string;
   number: string;
   status: string;
-  doc_type: string;
+  doc_type: "invoice" | "quote";
+  issue_date: string;
   due_date: string | null;
-  invoice_items: { quantity: number; unit_price: number }[] | null;
+  notes: string | null;
+  currency?: string | null;
+  tax_label?: string | null;
+  tax_rate?: number | null;
+  invoice_items: { description?: string; quantity: number; unit_price: number; position?: number }[];
 };
+
+export const metadata = { title: "Customer" };
+
 
 export default async function CustomerDetailPage({
   params,
@@ -38,7 +46,7 @@ export default async function CustomerDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase, business } = await requireUserAndBusiness();
+  const { supabase, user, business } = await requireUserAndBusiness();
 
   const { data } = await supabase
     .from("customers")
@@ -86,10 +94,9 @@ export default async function CustomerDetailPage({
       .order("due_date", { ascending: true, nullsFirst: false }),
     supabase
       .from("invoices")
-      .select("id, number, status, doc_type, due_date, invoice_items(quantity, unit_price)")
+      .select("*, invoice_items(description, quantity, unit_price, position)")
       .eq("business_id", business.id)
       .eq("customer_id", id)
-      .eq("doc_type", "invoice")
       .order("issue_date", { ascending: false }),
     supabase
       .from("activities")
@@ -112,13 +119,12 @@ export default async function CustomerDetailPage({
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
   const openTasks = (openTasksData ?? []) as { id: string; title: string; due_date: string | null }[];
-  const invoiceTotal = (inv: InvoiceRow) =>
-    (inv.invoice_items ?? []).reduce(
-      (s, it) => s + Number(it.quantity) * Number(it.unit_price),
-      0
-    );
-  const unpaid = ((invoicesData ?? []) as InvoiceRow[]).filter(
-    (i) => i.status === "sent" || i.status === "draft"
+  const allDocs = (invoicesData ?? []) as SendRow[];
+  const invoiceTotal = (inv: SendRow) =>
+    invoiceTotals(inv.invoice_items ?? [], inv.tax_rate ?? 0).total;
+  const docCurrency = (inv: SendRow) => inv.currency || business.currency;
+  const unpaid = allDocs.filter(
+    (i) => i.doc_type === "invoice" && (i.status === "sent" || i.status === "draft")
   );
   const unpaidTotal = unpaid.reduce((s, i) => s + invoiceTotal(i), 0);
   const overdue = unpaid.filter((i) => i.status === "sent" && i.due_date && i.due_date < today);
@@ -128,10 +134,44 @@ export default async function CustomerDetailPage({
     ? {
         id: toSend.id,
         number: toSend.number,
-        total: formatMoney(invoiceTotal(toSend), business.currency),
+        total: formatMoney(invoiceTotal(toSend), docCurrency(toSend)),
         due: toSend.due_date,
       }
     : null;
+
+  // "Send invoice": every invoice / quote not sent yet.
+  const { data: me } = await supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle();
+  const fromName = me?.full_name || business.name;
+  const sendDocs: SendableDoc[] = allDocs
+    .filter((d) => d.status === "draft")
+    .map((d) => {
+      const doc: InvoiceDoc = {
+        number: d.number,
+        doc_type: d.doc_type,
+        status: d.status,
+        issue_date: d.issue_date,
+        due_date: d.due_date,
+        notes: d.notes,
+        currency: docCurrency(d),
+        tax_label: d.tax_label ?? null,
+        tax_rate: Number(d.tax_rate ?? 0),
+        business_name: business.name,
+        owner_name: me?.full_name ?? null,
+        customer_name: customer.name,
+        customer_company: customer.company ?? null,
+        items: [...(d.invoice_items ?? [])]
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+          .map((i) => ({ description: i.description ?? "", quantity: Number(i.quantity), unit_price: Number(i.unit_price) })),
+      };
+      const title = `${d.doc_type === "quote" ? "Quote" : "Invoice"} ${d.number}`;
+      return {
+        id: d.id,
+        title: `${title} · ${formatMoney(invoiceTotal(d), docCurrency(d))}`,
+        subject: `${title} from ${business.name}`,
+        body: invoiceEmailText(doc, "{link}", fromName),
+        status: d.status,
+      };
+    });
 
   const activities = (activitiesResult.data ?? []) as Activity[];
   const nextMeeting = activities
@@ -194,6 +234,7 @@ export default async function CustomerDetailPage({
         canSend={send.canSend}
         sendNote={send.canSend ? undefined : emailNote(send)}
         openInvoice={openInvoice}
+        sendDocs={sendDocs}
         businessName={business.name}
       />
 
@@ -260,6 +301,13 @@ export default async function CustomerDetailPage({
           customerId={customer.id}
           documents={(documentsResult.data ?? []) as CustomerDocument[]}
           missing={!!documentsResult.error}
+          send={{
+            to: { name: customer.name, email: customer.email },
+            canSend: send.canSend,
+            sendNote: send.canSend ? undefined : emailNote(send),
+            businessName: business.name,
+            fromName,
+          }}
         />
       </Section>
 

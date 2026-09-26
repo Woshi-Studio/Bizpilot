@@ -4,7 +4,16 @@ import Link from "next/link";
 import { useState } from "react";
 import Icon, { type IconName } from "@/components/icons";
 import SendEmailDialog from "@/components/send-email-dialog";
-import { mailtoHref } from "@/lib/mailto";
+import { SendDocDialog } from "@/components/send-doc-dialog";
+
+// An unsent invoice / quote the "Send invoice" menu offers.
+export type SendableDoc = {
+  id: string;
+  title: string; // "Invoice INV-0003 · CA$226.00"
+  subject: string;
+  body: string; // with {link}
+  status: string;
+};
 
 export type OpenInvoice = {
   id: string;
@@ -26,7 +35,7 @@ export default function ContactActions({
   canSend,
   sendNote,
   openInvoice,
-  businessName,
+  sendDocs = [],
   leadConvert,
 }: {
   kind: "customer" | "lead";
@@ -36,12 +45,14 @@ export default function ContactActions({
   canSend: boolean;
   sendNote?: string;
   openInvoice?: OpenInvoice | null;
+  sendDocs?: SendableDoc[];
   businessName: string;
   // for leads: a server action form that turns the lead into a customer
   leadConvert?: React.ReactNode;
 }) {
   const [dialog, setDialog] = useState<{ n: number; subject: string; body: string } | null>(null);
-  const first = name.split(" ")[0] || name;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [sending, setSending] = useState<{ n: number; doc: SendableDoc } | null>(null);
   const contactParam = `${kind}=${id}`;
 
   function compose(subject = "", body = "") {
@@ -52,34 +63,14 @@ export default function ContactActions({
 
   if (kind === "customer") {
     actions.push({ key: "invoice", label: "Add invoice", icon: "receipt", href: `/invoices/new?customer=${id}` });
-    if (openInvoice) {
-      const invoiceBody = `Hi ${first},\n\nHere is invoice ${openInvoice.number} from ${businessName} for ${openInvoice.total}${
-        openInvoice.due ? `, due ${openInvoice.due}` : ""
-      }.\n\nPlease let me know if you have any questions.\n\nThank you!`;
-      actions.push(
-        canSend && email
-          ? {
-              key: "send-invoice",
-              label: "Send invoice",
-              icon: "send",
-              onClick: () => compose(`Invoice ${openInvoice.number} from ${businessName}`, invoiceBody),
-            }
-          : email
-            ? {
-                key: "send-invoice",
-                label: "Send invoice",
-                icon: "send",
-                href: mailtoHref(email, `Invoice ${openInvoice.number} from ${businessName}`, invoiceBody),
-                title: "Opens your own email app with the invoice note filled in",
-              }
-            : {
-                key: "send-invoice",
-                label: "Send invoice",
-                icon: "send",
-                href: `/invoices/${openInvoice.id}`,
-                title: "Open the invoice to print or share it",
-              }
-      );
+    if (sendDocs.length === 0 && openInvoice) {
+      actions.push({
+        key: "send-invoice",
+        label: "Send invoice",
+        icon: "send",
+        href: `/invoices/${openInvoice.id}`,
+        title: "Open the invoice to send, print or share it",
+      });
     }
   }
 
@@ -128,6 +119,43 @@ export default function ContactActions({
       <div data-tour="contact-actions" className="sticky top-16 z-20 -mx-4 bg-canvas/85 px-4 py-3 backdrop-blur-md sm:mx-0 sm:rounded-2xl sm:px-0 print:hidden">
         <div className="flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
           {leadConvert}
+          {sendDocs.length > 0 && (
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((o) => !o)}
+                aria-expanded={menuOpen}
+                className="btn-secondary btn-sm"
+              >
+                <Icon name="send" className="h-4 w-4" />
+                Send invoice
+                <span className="rounded-full bg-accent-soft px-1.5 text-[10px] font-bold text-accent-text">
+                  {sendDocs.length}
+                </span>
+              </button>
+              {menuOpen && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                  <div className="card absolute left-0 top-10 z-50 w-72 p-1.5 shadow-pop">
+                    <p className="px-2.5 py-1.5 text-xs text-muted">Not sent yet</p>
+                    {sendDocs.map((d) => (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => {
+                          setMenuOpen(false);
+                          setSending((s) => ({ n: (s?.n ?? 0) + 1, doc: d }));
+                        }}
+                        className="block w-full rounded-lg px-2.5 py-2 text-left text-sm text-ink-2 hover:bg-surface-3 hover:text-ink"
+                      >
+                        {d.title}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           {[...actions].sort((a, b) => Number(!!b.primary) - Number(!!a.primary)).map((a) => {
             const cls = `${a.primary ? "btn-primary" : "btn-secondary"} btn-sm shrink-0`;
             const inner = (
@@ -159,6 +187,22 @@ export default function ContactActions({
         )}
       </div>
 
+      {sending && (
+        <SendDocDialog
+          key={sending.n}
+          open
+          onClose={() => setSending(null)}
+          kind="invoice"
+          id={sending.doc.id}
+          title={sending.doc.title.split(" · ")[0]}
+          to={{ name, email }}
+          subject={sending.doc.subject}
+          body={sending.doc.body}
+          canSend={canSend}
+          sendNote={sendNote}
+          status={sending.doc.status}
+        />
+      )}
       {dialog && (
         <SendEmailDialog
           key={dialog.n}

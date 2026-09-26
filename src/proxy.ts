@@ -12,6 +12,8 @@ const PUBLIC_PATHS = [
   "/privacy",
   "/b/",
   "/api/",
+  "/i/", // shared invoice / quote view (token)
+  "/d/", // shared file download (token)
 ];
 
 export async function proxy(request: NextRequest) {

@@ -157,6 +157,7 @@ export function createDemoClient() {
     upload: async () => ({ data: { path: "demo" }, error: null }),
     remove: async () => ({ data: [], error: null }),
     createSignedUrl: async () => ({ data: { signedUrl: "#" }, error: null }),
+    createSignedUrls: async () => ({ data: [], error: null }),
     download: async () => ({ data: null, error: { message: "demo" } }),
   };
 
@@ -166,6 +167,23 @@ export function createDemoClient() {
       if (fn === "owner_hub_scoreboard") return { data: demoScoreboard(db), error: null };
       if (fn === "consume_ai_credit") return { data: { allowed: true, used: 8, limit: 100 }, error: null };
       if (fn === "consume_email_send") return { data: { allowed: true, used: 3, limit: 50 }, error: null };
+      if (fn === "shared_invoice") {
+        const inv = (db.invoices ?? [])[0];
+        if (!inv) return { data: null, error: null };
+        const biz = (db.businesses ?? [])[0] ?? {};
+        const cust = (db.customers ?? []).find((c) => c.id === inv.customer_id);
+        return {
+          data: {
+            number: inv.number, doc_type: inv.doc_type, status: inv.status,
+            issue_date: inv.issue_date, due_date: inv.due_date, notes: inv.notes ?? "Interac e-Transfer: maya@example.com",
+            currency: "CAD", tax_label: "HST", tax_rate: 13,
+            business_name: biz.name, owner_name: "Maya Torres",
+            customer_name: cust?.name ?? null, customer_company: cust?.company ?? null,
+            items: (db.invoice_items ?? []).filter((i) => i.invoice_id === inv.id),
+          },
+          error: null,
+        };
+      }
       if (fn === "plan_usage") {
         const count = (t: string) => (db[t] ?? []).length;
         const openLeads = (db.leads ?? []).filter((l) => l.status !== "converted").length;

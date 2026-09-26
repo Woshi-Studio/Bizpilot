@@ -11,6 +11,10 @@ import { setInvoiceStatus, deleteInvoice } from "../actions";
 import PrintButton from "./print-button";
 import { DeleteButton } from "@/components/row-actions";
 import { invoiceTotals } from "@/lib/line-settings";
+import SendDocButton from "@/components/send-doc-dialog";
+import { emailNote, emailStatus } from "@/lib/email";
+import { invoiceEmailText } from "@/lib/invoice-doc";
+import { revokeShareLinks } from "../../share/actions";
 
 export const metadata = { title: "Invoice" };
 
@@ -59,6 +63,30 @@ export default async function InvoiceDetailPage({
     .eq("id", user.id)
     .maybeSingle();
 
+  const send = emailStatus(business);
+  const title = `${isQuote ? "Quote" : "Invoice"} ${invoice.number}`;
+  const fromName = profile?.full_name || business.name;
+  const emailBody = invoiceEmailText(
+    {
+      number: invoice.number,
+      doc_type: invoice.doc_type,
+      status: invoice.status,
+      issue_date: invoice.issue_date,
+      due_date: invoice.due_date,
+      notes: invoice.notes,
+      currency,
+      tax_label: invoice.tax_label ?? null,
+      tax_rate: taxRate,
+      business_name: business.name,
+      owner_name: profile?.full_name ?? null,
+      customer_name: invoice.customers?.name ?? null,
+      customer_company: invoice.customers?.company ?? null,
+      items: items.map((i) => ({ description: i.description, quantity: Number(i.quantity), unit_price: Number(i.unit_price) })),
+    },
+    "{link}",
+    fromName
+  );
+
   return (
     <div className="mx-auto max-w-6xl [&>*]:max-w-3xl">
       {/* Controls — hidden when printing */}
@@ -70,6 +98,17 @@ export default async function InvoiceDetailPage({
           &larr; Back to invoices
         </Link>
         <div className="flex flex-wrap items-center gap-2">
+          <SendDocButton
+            kind="invoice"
+            id={invoice.id}
+            title={title}
+            to={invoice.customers ? { name: invoice.customers.name, email: invoice.customers.email } : null}
+            subject={`${title} from ${business.name}`}
+            body={emailBody}
+            canSend={send.canSend}
+            sendNote={send.canSend ? undefined : emailNote(send)}
+            status={invoice.status}
+          />
           {invoice.status === "draft" && (
             <form action={setInvoiceStatus}>
               <input type="hidden" name="id" value={invoice.id} />
@@ -110,6 +149,13 @@ export default async function InvoiceDetailPage({
             Edit
           </Link>
           <PrintButton />
+          <form action={revokeShareLinks}>
+            <input type="hidden" name="kind" value="invoice" />
+            <input type="hidden" name="id" value={invoice.id} />
+            <button type="submit" className="btn-ghost btn-sm" title="Old view links stop working; a new one is made next time you send">
+              Turn off view links
+            </button>
+          </form>
           <DeleteButton
             action={deleteInvoice}
             id={invoice.id}

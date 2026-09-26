@@ -250,7 +250,7 @@ create policy "Owners manage own client docs"
     bucket_id = 'client-docs'
     and exists (
       select 1 from public.businesses b
-      where b.id::text = (storage.foldername(name))[1]
+      where b.id::text = (storage.foldername(objects.name))[1]
         and b.owner_id = auth.uid()
     )
   )
@@ -260,8 +260,8 @@ create policy "Owners manage own client docs"
       select 1
       from public.businesses b
       join public.customers c on c.business_id = b.id
-      where b.id::text = (storage.foldername(name))[1]
-        and c.id::text = (storage.foldername(name))[2]
+      where b.id::text = (storage.foldername(objects.name))[1]
+        and c.id::text = (storage.foldername(objects.name))[2]
         and b.owner_id = auth.uid()
     )
   );

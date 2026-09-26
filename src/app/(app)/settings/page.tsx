@@ -11,6 +11,7 @@ import SettingsForm from "./settings-form";
 import PublicPageForm from "./public-page-form";
 import PaymentMethodsForm from "./payment-methods-form";
 import ChangeEmailForm from "./change-email-form";
+import AssistantAccess, { type ApiKeyRow, type AuditRow } from "./assistant-access";
 import type { PaymentMethod } from "@/lib/types";
 import { startCheckout, openBillingPortal } from "./billing-actions";
 
@@ -96,6 +97,28 @@ export default async function SettingsPage({
             .order("position")
         : Promise.resolve({ data: null, error: null }),
     ]);
+
+  // Assistant access (migration 0016). Tolerate the tables not existing yet.
+  const [keysResult, auditResult] = business
+    ? await Promise.all([
+        supabase
+          .from("api_keys")
+          .select("id, name, key_prefix, scopes, created_at, last_used_at, revoked_at")
+          .eq("business_id", business.id)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("agent_audit")
+          .select("id, key_id, action, result, ok, created_at")
+          .eq("business_id", business.id)
+          .order("created_at", { ascending: false })
+          .limit(50),
+      ])
+    : [null, null];
+  const agentReady = !!keysResult && !keysResult.error;
+  const apiKeys = agentReady ? ((keysResult.data ?? []) as ApiKeyRow[]) : [];
+  const agentAudit =
+    auditResult && !auditResult.error ? ((auditResult.data ?? []) as AuditRow[]) : [];
 
   const paymentMethods = paymentMethodsResult.error
     ? []
@@ -223,6 +246,12 @@ export default async function SettingsPage({
       {business && (
         <div className="mt-8">
           <PaymentMethodsForm methods={paymentMethods} />
+        </div>
+      )}
+
+      {business && (
+        <div className="mt-8">
+          <AssistantAccess keys={apiKeys} audit={agentAudit} ready={agentReady} />
         </div>
       )}
 

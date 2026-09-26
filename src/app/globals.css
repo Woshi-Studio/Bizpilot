@@ -119,6 +119,10 @@
   --color-red-800: #fca5a5;
   --color-amber-700: #fbbf24;
   --color-amber-800: #fcd34d;
+  --color-amber-900: #fde68a;
+  --color-amber-300: rgba(245, 158, 11, 0.4);
+  --color-red-900: #fecaca;
+  --color-green-900: #bbf7d0;
   --color-blue-700: #60a5fa;
   --color-blue-800: #93c5fd;
 }

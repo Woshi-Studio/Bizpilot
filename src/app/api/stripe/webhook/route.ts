@@ -1,10 +1,11 @@
 import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
-import { getStripe } from "@/lib/stripe";
+import { getStripe, tierForPriceId, type PaidTier } from "@/lib/stripe";
 
 // Stripe calls this endpoint when a payment succeeds or a subscription
-// changes. We verify the signature, then flip the business between the
-// free and premium plans. This runs server-to-server (no user session),
+// changes. We verify the signature, then set the business's plan to
+// free, premium or pro. The paid tier comes from the subscription's price
+// id (STRIPE_PRICE_ID = premium, STRIPE_PRICE_ID_PRO = pro). This runs server-to-server (no user session),
 // so it uses the service-role key to update the row.
 export async function POST(request: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -30,11 +31,27 @@ export async function POST(request: Request) {
     auth: { persistSession: false },
   });
 
-  async function setPlan(customerId: string, plan: "free" | "premium") {
-    await admin
+  async function setPlan(customerId: string, plan: "free" | PaidTier) {
+    const { error } = await admin
       .from("businesses")
       .update({ plan })
       .eq("stripe_customer_id", customerId);
+    if (error) throw new Error(`set plan failed: ${error.message}`);
+  }
+
+  // The paid tier for a subscription, from its price id. A price that
+  // matches neither env id still counts as paid (premium) so a paying
+  // customer is never left on free; it is logged so the owner can fix it.
+  function tierOf(sub: Stripe.Subscription): PaidTier {
+    const priceId = sub.items.data[0]?.price?.id ?? null;
+    const tier = tierForPriceId(priceId);
+    if (!tier) {
+      console.warn(
+        `[stripe] price ${priceId ?? "(none)"} matches neither STRIPE_PRICE_ID nor STRIPE_PRICE_ID_PRO; treating as premium`
+      );
+      return "premium";
+    }
+    return tier;
   }
 
   try {
@@ -44,14 +61,23 @@ export async function POST(request: Request) {
         const businessId = session.client_reference_id;
         const customerId =
           typeof session.customer === "string" ? session.customer : null;
+        const subId =
+          typeof session.subscription === "string"
+            ? session.subscription
+            : session.subscription?.id ?? null;
+        const sub = subId
+          ? await getStripe().subscriptions.retrieve(subId)
+          : null;
+        const plan: PaidTier = sub ? tierOf(sub) : "premium";
         if (businessId && customerId) {
           // Ensure the customer id is stored, then upgrade
-          await admin
+          const { error } = await admin
             .from("businesses")
-            .update({ stripe_customer_id: customerId, plan: "premium" })
+            .update({ stripe_customer_id: customerId, plan })
             .eq("id", businessId);
+          if (error) throw new Error(`upgrade failed: ${error.message}`);
         } else if (customerId) {
-          await setPlan(customerId, "premium");
+          await setPlan(customerId, plan);
         }
         break;
       }
@@ -61,7 +87,7 @@ export async function POST(request: Request) {
           typeof sub.customer === "string" ? sub.customer : null;
         if (customerId) {
           const active = sub.status === "active" || sub.status === "trialing";
-          await setPlan(customerId, active ? "premium" : "free");
+          await setPlan(customerId, active ? tierOf(sub) : "free");
         }
         break;
       }

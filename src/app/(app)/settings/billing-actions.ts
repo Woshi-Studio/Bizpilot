@@ -2,12 +2,25 @@
 
 import { redirect } from "next/navigation";
 import { requireUserAndBusiness } from "@/lib/data";
-import { getStripe, stripeConfigured, siteUrl, proPriceId } from "@/lib/stripe";
+import {
+  getStripe,
+  stripeConfigured,
+  siteUrl,
+  isPaidTier,
+  priceIdFor,
+  tierConfigured,
+} from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// Starts a Stripe Checkout session for the Pro plan and redirects to it.
-export async function startCheckout() {
-  if (!stripeConfigured()) {
+// Starts a Stripe Checkout session for a paid tier and redirects to it.
+// The form sends only a tier name ("premium" or "pro"); the price id is
+// looked up here on the server.
+export async function startCheckout(formData: FormData) {
+  const tier = formData.get("tier");
+  if (!isPaidTier(tier)) {
+    redirect("/settings?billing=error");
+  }
+  if (!tierConfigured(tier)) {
     redirect("/settings?billing=unconfigured");
   }
 
@@ -45,20 +58,35 @@ export async function startCheckout() {
       }
     }
 
-    const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
+    // Already paying (e.g. Premium → Pro)? A second checkout would make a
+    // second subscription, so switch plans in the Stripe portal instead.
+    const existing = await stripe.subscriptions.list({
       customer: customerId,
-      client_reference_id: business.id,
-      line_items: [{ price: proPriceId(), quantity: 1 }],
-      success_url: `${siteUrl()}/settings?billing=success`,
-      cancel_url: `${siteUrl()}/settings?billing=cancelled`,
-      subscription_data: { metadata: { business_id: business.id } },
+      status: "active",
+      limit: 1,
     });
+    if (existing.data.length > 0) {
+      const portal = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${siteUrl()}/settings`,
+      });
+      checkoutUrl = portal.url;
+    } else {
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        customer: customerId,
+        client_reference_id: business.id,
+        line_items: [{ price: priceIdFor(tier), quantity: 1 }],
+        success_url: `${siteUrl()}/settings?billing=success`,
+        cancel_url: `${siteUrl()}/settings?billing=cancelled`,
+        subscription_data: { metadata: { business_id: business.id, tier } },
+      });
 
-    if (!session.url) {
-      redirect("/settings?billing=error");
+      if (!session.url) {
+        redirect("/settings?billing=error");
+      }
+      checkoutUrl = session.url;
     }
-    checkoutUrl = session.url;
   } catch (err) {
     // Surface a friendly message instead of a scary server-error page.
     // (redirect() throws internally, so let its signal pass through.)

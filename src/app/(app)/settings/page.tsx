@@ -1,6 +1,12 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { stripeConfigured } from "@/lib/stripe";
+import { stripeConfigured, tierConfigured, type PaidTier } from "@/lib/stripe";
+import {
+  AI_DAILY_CREDITS,
+  PLAN_NAMES,
+  isPaidPlan,
+  normalizePlan,
+} from "@/lib/ai-quota";
 import SettingsForm from "./settings-form";
 import PublicPageForm from "./public-page-form";
 import PaymentMethodsForm from "./payment-methods-form";
@@ -10,8 +16,25 @@ import { startCheckout, openBillingPortal } from "./billing-actions";
 
 export const metadata = { title: "Settings" };
 
+const PAID_PLANS: {
+  tier: PaidTier;
+  price: string;
+  perks: string;
+}[] = [
+  {
+    tier: "premium",
+    price: "$5 USD / 4 weeks",
+    perks: `${AI_DAILY_CREDITS.premium} AI credits a day`,
+  },
+  {
+    tier: "pro",
+    price: "$15 USD / 4 weeks",
+    perks: `${AI_DAILY_CREDITS.pro} AI credits a day · most powerful AI`,
+  },
+];
+
 const BILLING_MESSAGES: Record<string, string> = {
-  success: "🎉 You're on Pro — thanks for upgrading!",
+  success: "🎉 Thanks for upgrading! Your new plan is on its way.",
   cancelled: "Checkout cancelled — no charge was made.",
   error: "Something went wrong starting checkout. Please try again.",
   unconfigured: "Billing isn't switched on yet.",
@@ -86,7 +109,8 @@ export default async function SettingsPage({
       planResult.error.message
     );
   }
-  const plan = planResult.data?.plan === "premium" ? "premium" : "free";
+  const plan = normalizePlan(planResult.data?.plan);
+  const paid = isPaidPlan(plan);
 
   // Public-page columns ship in migration 0007 — tolerate their absence
   const publicPage = publicResult.error ? null : publicResult.data;
@@ -106,15 +130,14 @@ export default async function SettingsPage({
             </h2>
             <p className="mt-1 text-sm text-slate-500">
               You&apos;re on the{" "}
-              <span className="font-medium capitalize text-slate-700">
-                {plan}
+              <span className="font-medium text-slate-700">
+                {PLAN_NAMES[plan]}
               </span>{" "}
-              plan — {plan === "premium" ? "300" : "10"} AI generations per
-              month.
+              plan — {AI_DAILY_CREDITS[plan]} AI credits a day.
             </p>
           </div>
           <span className="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-700">
-            {plan}
+            {PLAN_NAMES[plan]}
           </span>
         </div>
         {billingMessage && (
@@ -123,49 +146,64 @@ export default async function SettingsPage({
           </p>
         )}
 
-        {plan === "premium" ? (
-          <div className="mt-4">
-            <p className="text-sm text-slate-500">
-              You&apos;re on Pro. Thank you! 💜
-            </p>
-            {billingReady && (
-              <form action={openBillingPortal}>
-                <button
-                  type="submit"
-                  className="mt-3 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                >
-                  Manage billing / cancel
-                </button>
-              </form>
-            )}
-          </div>
-        ) : billingReady ? (
-          <div className="mt-4 rounded-md border border-indigo-200 bg-indigo-50 px-4 py-3">
-            <p className="text-sm font-medium text-indigo-800">
-              Upgrade to Pro — $9.99/month
-            </p>
-            <p className="mt-1 text-xs text-indigo-700">
-              Unlimited AI, invoices, receipts, tax export, reports &amp; the
-              Business Health Score.
-            </p>
-            <form action={startCheckout}>
-              <button
-                type="submit"
-                className="mt-3 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          {PAID_PLANS.map((p) => {
+            const current = plan === p.tier;
+            const canBuy = billingReady && tierConfigured(p.tier);
+            return (
+              <div
+                key={p.tier}
+                className={`rounded-lg border px-4 py-4 ${
+                  current
+                    ? "border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500"
+                    : "border-slate-200 bg-white"
+                }`}
               >
-                Upgrade now
-              </button>
-            </form>
-          </div>
-        ) : (
-          <div className="mt-4 rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-3">
-            <p className="text-sm font-medium text-slate-700">
-              Upgrade — coming soon
-            </p>
-            <p className="mt-1 text-xs text-slate-500">
-              Paid plans will appear here once billing is switched on.
-            </p>
-          </div>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-slate-800">
+                    {PLAN_NAMES[p.tier]}
+                  </p>
+                  {current && (
+                    <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                      Current plan
+                    </span>
+                  )}
+                </div>
+                <p className="mt-1 text-sm font-medium text-slate-700">
+                  {p.price}
+                </p>
+                <p className="mt-1 text-xs text-slate-500">{p.perks}</p>
+                {current ? (
+                  <p className="mt-3 text-xs text-indigo-700">
+                    You&apos;re on {PLAN_NAMES[p.tier]}. Thank you! 💜
+                  </p>
+                ) : canBuy ? (
+                  <form action={startCheckout}>
+                    <input type="hidden" name="tier" value={p.tier} />
+                    <button
+                      type="submit"
+                      className="mt-3 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+                    >
+                      {paid ? `Switch to ${PLAN_NAMES[p.tier]}` : `Upgrade to ${PLAN_NAMES[p.tier]}`}
+                    </button>
+                  </form>
+                ) : (
+                  <p className="mt-3 text-xs text-slate-400">Coming soon</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {paid && billingReady && (
+          <form action={openBillingPortal}>
+            <button
+              type="submit"
+              className="mt-4 rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              Manage billing / cancel
+            </button>
+          </form>
         )}
       </div>
 

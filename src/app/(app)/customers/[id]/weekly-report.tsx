@@ -63,16 +63,16 @@ export default function WeeklyReport({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="card p-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-800">
+        <h2 className="section-title">
           Weekly report
         </h2>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={generate}
-            className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500"
+            className="btn-primary btn-sm"
           >
             Generate
           </button>
@@ -80,7 +80,7 @@ export default function WeeklyReport({
             <button
               type="button"
               onClick={copy}
-              className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+              className="btn-secondary btn-sm"
             >
               {copied ? "Copied!" : "Copy"}
             </button>

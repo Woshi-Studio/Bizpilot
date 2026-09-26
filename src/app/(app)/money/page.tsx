@@ -104,18 +104,18 @@ export default async function MoneyPage({
   const cur = business.currency;
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-6xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Money</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="page-title">Money</h1>
+          <p className="page-sub">
             Income, expenses, and what&apos;s left over.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <a
             href={`/money/export?year=${month.slice(0, 4)}`}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="btn-secondary"
           >
             ⬇ Export {month.slice(0, 4)}
           </a>
@@ -126,7 +126,7 @@ export default async function MoneyPage({
           >
             &larr;
           </Link>
-          <span className="min-w-32 text-center text-sm font-semibold text-slate-800">
+          <span className="min-w-32 text-center section-title">
             {monthTitle(month)}
           </span>
           {month < currentMonth ? (
@@ -146,7 +146,7 @@ export default async function MoneyPage({
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="card p-5">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
             Income
           </p>
@@ -154,7 +154,7 @@ export default async function MoneyPage({
             {formatMoney(income, cur)}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="card p-5">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
             Expenses
           </p>
@@ -162,7 +162,7 @@ export default async function MoneyPage({
             {formatMoney(expenses, cur)}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="card p-5">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
             Profit
           </p>
@@ -180,10 +180,10 @@ export default async function MoneyPage({
 
       {(recurring ?? []).length > 0 && (
         <div className="mt-6">
-          <h2 className="text-sm font-semibold text-slate-800">
+          <h2 className="section-title">
             🔁 Recurring monthly
           </h2>
-          <ul className="mt-2 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <ul className="mt-2 divide-y divide-slate-100 overflow-hidden card">
             {(recurring ?? []).map((r) => (
               <li
                 key={r.id}
@@ -223,12 +223,12 @@ export default async function MoneyPage({
 
       <div className="mt-6">
         {transactions.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
+          <p className="card-empty p-8 text-center text-sm text-slate-400">
             Nothing logged for {monthTitle(month)} yet. Add your first income
             or expense above.
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <ul className="divide-y divide-slate-100 overflow-hidden card">
             {transactions.map((t) => (
               <li
                 key={t.id}

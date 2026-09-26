@@ -6,7 +6,7 @@ import { createPlan, upgradePlanWithAi, type LaunchpadState } from "./actions";
 const initialState: LaunchpadState = {};
 
 const inputClass =
-  "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "mt-1 input";
 
 export function LaunchpadIntake() {
   const [state, formAction, pending] = useActionState(
@@ -17,12 +17,12 @@ export function LaunchpadIntake() {
   return (
     <form
       action={formAction}
-      className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="card p-6"
     >
-      <h2 className="text-sm font-semibold text-slate-800">
+      <h2 className="section-title">
         Answer 5 quick questions
       </h2>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="page-sub">
         You&apos;ll get a written business plan plus an 18-step roadmap loaded
         into your task list — from this week to one year out.
       </p>
@@ -31,7 +31,7 @@ export function LaunchpadIntake() {
         <div>
           <label
             htmlFor="idea"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             What&apos;s the business? *
           </label>
@@ -48,7 +48,7 @@ export function LaunchpadIntake() {
           <div>
             <label
               htmlFor="location"
-              className="block text-sm font-medium text-slate-700"
+              className="label"
             >
               Where? <span className="text-slate-400">(city/online)</span>
             </label>
@@ -57,7 +57,7 @@ export function LaunchpadIntake() {
           <div>
             <label
               htmlFor="budget"
-              className="block text-sm font-medium text-slate-700"
+              className="label"
             >
               Money you can invest{" "}
               <span className="text-slate-400">(roughly)</span>
@@ -73,7 +73,7 @@ export function LaunchpadIntake() {
           <div>
             <label
               htmlFor="hours_per_week"
-              className="block text-sm font-medium text-slate-700"
+              className="label"
             >
               Hours per week you can give
             </label>
@@ -88,7 +88,7 @@ export function LaunchpadIntake() {
           <div>
             <label
               htmlFor="goal"
-              className="block text-sm font-medium text-slate-700"
+              className="label"
             >
               Goal for year one
             </label>
@@ -104,12 +104,12 @@ export function LaunchpadIntake() {
       </div>
 
       {state.error && (
-        <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-4 alert-error">
           {state.error}
         </p>
       )}
       {state.success && (
-        <p className="mt-4 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p className="mt-4 alert-success">
           {state.success}
         </p>
       )}
@@ -118,7 +118,7 @@ export function LaunchpadIntake() {
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+          className="btn-primary"
         >
           {pending ? "Building your plan..." : "🚀 Build my plan & roadmap"}
         </button>
@@ -145,7 +145,7 @@ export function AiUpgradeButton() {
         </button>
       </form>
       {state.error && (
-        <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-2 alert-error">
           {state.error}
         </p>
       )}

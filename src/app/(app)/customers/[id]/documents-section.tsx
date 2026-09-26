@@ -45,7 +45,7 @@ export default function DocumentsSection({
 
   if (missing) {
     return (
-      <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      <p className="alert-warn">
         Documents aren&apos;t set up yet — run migration 0014 in Supabase.
       </p>
     );
@@ -69,7 +69,7 @@ export default function DocumentsSection({
         <button
           type="submit"
           disabled={pending}
-          className="shrink-0 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+          className="shrink-0 btn-primary"
         >
           {pending ? "Uploading..." : "Upload"}
         </button>
@@ -79,12 +79,12 @@ export default function DocumentsSection({
         them.
       </p>
       {state.error && (
-        <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-2 alert-error">
           {state.error}
         </p>
       )}
       {state.success && (
-        <p className="mt-2 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p className="mt-2 alert-success">
           {state.success}
         </p>
       )}
@@ -104,7 +104,7 @@ export default function DocumentsSection({
               <div className="min-w-0">
                 <a
                   href={`/customers/${customerId}/documents/${d.id}`}
-                  className="block truncate text-sm font-medium text-indigo-600 hover:text-indigo-500"
+                  className="block truncate text-sm link"
                 >
                   {d.name}
                 </a>

@@ -53,7 +53,7 @@ export default async function PublicBusinessPage({
 
         {services.length > 0 && (
           <div className="mt-8">
-            <h2 className="text-sm font-semibold text-slate-800">Services</h2>
+            <h2 className="section-title">Services</h2>
             <ul className="mt-3 space-y-2">
               {services.map((s) => (
                 <li
@@ -68,11 +68,11 @@ export default async function PublicBusinessPage({
           </div>
         )}
 
-        <div className="mt-10 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-800">
+        <div className="mt-10 card p-6">
+          <h2 className="section-title">
             Get in touch
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="page-sub">
             Send a message and {business.name} will get back to you.
           </p>
           <div className="mt-4">

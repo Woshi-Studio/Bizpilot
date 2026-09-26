@@ -62,17 +62,17 @@ export default async function GoalsPage() {
       : 0;
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <h1 className="text-2xl font-bold text-slate-900">Goals & Wins</h1>
-      <p className="mt-1 text-sm text-slate-500">
+    <div className="mx-auto max-w-6xl">
+      <h1 className="page-title">Goals & Wins</h1>
+      <p className="page-sub">
         What you&apos;re aiming for, and proof you&apos;re getting there.
       </p>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="space-y-6">
           {(b.goal_customers || b.goal_monthly_revenue || b.savings_target) && (
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-sm font-semibold text-slate-800">
+            <div className="card p-6">
+              <h2 className="section-title">
                 Progress
               </h2>
               {b.goal_customers && (

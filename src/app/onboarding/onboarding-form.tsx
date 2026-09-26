@@ -62,7 +62,7 @@ export default function OnboardingForm({
       </div>
 
       {state.error && (
-        <p className="mb-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mb-4 alert-error">
           {state.error}
         </p>
       )}
@@ -72,7 +72,7 @@ export default function OnboardingForm({
           <div>
             <label
               htmlFor="onb_full_name"
-              className="block text-sm font-medium text-slate-700"
+              className="label"
             >
               Your name
             </label>
@@ -81,13 +81,13 @@ export default function OnboardingForm({
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 input"
             />
           </div>
           <div>
             <label
               htmlFor="onb_business_name"
-              className="block text-sm font-medium text-slate-700"
+              className="label"
             >
               Business name
             </label>
@@ -97,7 +97,7 @@ export default function OnboardingForm({
               value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}
               placeholder="e.g. Jane Doe Design"
-              className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="mt-1 input"
             />
             <p className="mt-1 text-xs text-slate-400">
               Freelancing under your own name? Just use that.
@@ -207,7 +207,7 @@ export default function OnboardingForm({
             type="button"
             disabled={!canContinue}
             onClick={() => setStep((s) => s + 1)}
-            className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
+            className="btn-primary"
           >
             Continue
           </button>
@@ -215,7 +215,7 @@ export default function OnboardingForm({
           <button
             type="submit"
             disabled={!canContinue || pending}
-            className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
+            className="btn-primary"
           >
             {pending ? "Setting up..." : "Finish setup"}
           </button>

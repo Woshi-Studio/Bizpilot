@@ -39,11 +39,11 @@ export default async function OnboardingPage() {
         <h1 className="text-3xl font-bold tracking-tight text-indigo-600">
           Jephelen
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="page-sub">
           Let&apos;s set up your business — takes less than a minute.
         </p>
       </div>
-      <div className="w-full max-w-lg rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="w-full max-w-lg card p-8">
         <OnboardingForm initialName={profile?.full_name ?? ""} />
       </div>
     </div>

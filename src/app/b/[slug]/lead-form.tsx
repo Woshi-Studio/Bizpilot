@@ -6,7 +6,7 @@ import { submitLead, type LeadFormState } from "./actions";
 const initialState: LeadFormState = {};
 
 const inputClass =
-  "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "mt-1 input";
 
 export default function LeadForm({ businessId }: { businessId: string }) {
   const [state, formAction, pending] = useActionState(
@@ -16,7 +16,7 @@ export default function LeadForm({ businessId }: { businessId: string }) {
 
   if (state.success) {
     return (
-      <p className="rounded-md bg-green-50 px-4 py-3 text-sm text-green-700">
+      <p className="alert-success">
         {state.success}
       </p>
     );
@@ -38,7 +38,7 @@ export default function LeadForm({ businessId }: { businessId: string }) {
       <div>
         <label
           htmlFor="lead_name"
-          className="block text-sm font-medium text-slate-700"
+          className="label"
         >
           Your name
         </label>
@@ -54,7 +54,7 @@ export default function LeadForm({ businessId }: { businessId: string }) {
         <div>
           <label
             htmlFor="lead_email"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Email
           </label>
@@ -63,7 +63,7 @@ export default function LeadForm({ businessId }: { businessId: string }) {
         <div>
           <label
             htmlFor="lead_phone"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Phone
           </label>
@@ -73,7 +73,7 @@ export default function LeadForm({ businessId }: { businessId: string }) {
       <div>
         <label
           htmlFor="lead_message"
-          className="block text-sm font-medium text-slate-700"
+          className="label"
         >
           What do you need?
         </label>
@@ -85,14 +85,14 @@ export default function LeadForm({ businessId }: { businessId: string }) {
         />
       </div>
       {state.error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="alert-error">
           {state.error}
         </p>
       )}
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-md bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+        className="w-full btn-primary"
       >
         {pending ? "Sending..." : "Send message"}
       </button>

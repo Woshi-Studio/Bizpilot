@@ -126,15 +126,15 @@ export default async function ReportsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <h1 className="text-2xl font-bold text-slate-900">Reports</h1>
-      <p className="mt-1 text-sm text-slate-500">
+    <div className="mx-auto max-w-6xl">
+      <h1 className="page-title">Reports</h1>
+      <p className="page-sub">
         Your business at a glance — the numbers that matter, turned into
         decisions.
       </p>
 
       {/* Business Health Score */}
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="mt-6 card p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <div className="flex flex-col items-center justify-center rounded-xl bg-slate-50 px-8 py-5">
             <span className={`text-4xl font-bold ${health.gradeClass}`}>
@@ -143,11 +143,11 @@ export default async function ReportsPage() {
             <span className="text-xs text-slate-400">out of 100</span>
           </div>
           <div>
-            <h2 className="text-sm font-semibold text-slate-800">
+            <h2 className="section-title">
               Business Health:{" "}
               <span className={health.gradeClass}>{health.grade}</span>
             </h2>
-            <p className="mt-1 text-sm text-slate-500">{health.headline}</p>
+            <p className="page-sub">{health.headline}</p>
           </div>
         </div>
 
@@ -175,8 +175,8 @@ export default async function ReportsPage() {
       </div>
 
       {/* Income vs expenses, last 6 months */}
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-800">
+      <div className="mt-6 card p-6">
+        <h2 className="section-title">
           Income &amp; expenses — last 6 months
         </h2>
         <div className="mt-5 flex items-end justify-between gap-3">
@@ -213,8 +213,8 @@ export default async function ReportsPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Top customers */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-800">
+        <div className="card p-6">
+          <h2 className="section-title">
             Top customers this year
           </h2>
           {topCustomers.length === 0 ? (
@@ -244,8 +244,8 @@ export default async function ReportsPage() {
         </div>
 
         {/* Unpaid invoices */}
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-800">
+        <div className="card p-6">
+          <h2 className="section-title">
             Needs chasing
           </h2>
           {(overdueInvoices ?? []).length === 0 ? (

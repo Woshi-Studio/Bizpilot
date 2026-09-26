@@ -14,25 +14,25 @@ export default function SignupPage() {
       <h2 className="text-xl font-semibold text-slate-900">
         Create your account
       </h2>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="page-sub">
         Start running your freelance business smarter.
       </p>
 
       <form action={formAction} className="mt-6 space-y-4">
         {state.error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="alert-error">
             {state.error}
           </p>
         )}
         {state.success && (
-          <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+          <p className="alert-success">
             {state.success}
           </p>
         )}
         <div>
           <label
             htmlFor="full_name"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Full name
           </label>
@@ -42,13 +42,13 @@ export default function SignupPage() {
             type="text"
             autoComplete="name"
             required
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="mt-1 input"
           />
         </div>
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Email
           </label>
@@ -58,13 +58,13 @@ export default function SignupPage() {
             type="email"
             autoComplete="email"
             required
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="mt-1 input"
           />
         </div>
         <div>
           <label
             htmlFor="password"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Password
           </label>
@@ -75,14 +75,14 @@ export default function SignupPage() {
             autoComplete="new-password"
             required
             minLength={8}
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="mt-1 input"
           />
           <p className="mt-1 text-xs text-slate-400">At least 8 characters.</p>
         </div>
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+          className="w-full btn-primary"
         >
           {pending ? "Creating account..." : "Create account"}
         </button>
@@ -92,7 +92,7 @@ export default function SignupPage() {
         Already have an account?{" "}
         <Link
           href="/login"
-          className="font-medium text-indigo-600 hover:text-indigo-500"
+          className="link"
         >
           Log in
         </Link>

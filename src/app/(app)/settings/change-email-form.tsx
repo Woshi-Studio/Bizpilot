@@ -6,7 +6,7 @@ import { changeEmail, type AuthState } from "@/app/(auth)/actions";
 const initialState: AuthState = {};
 
 const inputClass =
-  "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "mt-1 input";
 
 export default function ChangeEmailForm({
   currentEmail,
@@ -25,10 +25,10 @@ export default function ChangeEmailForm({
   return (
     <form
       action={formAction}
-      className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="card p-6"
     >
-      <h2 className="text-sm font-semibold text-slate-800">Login email</h2>
-      <p className="mt-1 text-sm text-slate-500">
+      <h2 className="section-title">Login email</h2>
+      <p className="page-sub">
         You log in with{" "}
         <span className="font-medium text-slate-700">
           {currentEmail || "(no email)"}
@@ -51,7 +51,7 @@ export default function ChangeEmailForm({
       <div className="mt-4">
         <label
           htmlFor="new_email"
-          className="block text-sm font-medium text-slate-700"
+          className="label"
         >
           New email
         </label>
@@ -66,12 +66,12 @@ export default function ChangeEmailForm({
       </div>
 
       {state.error && (
-        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-3 alert-error">
           {state.error}
         </p>
       )}
       {state.success && (
-        <p className="mt-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p className="mt-3 alert-success">
           {state.success}
         </p>
       )}
@@ -80,7 +80,7 @@ export default function ChangeEmailForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+          className="btn-primary"
         >
           {pending ? "Sending..." : "Change login email"}
         </button>

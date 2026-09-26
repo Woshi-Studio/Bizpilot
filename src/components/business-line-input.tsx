@@ -23,7 +23,7 @@ export default function BusinessLineInput({
   return (
     <div>
       {showLabel && (
-        <label htmlFor={id} className="block text-sm font-medium text-slate-700">
+        <label htmlFor={id} className="label">
           {label}
         </label>
       )}

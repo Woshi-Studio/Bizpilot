@@ -20,7 +20,7 @@ function PlanContent({ content }: { content: string }) {
         }
         if (line.startsWith("## ")) {
           return (
-            <h3 key={i} className="pt-4 text-sm font-semibold text-slate-800">
+            <h3 key={i} className="pt-4 section-title">
               {line.slice(3)}
             </h3>
           );
@@ -72,16 +72,16 @@ export default async function LaunchpadPage() {
     !!plan && (customerCount ?? 0) > 0 && (incomeTx ?? []).length > 0;
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="text-2xl font-bold text-slate-900">🚀 Launchpad</h1>
-      <p className="mt-1 text-sm text-slate-500">
+    <div className="mx-auto max-w-6xl [&>*]:max-w-3xl">
+      <h1 className="page-title">🚀 Launchpad</h1>
+      <p className="page-sub">
         From &quot;I have an idea&quot; to a running business — with a plan and
         a roadmap that live inside your app.
       </p>
       <AiCreditMeter className="mt-2" />
 
       {planError ? (
-        <p className="mt-6 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <p className="mt-6 alert-warn">
           Launchpad isn&apos;t set up yet — the database migration for this
           feature hasn&apos;t been run.
         </p>
@@ -108,7 +108,7 @@ export default async function LaunchpadPage() {
             </div>
           )}
 
-          <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="mt-6 card p-6">
             <div className="flex items-center justify-between">
               <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
                 Your business plan{" "}
@@ -125,7 +125,7 @@ export default async function LaunchpadPage() {
             Your 18-step roadmap lives in{" "}
             <Link
               href="/tasks"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
+              className="link"
             >
               Tasks
             </Link>{" "}

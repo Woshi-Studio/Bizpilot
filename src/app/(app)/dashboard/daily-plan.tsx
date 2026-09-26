@@ -12,16 +12,17 @@ export default function DailyPlan() {
   );
 
   return (
-    <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-5 shadow-sm">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-slate-800">
-          ✨ Today&apos;s Plan
+    <div className="card relative overflow-hidden p-5 sm:p-6">
+      <div aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-44 w-44 rounded-full bg-gradient-to-br from-indigo-500/25 to-violet-500/10 blur-2xl" />
+      <div className="relative flex items-center justify-between gap-3">
+        <h2 className="section-title">
+          <span className="mr-1.5 text-accent">✦</span>Today&apos;s plan
         </h2>
         <form action={formAction}>
           <button
             type="submit"
             disabled={pending}
-            className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+            className="btn-primary btn-sm"
           >
             {pending
               ? "Thinking..."
@@ -34,12 +35,12 @@ export default function DailyPlan() {
 
       {pending ? (
         <div className="mt-4 space-y-2">
-          <div className="h-3 w-3/4 animate-pulse rounded bg-indigo-100" />
-          <div className="h-3 w-full animate-pulse rounded bg-indigo-100" />
-          <div className="h-3 w-2/3 animate-pulse rounded bg-indigo-100" />
+          <div className="h-3 w-3/4 animate-pulse rounded bg-surface-3" />
+          <div className="h-3 w-full animate-pulse rounded bg-surface-3" />
+          <div className="h-3 w-2/3 animate-pulse rounded bg-surface-3" />
         </div>
       ) : state.error ? (
-        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-3 alert-error">
           {state.error}
         </p>
       ) : state.plan ? (
@@ -47,7 +48,7 @@ export default function DailyPlan() {
           {state.plan}
         </pre>
       ) : (
-        <p className="mt-3 text-sm text-slate-500">
+        <p className="relative mt-3 text-sm leading-6 text-slate-500">
           Let the AI look at your tasks and follow-ups, and suggest what to
           tackle first today.
         </p>

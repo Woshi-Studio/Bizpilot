@@ -25,9 +25,9 @@ export default async function ServicesPage({
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="text-2xl font-bold text-slate-900">Pricing</h1>
-      <p className="mt-1 text-sm text-slate-500">
+    <div className="mx-auto max-w-6xl [&>*]:max-w-3xl">
+      <h1 className="page-title">Pricing</h1>
+      <p className="page-sub">
         Your rate card. Pick these when creating a task so the value fills in
         automatically.
       </p>

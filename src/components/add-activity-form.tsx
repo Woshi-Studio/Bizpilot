@@ -10,7 +10,7 @@ import {
 const initialState: ActivityFormState = {};
 
 const inputClass =
-  "block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "input";
 
 // Manual log for notes, calls, meetings (and emails sent outside the app).
 export default function AddActivityForm({
@@ -115,19 +115,19 @@ export default function AddActivityForm({
           <button
             type="submit"
             disabled={pending}
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+            className="btn-primary"
           >
             {pending ? "Saving..." : "Save"}
           </button>
         </div>
       </div>
       {state.error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="alert-error">
           {state.error}
         </p>
       )}
       {state.success && (
-        <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p className="alert-success">
           {state.success}
         </p>
       )}

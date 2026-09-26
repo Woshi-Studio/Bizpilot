@@ -26,28 +26,28 @@ export default function SettingsForm({
   );
 
   const inputClass =
-    "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+    "mt-1 input";
 
   return (
     <form action={formAction} className="space-y-8">
       {state.error && (
-        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="alert-error">
           {state.error}
         </p>
       )}
       {state.success && (
-        <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p className="alert-success">
           {state.success}
         </p>
       )}
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-800">Your profile</h2>
+      <section className="card p-6">
+        <h2 className="section-title">Your profile</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label
               htmlFor="full_name"
-              className="block text-sm font-medium text-slate-700"
+              className="label"
             >
               Full name
             </label>
@@ -63,7 +63,7 @@ export default function SettingsForm({
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-slate-700"
+              className="label"
             >
               Email
             </label>
@@ -81,13 +81,13 @@ export default function SettingsForm({
         </div>
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-800">Your business</h2>
+      <section className="card p-6">
+        <h2 className="section-title">Your business</h2>
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label
               htmlFor="business_name"
-              className="block text-sm font-medium text-slate-700"
+              className="label"
             >
               Business name
             </label>
@@ -103,7 +103,7 @@ export default function SettingsForm({
           <div>
             <label
               htmlFor="business_type"
-              className="block text-sm font-medium text-slate-700"
+              className="label"
             >
               Type of work
             </label>
@@ -124,7 +124,7 @@ export default function SettingsForm({
           <div className="sm:col-span-2">
             <label
               htmlFor="description"
-              className="block text-sm font-medium text-slate-700"
+              className="label"
             >
               Description <span className="text-slate-400">(optional)</span>
             </label>
@@ -140,7 +140,7 @@ export default function SettingsForm({
           <div>
             <label
               htmlFor="currency"
-              className="block text-sm font-medium text-slate-700"
+              className="label"
             >
               Currency
             </label>
@@ -164,7 +164,7 @@ export default function SettingsForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+          className="btn-primary"
         >
           {pending ? "Saving..." : "Save changes"}
         </button>

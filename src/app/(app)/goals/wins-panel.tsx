@@ -7,7 +7,7 @@ import { addWin, deleteWin, type GoalsFormState } from "./actions";
 const initialState: GoalsFormState = {};
 
 const inputClass =
-  "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "mt-1 input";
 
 export default function WinsPanel({ wins }: { wins: Win[] }) {
   const [state, formAction, pending] = useActionState(addWin, initialState);
@@ -18,12 +18,12 @@ export default function WinsPanel({ wins }: { wins: Win[] }) {
   }, [state.success]);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-sm font-semibold text-slate-800">Wins log</h2>
+    <div className="card p-6">
+      <h2 className="section-title">Wins log</h2>
 
       <form ref={formRef} action={formAction} className="mt-4 space-y-3">
         {state.error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="alert-error">
             {state.error}
           </p>
         )}
@@ -55,7 +55,7 @@ export default function WinsPanel({ wins }: { wins: Win[] }) {
           <button
             type="submit"
             disabled={pending}
-            className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+            className="btn-primary"
           >
             {pending ? "Saving..." : "Log win"}
           </button>

@@ -55,21 +55,21 @@ export default async function TimePage() {
     .eq("status", "active");
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-bold text-slate-900">Time & Billing</h1>
-      <p className="mt-1 text-sm text-slate-500">
+    <div className="mx-auto max-w-6xl">
+      <h1 className="page-title">Time & Billing</h1>
+      <p className="page-sub">
         Log hours against a customer or task, and keep track of what&apos;s still
         unbilled.
       </p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 text-center shadow-sm">
-          <p className="text-2xl font-bold text-slate-900">{weekHours}h</p>
+        <div className="card p-5 text-center shadow-sm">
+          <p className="page-title">{weekHours}h</p>
           <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">
             This week
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 text-center shadow-sm">
+        <div className="card p-5 text-center shadow-sm">
           <p className="text-2xl font-bold text-amber-600">
             {unbilledHours}h
           </p>
@@ -77,8 +77,8 @@ export default async function TimePage() {
             Unbilled hours
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 text-center shadow-sm">
-          <p className="text-2xl font-bold text-slate-900">
+        <div className="card p-5 text-center shadow-sm">
+          <p className="page-title">
             {(activeCustomers ?? []).length}
           </p>
           <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">

@@ -12,20 +12,20 @@ export default function LoginPage() {
   return (
     <div>
       <h2 className="text-xl font-semibold text-slate-900">Welcome back</h2>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="page-sub">
         Log in to your Jephelen account.
       </p>
 
       <form action={formAction} className="mt-6 space-y-4">
         {state.error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="alert-error">
             {state.error}
           </p>
         )}
         <div>
           <label
             htmlFor="email"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Email
           </label>
@@ -35,14 +35,14 @@ export default function LoginPage() {
             type="email"
             autoComplete="email"
             required
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="mt-1 input"
           />
         </div>
         <div>
           <div className="flex items-center justify-between">
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-slate-700"
+              className="label"
             >
               Password
             </label>
@@ -59,13 +59,13 @@ export default function LoginPage() {
             type="password"
             autoComplete="current-password"
             required
-            className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+            className="mt-1 input"
           />
         </div>
         <button
           type="submit"
           disabled={pending}
-          className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+          className="w-full btn-primary"
         >
           {pending ? "Logging in..." : "Log in"}
         </button>
@@ -75,7 +75,7 @@ export default function LoginPage() {
         New to Jephelen?{" "}
         <Link
           href="/signup"
-          className="font-medium text-indigo-600 hover:text-indigo-500"
+          className="link"
         >
           Create an account
         </Link>

@@ -31,18 +31,18 @@ export default function NotesSection({
           name="body"
           required
           placeholder="Add a note — call outcome, price discussed, anything worth remembering..."
-          className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="input"
         />
         <button
           type="submit"
           disabled={pending}
-          className="shrink-0 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+          className="shrink-0 btn-primary"
         >
           {pending ? "..." : "Add"}
         </button>
       </form>
       {state.error && (
-        <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-2 alert-error">
           {state.error}
         </p>
       )}

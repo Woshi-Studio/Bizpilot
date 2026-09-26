@@ -7,7 +7,7 @@ import { addPaymentMethod, deletePaymentMethod, type SettingsState } from "./act
 const initialState: SettingsState = {};
 
 const inputClass =
-  "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "mt-1 input";
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -19,7 +19,7 @@ function CopyButton({ text }: { text: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 1500);
       }}
-      className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
+      className="text-xs link"
     >
       {copied ? "Copied!" : "Copy"}
     </button>
@@ -42,11 +42,11 @@ export default function PaymentMethodsForm({
   }, [state.success]);
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-sm font-semibold text-slate-800">
+    <div className="card p-6">
+      <h2 className="section-title">
         💳 Payment methods
       </h2>
-      <p className="mt-1 text-sm text-slate-500">
+      <p className="page-sub">
         No payment processing here — just your own PayPal link, e-transfer
         email, bank details, or anything else you want to show customers and
         attach to invoices.
@@ -84,7 +84,7 @@ export default function PaymentMethodsForm({
 
       <form ref={formRef} action={formAction} className="mt-4 space-y-3">
         {state.error && (
-          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="alert-error">
             {state.error}
           </p>
         )}
@@ -107,7 +107,7 @@ export default function PaymentMethodsForm({
           <button
             type="submit"
             disabled={pending}
-            className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+            className="btn-primary"
           >
             {pending ? "Saving..." : "Add payment method"}
           </button>

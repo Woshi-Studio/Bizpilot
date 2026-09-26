@@ -20,14 +20,14 @@ export default function TimeList({
 }) {
   if (!entries.length) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
+      <div className="card-empty p-8 text-center text-sm text-slate-400">
         No time logged yet.
       </div>
     );
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <div className="overflow-x-auto card">
       <table className="min-w-full divide-y divide-slate-100 text-sm">
         <thead>
           <tr className="text-left text-xs font-medium uppercase tracking-wide text-slate-400">

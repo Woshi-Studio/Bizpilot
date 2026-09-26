@@ -40,7 +40,7 @@ export default function CoachChat() {
   return (
     <div>
       {history.length === 0 && !pending && (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6">
+        <div className="card-empty p-6">
           <p className="text-sm font-medium text-slate-600">
             Ask anything about running your business — the coach knows your
             numbers.
@@ -88,7 +88,7 @@ export default function CoachChat() {
       </div>
 
       {state.error && (
-        <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-4 alert-error">
           {state.error}
         </p>
       )}
@@ -100,12 +100,12 @@ export default function CoachChat() {
           rows={2}
           required
           placeholder="e.g. Is it time to raise my prices?"
-          className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          className="input"
         />
         <button
           type="submit"
           disabled={pending}
-          className="shrink-0 self-end rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+          className="shrink-0 self-end btn-primary"
         >
           Ask
         </button>

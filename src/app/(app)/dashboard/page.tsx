@@ -1,5 +1,7 @@
 import AiCreditMeter from "@/components/ai-credit-meter";
 import Link from "next/link";
+import Greeting from "@/components/greeting";
+import Icon, { type IconName } from "@/components/icons";
 import { requireUserAndBusiness } from "@/lib/data";
 import { formatMoney } from "@/lib/types";
 import DailyPlan from "./daily-plan";
@@ -9,13 +11,6 @@ import { loadBusinessLines, withLine } from "@/lib/activities";
 import { NO_LINE, lineFromParam } from "@/lib/business-lines";
 
 export const metadata = { title: "Dashboard" };
-
-function greeting() {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
-  return "Good evening";
-}
 
 export default async function DashboardPage({
   searchParams,
@@ -273,70 +268,285 @@ export default async function DashboardPage({
   ];
   const showChecklist = checklist.some((c) => !c.done);
 
-  return (
-    <div className="mx-auto max-w-5xl">
-      <h1 className="text-2xl font-bold text-slate-900">
-        {greeting()}, {firstName} 👋
-      </h1>
-      <p className="mt-1 text-sm text-slate-500">
-        {tasks.length + reminders.length > 0
-          ? `You have ${tasks.length} task${tasks.length === 1 ? "" : "s"} due and ${reminders.length} follow-up${reminders.length === 1 ? "" : "s"} waiting.`
-          : "You're all caught up. Nice."}{" "}
-        <Link
-          href="/reports"
-          className="font-medium text-indigo-600 hover:text-indigo-500"
-        >
-          See your Business Health Score →
-        </Link>
-      </p>
+  const dueCount = tasks.length + reminders.length;
+  const stats: {
+    label: string;
+    value: string;
+    hint: string;
+    icon: IconName;
+    href: string;
+    tone?: string;
+  }[] = [
+    {
+      label: "Income this month",
+      value: formatMoney(monthIncome, business.currency),
+      hint: `${formatMoney(monthExpenses, business.currency)} spent`,
+      icon: "money",
+      href: "/money",
+    },
+    {
+      label: "Profit this month",
+      value: formatMoney(monthProfit, business.currency),
+      hint: monthProfit >= 0 ? "You're in the green" : "Spending more than earning",
+      icon: "sparkle",
+      href: "/reports",
+      tone: monthProfit >= 0 ? "text-green-600" : "text-red-600",
+    },
+    {
+      label: "Due today",
+      value: String(dueCount),
+      hint: `${tasks.length} task${tasks.length === 1 ? "" : "s"} · ${reminders.length} follow-up${reminders.length === 1 ? "" : "s"}`,
+      icon: "check",
+      href: "/tasks",
+    },
+    {
+      label: "New leads",
+      value: String(newLeadCount),
+      hint: `${customerCount ?? 0} customer${(customerCount ?? 0) === 1 ? "" : "s"} in your hub`,
+      icon: "people",
+      href: "/leads",
+    },
+  ];
+  const doneSteps = checklist.filter((c) => c.done).length;
 
-      <div className="mt-4">
+  return (
+    <div className="mx-auto max-w-6xl">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h1 className="page-title">
+            <Greeting name={firstName} />
+          </h1>
+          <p className="page-sub">
+            {dueCount > 0
+              ? `You have ${tasks.length} task${tasks.length === 1 ? "" : "s"} due and ${reminders.length} follow-up${reminders.length === 1 ? "" : "s"} waiting.`
+              : "You're all caught up. Nice."}{" "}
+            <Link href="/reports" className="link whitespace-nowrap">
+              Health score →
+            </Link>
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/customers/new" className="btn-secondary btn-sm">
+            <Icon name="people" className="h-4 w-4" /> Add customer
+          </Link>
+          <Link href="/tasks" className="btn-secondary btn-sm">
+            <Icon name="check" className="h-4 w-4" /> Add task
+          </Link>
+          <Link href="/invoices/new" className="btn-primary btn-sm">
+            <Icon name="plus" className="h-4 w-4" /> New invoice
+          </Link>
+        </div>
+      </div>
+
+      <div className="mt-6">
         <BusinessLineFilter basePath="/dashboard" lines={lines} current={line} />
       </div>
 
-      {showChecklist && (
-        <div className="mt-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-800">
-            🚀 Getting started
-          </h2>
-          <p className="mt-1 text-xs text-slate-400">
-            Set up your hub in a few minutes — each step unlocks more of the
-            dashboard.
-          </p>
-          <ul className="mt-3 space-y-2">
-            {checklist.map((item) => (
-              <li key={item.label} className="flex items-center gap-2 text-sm">
-                <span
-                  className={`flex h-5 w-5 items-center justify-center rounded-full text-xs ${
-                    item.done
-                      ? "bg-green-500 text-white"
-                      : "border border-slate-300 text-transparent"
-                  }`}
-                >
-                  ✓
-                </span>
-                {item.done ? (
-                  <span className="text-slate-400 line-through">
-                    {item.label}
-                  </span>
-                ) : (
-                  <Link
-                    href={item.href}
-                    className="text-slate-700 hover:text-indigo-600"
-                  >
-                    {item.label} &rarr;
-                  </Link>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      {/* KPI row */}
+      <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+        {stats.map((s) => (
+          <Link key={s.label} href={s.href} className="card card-hover block p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-2">
+              <span className="truncate text-xs font-medium text-muted sm:text-sm">{s.label}</span>
+              <span className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent-text sm:flex">
+                <Icon name={s.icon} className="h-4 w-4" />
+              </span>
+            </div>
+            <p className={`mt-2 text-xl font-semibold tracking-tight sm:text-2xl ${s.tone ?? "text-ink"}`}>
+              {s.value}
+            </p>
+            <p className="mt-0.5 truncate text-xs text-muted">{s.hint}</p>
+          </Link>
+        ))}
+      </div>
 
-      <div className="mt-4">
-        <h2 className="mb-2 text-sm font-semibold text-slate-800">
-          📊 Scoreboard by business
-        </h2>
+      <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-3">
+        {/* Left: what to do */}
+        <div className="space-y-5 lg:col-span-2">
+          <div className="card p-5 sm:p-6">
+            <div className="flex items-center justify-between">
+              <h2 className="section-title">Today</h2>
+              <div className="flex gap-3 text-sm">
+                <Link href="/tasks" className="link">Tasks</Link>
+                <Link href="/customers" className="link">Customers</Link>
+              </div>
+            </div>
+            {dueCount === 0 ? (
+              <div className="mt-4 rounded-2xl bg-surface-2 px-5 py-8 text-center">
+                <p className="text-sm font-medium text-ink">Nothing due today 🎉</p>
+                <p className="mt-1 text-sm text-muted">
+                  {customerCount === 0 ? (
+                    <Link href="/customers/new" className="link">Add your first customer</Link>
+                  ) : (
+                    <>
+                      Plan ahead on the <Link href="/tasks" className="link">Tasks</Link> page.
+                    </>
+                  )}
+                </p>
+              </div>
+            ) : (
+              <ul className="mt-3 divide-y divide-line/60">
+                {tasks.map((t) => {
+                  const overdue = t.due_date && t.due_date < today;
+                  return (
+                    <li key={t.id}>
+                      <Link
+                        href="/tasks"
+                        className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-surface-2"
+                      >
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-accent-soft text-accent-text">
+                          <Icon name="check" className="h-4 w-4" />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{t.title}</span>
+                        <span className={`shrink-0 text-xs font-medium ${overdue ? "text-red-600" : "text-muted"}`}>
+                          {overdue ? `Overdue · ${t.due_date}` : "Today"}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+                {reminders.map((c) => {
+                  const overdue = c.next_follow_up && c.next_follow_up < today;
+                  return (
+                    <li key={c.id}>
+                      <Link
+                        href={`/customers/${c.id}`}
+                        className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-3 transition-colors hover:bg-surface-2"
+                      >
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-amber-700">
+                          <Icon name="phone" className="h-4 w-4" />
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">
+                          Follow up with {c.name}
+                        </span>
+                        <span className={`shrink-0 text-xs font-medium ${overdue ? "text-red-600" : "text-amber-600"}`}>
+                          {overdue ? `Since ${c.next_follow_up}` : "Today"}
+                        </span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          {autopilotItems.length > 0 && (
+            <div className="card p-5 sm:p-6">
+              <h2 className="section-title">Jephelen noticed</h2>
+              <ul className="mt-3 space-y-1">
+                {autopilotItems.map((item, i) => (
+                  <li key={i}>
+                    <Link
+                      href={item.href}
+                      className="-mx-2 flex items-start gap-3 rounded-xl px-2 py-2.5 text-sm text-ink-2 transition-colors hover:bg-surface-2"
+                    >
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-surface-2 text-base">
+                        {item.emoji}
+                      </span>
+                      <span className="pt-1.5">{item.text}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Right: AI plan, money, setup */}
+        <div className="space-y-5">
+          <div>
+            <DailyPlan />
+            <AiCreditMeter className="mt-2 px-1" />
+          </div>
+
+          <div className="card p-5 sm:p-6">
+            <div className="flex items-center justify-between">
+              <h2 className="section-title">Money this month</h2>
+              <Link href="/money" className="link text-sm">Details</Link>
+            </div>
+            {txs.length === 0 ? (
+              <p className="mt-3 text-sm text-muted">
+                Nothing logged yet. <Link href="/money" className="link">Add income or expenses</Link>
+              </p>
+            ) : (
+              <>
+                <div className="mt-4 flex h-2.5 overflow-hidden rounded-full bg-surface-3">
+                  <div
+                    className="bg-green-500"
+                    style={{
+                      width: `${monthIncome + monthExpenses > 0 ? (monthIncome / (monthIncome + monthExpenses)) * 100 : 0}%`,
+                    }}
+                  />
+                  <div className="flex-1 bg-red-400/70" />
+                </div>
+                <dl className="mt-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <dt className="flex items-center gap-2 text-muted">
+                      <span className="h-2 w-2 rounded-full bg-green-500" />
+                      Income
+                    </dt>
+                    <dd className="font-semibold text-ink">{formatMoney(monthIncome, business.currency)}</dd>
+                  </div>
+                  <div className="flex justify-between">
+                    <dt className="flex items-center gap-2 text-muted">
+                      <span className="h-2 w-2 rounded-full bg-red-400" />
+                      Expenses
+                    </dt>
+                    <dd className="font-semibold text-ink">{formatMoney(monthExpenses, business.currency)}</dd>
+                  </div>
+                  <div className="flex justify-between border-t border-line/70 pt-2">
+                    <dt className="font-medium text-ink">Profit</dt>
+                    <dd className={`font-semibold ${monthProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                      {formatMoney(monthProfit, business.currency)}
+                    </dd>
+                  </div>
+                </dl>
+              </>
+            )}
+          </div>
+
+          {showChecklist && (
+            <div className="card p-5 sm:p-6">
+              <h2 className="section-title">Getting started</h2>
+              <p className="mt-1 text-sm text-muted">
+                {doneSteps} of {checklist.length} done
+              </p>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-surface-3">
+                <div
+                  className="h-full rounded-full bg-accent"
+                  style={{ width: `${(doneSteps / checklist.length) * 100}%` }}
+                />
+              </div>
+              <ul className="mt-4 space-y-2.5">
+                {checklist.map((item) => (
+                  <li key={item.label} className="flex items-center gap-2.5 text-sm">
+                    <span
+                      className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] ${
+                        item.done ? "bg-green-500 text-white" : "border border-line text-transparent"
+                      }`}
+                    >
+                      ✓
+                    </span>
+                    {item.done ? (
+                      <span className="text-subtle line-through">{item.label}</span>
+                    ) : (
+                      <Link href={item.href} className="font-medium text-ink hover:text-accent-text">
+                        {item.label} →
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="section-title">Scoreboard by business</h2>
+          <Link href="/leads" className="link text-sm">All leads</Link>
+        </div>
         <Scoreboard
           rows={scoreRows}
           due={dueItems}
@@ -345,182 +555,6 @@ export default async function DashboardPage({
           missing={scoreMissing}
         />
       </div>
-
-      <div className="mt-4">
-        <DailyPlan />
-        <AiCreditMeter className="mt-2" />
-      </div>
-
-      {autopilotItems.length > 0 && (
-        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-800">
-            🤖 Autopilot noticed
-          </h2>
-          <ul className="mt-3 space-y-2">
-            {autopilotItems.map((item, i) => (
-              <li key={i}>
-                <Link
-                  href={item.href}
-                  className="-mx-2 flex items-start gap-2 rounded-md px-2 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                >
-                  <span>{item.emoji}</span>
-                  <span>{item.text}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-        {/* Today's tasks */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-800">
-              Today&apos;s Tasks
-            </h2>
-            <Link
-              href="/tasks"
-              className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              All tasks &rarr;
-            </Link>
-          </div>
-          {tasks.length === 0 ? (
-            <p className="mt-3 text-sm text-slate-400">
-              Nothing due today.{" "}
-              <Link href="/tasks" className="text-indigo-600 hover:underline">
-                Plan your day
-              </Link>
-              .
-            </p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {tasks.map((t) => {
-                const overdue = t.due_date && t.due_date < today;
-                return (
-                  <li key={t.id} className="text-sm">
-                    <Link
-                      href="/tasks"
-                      className="block rounded-md px-2 py-1.5 -mx-2 hover:bg-slate-50"
-                    >
-                      <span className="text-slate-700">{t.title}</span>
-                      {overdue && (
-                        <span className="ml-2 text-xs font-medium text-red-600">
-                          overdue
-                        </span>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-
-        {/* Follow-ups */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-800">
-              Customer Follow-ups
-            </h2>
-            <Link
-              href="/customers"
-              className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              All customers &rarr;
-            </Link>
-          </div>
-          {reminders.length === 0 ? (
-            <p className="mt-3 text-sm text-slate-400">
-              No follow-ups due.{" "}
-              {customerCount === 0 ? (
-                <Link
-                  href="/customers/new"
-                  className="text-indigo-600 hover:underline"
-                >
-                  Add your first customer
-                </Link>
-              ) : (
-                "You're on top of your clients."
-              )}
-            </p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {reminders.map((c) => {
-                const overdue = c.next_follow_up && c.next_follow_up < today;
-                return (
-                  <li key={c.id} className="text-sm">
-                    <Link
-                      href={`/customers/${c.id}`}
-                      className="block rounded-md px-2 py-1.5 -mx-2 hover:bg-slate-50"
-                    >
-                      <span className="text-slate-700">{c.name}</span>
-                      <span
-                        className={`ml-2 text-xs font-medium ${overdue ? "text-red-600" : "text-amber-600"}`}
-                      >
-                        {overdue ? `since ${c.next_follow_up}` : "today"}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-
-        {/* Money snapshot (this month) */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-800">
-              Money Snapshot
-            </h2>
-            <Link
-              href="/money"
-              className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Details &rarr;
-            </Link>
-          </div>
-          {txs.length === 0 ? (
-            <p className="mt-3 text-sm text-slate-400">
-              Nothing logged this month.{" "}
-              <Link href="/money" className="text-indigo-600 hover:underline">
-                Add income or expenses
-              </Link>
-              .
-            </p>
-          ) : (
-            <dl className="mt-3 space-y-1.5 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-slate-500">Income</dt>
-                <dd className="font-semibold text-green-600">
-                  {formatMoney(monthIncome, business.currency)}
-                </dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-slate-500">Expenses</dt>
-                <dd className="font-semibold text-red-600">
-                  {formatMoney(monthExpenses, business.currency)}
-                </dd>
-              </div>
-              <div className="flex justify-between border-t border-slate-100 pt-1.5">
-                <dt className="font-medium text-slate-700">Profit</dt>
-                <dd
-                  className={`font-bold ${monthProfit >= 0 ? "text-slate-900" : "text-red-600"}`}
-                >
-                  {formatMoney(monthProfit, business.currency)}
-                </dd>
-              </div>
-            </dl>
-          )}
-        </div>
-      </div>
-
-      <p className="mt-6 text-xs text-slate-400">
-        {customerCount ?? 0} customer{(customerCount ?? 0) === 1 ? "" : "s"} in
-        your hub
-      </p>
     </div>
   );
 }

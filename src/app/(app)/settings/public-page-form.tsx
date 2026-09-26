@@ -7,7 +7,7 @@ import { updatePublicPage, type SettingsState } from "./actions";
 const initialState: SettingsState = {};
 
 const inputClass =
-  "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "mt-1 input";
 
 export default function PublicPageForm({
   defaults,
@@ -29,14 +29,14 @@ export default function PublicPageForm({
   return (
     <form
       action={formAction}
-      className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+      className="card p-6"
     >
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-slate-800">
+          <h2 className="section-title">
             🌐 Public page & lead capture
           </h2>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="page-sub">
             A simple page anyone can visit — messages land in your Leads
             inbox.
           </p>
@@ -57,7 +57,7 @@ export default function PublicPageForm({
         <div>
           <label
             htmlFor="slug"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Page address
           </label>
@@ -79,7 +79,7 @@ export default function PublicPageForm({
               <Link
                 href={`/b/${slug}`}
                 target="_blank"
-                className="font-medium text-indigo-600 hover:text-indigo-500"
+                className="link"
               >
                 /b/{slug}
               </Link>
@@ -89,7 +89,7 @@ export default function PublicPageForm({
         <div>
           <label
             htmlFor="tagline"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Tagline
           </label>
@@ -105,7 +105,7 @@ export default function PublicPageForm({
         <div className="sm:col-span-2">
           <label
             htmlFor="services"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Services <span className="text-slate-400">(one per line)</span>
           </label>
@@ -121,12 +121,12 @@ export default function PublicPageForm({
       </div>
 
       {state.error && (
-        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-3 alert-error">
           {state.error}
         </p>
       )}
       {state.success && (
-        <p className="mt-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p className="mt-3 alert-success">
           {state.success}
         </p>
       )}
@@ -135,7 +135,7 @@ export default function PublicPageForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+          className="btn-primary"
         >
           {pending ? "Saving..." : "Save public page"}
         </button>

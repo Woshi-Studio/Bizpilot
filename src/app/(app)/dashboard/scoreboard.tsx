@@ -12,6 +12,15 @@ export type DueItem = {
   kind: "lead" | "customer";
 };
 
+// Short words so five boxes fit on one row, even on a phone.
+const SHORT_LABEL: Record<string, string> = {
+  new: "New",
+  contacted: "Talking",
+  meeting: "Meeting",
+  declined: "Lost",
+  converted: "Won",
+};
+
 const SCORE_STATUSES = ["new", "contacted", "meeting", "declined", "converted"] as const;
 
 // One card per business line: leads by status, emails sent, replies, and
@@ -32,7 +41,7 @@ export default function Scoreboard({
 }) {
   if (missing) {
     return (
-      <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      <p className="alert-warn">
         The scoreboard needs migration 0014 — run it in Supabase.
       </p>
     );
@@ -60,7 +69,7 @@ export default function Scoreboard({
 
   if (cards.length === 0) {
     return (
-      <p className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-sm text-slate-400">
+      <p className="card-empty p-6 text-center text-sm text-slate-400">
         Nothing to score yet. Tag leads and customers with a business to see
         each one here.
       </p>
@@ -68,21 +77,21 @@ export default function Scoreboard({
   }
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       {cards.map((c) => {
         const lineParam = c.line ?? NO_LINE;
         return (
           <div
             key={key(c.line)}
-            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+            className="card p-5"
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-800">
+              <h3 className="section-title">
                 {lineLabel(c.line)}
               </h3>
               <Link
                 href={`/leads?line=${encodeURIComponent(lineParam)}`}
-                className="text-xs font-medium text-indigo-600 hover:text-indigo-500"
+                className="text-xs link"
               >
                 Leads &rarr;
               </Link>
@@ -94,11 +103,11 @@ export default function Scoreboard({
                 return (
                   <div
                     key={status}
-                    className={`rounded-lg border px-1 py-2 text-center ${meta?.badgeClass ?? ""}`}
+                    className="rounded-xl bg-surface-2 px-1 py-2.5 text-center"
                   >
-                    <p className="text-lg font-bold leading-none">{n}</p>
-                    <p className="mt-1 truncate text-[10px] font-medium uppercase tracking-wide">
-                      {status === "meeting" ? "Meeting" : meta?.label ?? status}
+                    <p className={`text-lg font-semibold leading-none ${n ? "text-ink" : "text-subtle"}`}>{n}</p>
+                    <p className="mt-1 truncate text-[11px] font-medium text-muted" title={meta?.label ?? status}>
+                      {SHORT_LABEL[status] ?? meta?.label ?? status}
                     </p>
                   </div>
                 );
@@ -106,14 +115,14 @@ export default function Scoreboard({
             </div>
 
             <p className="mt-3 text-sm text-slate-600">
-              📤 <span className="font-semibold text-slate-800">{c.sent}</span>{" "}
-              email{c.sent === 1 ? "" : "s"} sent · 📥{" "}
+              <span className="font-semibold text-slate-800">{c.sent}</span>{" "}
+              email{c.sent === 1 ? "" : "s"} sent ·{" "}
               <span className="font-semibold text-slate-800">{c.replies}</span>{" "}
               repl{c.replies === 1 ? "y" : "ies"}
             </p>
 
             <div className="mt-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              <p className="eyebrow">
                 Follow-ups due ({c.lineDue.length})
               </p>
               {c.lineDue.length === 0 ? (

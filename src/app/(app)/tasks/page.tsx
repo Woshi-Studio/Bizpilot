@@ -6,15 +6,18 @@ import BusinessLineFilter from "@/components/business-line-filter";
 import { loadBusinessLines, withLine } from "@/lib/activities";
 import { NO_LINE, lineFromParam } from "@/lib/business-lines";
 
+const isId = (v?: string) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v : undefined);
+
 export const metadata = { title: "Tasks" };
 
 export default async function TasksPage({
   searchParams,
 }: {
-  searchParams: Promise<{ line?: string }>;
+  searchParams: Promise<{ line?: string; customer?: string }>;
 }) {
   const { supabase, business } = await requireUserAndBusiness();
-  const line = lineFromParam((await searchParams).line);
+  const params = await searchParams;
+  const line = lineFromParam(params.line);
 
   const TASK_COLUMNS: string =
     "id, title, description, value, status, due_date, completed_at, business_line, customers(id, name)";
@@ -47,9 +50,9 @@ export default async function TasksPage({
   const cur = business.currency;
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="text-2xl font-bold text-slate-900">Tasks</h1>
-      <p className="mt-1 text-sm text-slate-500">
+    <div className="mx-auto max-w-6xl">
+      <h1 className="page-title">Tasks</h1>
+      <p className="page-sub">
         Your daily action list — small steps, every day.
       </p>
 
@@ -59,6 +62,7 @@ export default async function TasksPage({
 
       <div className="mt-6">
         <TaskComposer
+          defaultCustomerId={isId(params.customer)}
           customers={customers ?? []}
           services={(services ?? []) as Service[]}
           lines={lines}
@@ -67,16 +71,16 @@ export default async function TasksPage({
       </div>
 
       <div className="mt-6">
-        <h2 className="text-sm font-semibold text-slate-800">
+        <h2 className="section-title">
           Open ({openTasks.length})
         </h2>
         {openTasks.length === 0 ? (
-          <p className="mt-3 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
+          <p className="mt-3 card-empty p-8 text-center text-sm text-slate-400">
             Nothing open. Add a task above — even &quot;follow up with one
             customer&quot; counts.
           </p>
         ) : (
-          <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <ul className="mt-3 divide-y divide-slate-100 overflow-hidden card">
             {openTasks.map((t) => (
               <TaskRow key={t.id} task={t} currency={cur} />
             ))}
@@ -89,7 +93,7 @@ export default async function TasksPage({
           <h2 className="text-sm font-semibold text-slate-400">
             Recently completed
           </h2>
-          <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <ul className="mt-3 divide-y divide-slate-100 overflow-hidden card">
             {doneTasks.map((t) => (
               <TaskRow key={t.id} task={t} currency={cur} />
             ))}

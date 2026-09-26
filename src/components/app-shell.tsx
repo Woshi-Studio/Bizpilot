@@ -4,163 +4,220 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import FeedbackWidget from "./feedback-widget";
+import Icon from "./icons";
+import { ThemeToggleButton } from "./theme";
+import { NAV_GROUPS, groupFor, pageFor } from "@/lib/nav";
 
-type NavItem = {
-  label: string;
-  href: string;
-  soon?: boolean;
-};
+function initials(name: string) {
+  const parts = name.replace(/@.*/, "").split(/[\s._-]+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
+}
 
-const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Customers", href: "/customers" },
-  { label: "Leads", href: "/leads" },
-  { label: "Tasks", href: "/tasks" },
-  { label: "Calendar", href: "/calendar" },
-  { label: "Time & Billing", href: "/time" },
-  { label: "Pricing", href: "/services" },
-  { label: "AI Messages", href: "/messages" },
-  { label: "Decision Guard", href: "/decisions" },
-  { label: "Money", href: "/money" },
-  { label: "Invoices", href: "/invoices" },
-  { label: "Tax Center", href: "/tax" },
-  { label: "Reports", href: "/reports" },
-  { label: "Goals & Wins", href: "/goals" },
-  { label: "Coach", href: "/coach" },
-  { label: "Launchpad", href: "/launchpad" },
-  { label: "Settings", href: "/settings" },
-];
+function Logo() {
+  return (
+    <Link href="/dashboard" className="flex items-center gap-2.5">
+      <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-bold text-white shadow-sm">
+        J
+      </span>
+      <span className="text-[17px] font-semibold tracking-tight text-ink">
+        Jephelen
+      </span>
+    </Link>
+  );
+}
 
 export default function AppShell({
   businessName,
   userName,
   signOutAction,
+  athena,
   children,
 }: {
   businessName: string;
   userName: string;
   signOutAction: () => Promise<void>;
+  athena?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  const nav = (
-    <nav className="flex flex-col gap-1 px-3">
-      {NAV_ITEMS.map((item) =>
-        item.soon ? (
-          <span
-            key={item.href}
-            className="flex cursor-default items-center justify-between rounded-md px-3 py-2 text-sm text-slate-400"
-          >
-            {item.label}
-            <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-400">
-              Soon
-            </span>
-          </span>
-        ) : (
-          <Link
-            key={item.href}
-            href={item.href}
-            onClick={() => setSidebarOpen(false)}
-            className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-              pathname.startsWith(item.href)
-                ? "bg-indigo-50 text-indigo-700"
-                : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
-            }`}
-          >
-            {item.label}
-          </Link>
-        )
-      )}
-    </nav>
-  );
+  const group = groupFor(pathname);
+  const page = pageFor(pathname);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen w-full">
+    <div className="flex min-h-screen w-full bg-canvas">
       {/* Desktop sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-slate-200 bg-white py-5 print:hidden lg:flex">
-        <div className="mb-6 px-6">
-          <Link href="/dashboard" className="text-xl font-bold text-indigo-600">
-            Jephelen
-          </Link>
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line/70 bg-surface px-4 py-6 print:hidden lg:flex">
+        <div className="px-2">
+          <Logo />
         </div>
-        {nav}
+
+        <nav className="mt-8 flex flex-col gap-1" aria-label="Main">
+          {NAV_GROUPS.map((g) => {
+            const active = group?.key === g.key;
+            return (
+              <Link
+                key={g.key}
+                href={g.href}
+                aria-current={active ? "page" : undefined}
+                className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-medium transition-colors ${
+                  active
+                    ? "bg-accent-soft text-accent-text"
+                    : "text-ink-2 hover:bg-surface-3 hover:text-ink"
+                }`}
+              >
+                <Icon
+                  name={g.icon}
+                  className={`h-5 w-5 ${active ? "text-accent" : "text-subtle group-hover:text-ink-2"}`}
+                />
+                {g.label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="mt-auto rounded-2xl bg-surface-2 p-3">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-sm font-semibold text-accent-text">
+              {initials(userName)}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-ink">{userName}</p>
+              <p className="truncate text-xs text-muted">{businessName}</p>
+            </div>
+          </div>
+          <form action={signOutAction} className="mt-3">
+            <button type="submit" className="btn-ghost btn-sm w-full justify-start">
+              <Icon name="logout" className="h-4 w-4" />
+              Sign out
+            </button>
+          </form>
+        </div>
       </aside>
 
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-40 lg:hidden">
-          <div
-            className="absolute inset-0 bg-slate-900/40"
-            onClick={() => setSidebarOpen(false)}
-          />
-          <aside className="absolute inset-y-0 left-0 flex w-60 flex-col bg-white py-5 shadow-xl">
-            <div className="mb-6 flex items-center justify-between px-6">
-              <span className="text-xl font-bold text-indigo-600">
-                Jephelen
-              </span>
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(false)}
-                aria-label="Close menu"
-                className="text-2xl leading-none text-slate-400 hover:text-slate-600"
-              >
-                &times;
-              </button>
-            </div>
-            {nav}
-          </aside>
-        </div>
-      )}
-
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Topbar */}
-        <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 print:hidden sm:px-6">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open menu"
-              className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden"
-            >
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-            <span className="truncate text-sm font-semibold text-slate-800">
-              {businessName}
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
-            <span className="hidden text-sm text-slate-500 sm:inline">
-              {userName}
-            </span>
-            <form action={signOutAction}>
-              <button
-                type="submit"
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
-              >
-                Sign out
-              </button>
-            </form>
+        {/* Top bar */}
+        <header className="sticky top-0 z-30 border-b border-line/60 bg-canvas/80 backdrop-blur-md print:hidden">
+          <div className="flex h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-10">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="lg:hidden">
+                <Logo />
+              </div>
+              <div className="hidden min-w-0 items-center gap-2 text-sm lg:flex">
+                <span className="truncate font-medium text-muted">{businessName}</span>
+                {group && (
+                  <>
+                    <Icon name="chevronRight" className="h-4 w-4 text-subtle" />
+                    <span className="font-semibold text-ink">{group.label}</span>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <FeedbackWidget />
+              <ThemeToggleButton />
+              <div className="relative lg:hidden">
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen((o) => !o)}
+                  aria-label="Account menu"
+                  aria-expanded={menuOpen}
+                  className="ml-1 flex h-9 w-9 items-center justify-center rounded-full bg-accent-soft text-sm font-semibold text-accent-text"
+                >
+                  {initials(userName)}
+                </button>
+                {menuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setMenuOpen(false)} />
+                    <div className="card absolute right-0 top-11 z-50 w-60 p-3 shadow-pop">
+                      <p className="truncate text-sm font-semibold text-ink">{userName}</p>
+                      <p className="truncate text-xs text-muted">{businessName}</p>
+                      <Link
+                        href="/settings"
+                        onClick={() => setMenuOpen(false)}
+                        className="btn-ghost btn-sm mt-3 w-full justify-start"
+                      >
+                        <Icon name="settings" className="h-4 w-4" />
+                        Settings
+                      </Link>
+                      <form action={signOutAction}>
+                        <button type="submit" className="btn-ghost btn-sm w-full justify-start">
+                          <Icon name="logout" className="h-4 w-4" />
+                          Sign out
+                        </button>
+                      </form>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">{children}</main>
+        <main className="flex-1 px-4 pb-32 pt-6 sm:px-6 lg:px-10 lg:pb-16 lg:pt-8 print:p-0">
+          {/* Page tabs inside a group (e.g. People: Customers · Leads) */}
+          {group && group.pages.length > 1 && (
+            <div className="mx-auto mb-7 max-w-6xl print:hidden">
+              <nav
+                aria-label={`${group.label} pages`}
+                className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none]"
+              >
+                {group.pages.map((p) => {
+                  const active = page?.href === p.href;
+                  return (
+                    <Link
+                      key={p.href}
+                      href={p.href}
+                      aria-current={active ? "page" : undefined}
+                      className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                        active
+                          ? "bg-ink text-canvas shadow-sm"
+                          : "text-muted hover:bg-surface-3 hover:text-ink"
+                      }`}
+                    >
+                      {p.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+          )}
+          {children}
+        </main>
       </div>
 
-      <FeedbackWidget />
+      {/* Mobile bottom tab bar */}
+      <nav
+        aria-label="Main"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-line/70 bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md print:hidden lg:hidden"
+      >
+        <div className="grid grid-cols-6">
+          {NAV_GROUPS.map((g) => {
+            const active = group?.key === g.key;
+            return (
+              <Link
+                key={g.key}
+                href={g.href}
+                aria-current={active ? "page" : undefined}
+                className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
+                  active ? "text-accent" : "text-muted"
+                }`}
+              >
+                <span
+                  className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors ${
+                    active ? "bg-accent-soft" : ""
+                  }`}
+                >
+                  <Icon name={g.icon} className="h-[22px] w-[22px]" />
+                </span>
+                {g.label}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+      {athena}
     </div>
   );
 }

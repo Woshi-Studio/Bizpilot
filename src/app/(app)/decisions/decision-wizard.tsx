@@ -20,7 +20,7 @@ const initialState: SaveDecisionState = {};
 const adviceInitial: AdviceState = {};
 
 const inputClass =
-  "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "mt-1 input";
 
 // Paid-plan panel (Premium or Pro): personalized AI advice grounded in real numbers + history.
 function AiAdvicePanel({
@@ -45,7 +45,7 @@ function AiAdvicePanel({
     <div className="mt-5 rounded-lg border border-indigo-200 bg-indigo-50/40 p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="text-sm font-semibold text-slate-800">
+          <h3 className="section-title">
             🧠 Personalized AI advice{" "}
             <span className="ml-1 rounded-full bg-indigo-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
               Premium
@@ -68,7 +68,7 @@ function AiAdvicePanel({
             <button
               type="submit"
               disabled={pending}
-              className="shrink-0 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+              className="shrink-0 btn-primary btn-sm"
             >
               {pending ? "Thinking..." : isPremium ? "Get advice" : "Get advice"}
             </button>
@@ -101,7 +101,7 @@ function AiAdvicePanel({
         </div>
       )}
       {state.error && (
-        <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-3 alert-error">
           {state.error}
         </p>
       )}
@@ -138,10 +138,10 @@ export default function DecisionWizard({
             key={t.value}
             type="button"
             onClick={() => setType(t.value)}
-            className="rounded-xl border border-slate-200 bg-white p-5 text-left shadow-sm transition-colors hover:border-indigo-400"
+            className="card p-5 text-left shadow-sm transition-colors hover:border-indigo-400"
           >
             <span className="text-2xl">{t.emoji}</span>
-            <p className="mt-2 text-sm font-semibold text-slate-800">
+            <p className="mt-2 section-title">
               {t.label}
             </p>
             <p className="mt-0.5 text-xs text-slate-400">{t.blurb}</p>
@@ -164,7 +164,7 @@ export default function DecisionWizard({
     );
 
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="card p-6">
         <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
           {typeMeta.emoji} {typeMeta.label}
           {title ? ` — ${title}` : ""}
@@ -194,7 +194,7 @@ export default function DecisionWizard({
 
         {result.recommendations.length > 0 && (
           <div className="mt-4">
-            <h3 className="text-sm font-semibold text-slate-800">
+            <h3 className="section-title">
               Recommendations
             </h3>
             <ul className="mt-2 space-y-2">
@@ -220,7 +220,7 @@ export default function DecisionWizard({
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
           {saveState.success ? (
-            <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+            <p className="alert-success">
               {saveState.success}
             </p>
           ) : (
@@ -240,7 +240,7 @@ export default function DecisionWizard({
               <button
                 type="submit"
                 disabled={saving}
-                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+                className="btn-primary"
               >
                 {saving ? "Saving..." : "Save to history"}
               </button>
@@ -255,7 +255,7 @@ export default function DecisionWizard({
               setAnswers({});
               setShowResult(false);
             }}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            className="btn-secondary"
           >
             Check another decision
           </button>
@@ -273,13 +273,13 @@ export default function DecisionWizard({
           </Link>
           <Link
             href="/decisions"
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+            className="text-sm link"
           >
             View history &rarr;
           </Link>
         </div>
         {saveState.error && (
-          <p className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+          <p className="mt-3 alert-error">
             {saveState.error}
           </p>
         )}
@@ -289,9 +289,9 @@ export default function DecisionWizard({
 
   // Step 2: details + questions
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="card p-6">
       <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-slate-800">
+        <p className="section-title">
           {typeMeta.emoji} {typeMeta.label}
         </p>
         <button
@@ -310,7 +310,7 @@ export default function DecisionWizard({
         <div>
           <label
             htmlFor="dg_title"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             What&apos;s the decision?
           </label>
@@ -326,7 +326,7 @@ export default function DecisionWizard({
         <div>
           <label
             htmlFor="dg_amount"
-            className="block text-sm font-medium text-slate-700"
+            className="label"
           >
             Amount involved <span className="text-slate-400">(optional)</span>
           </label>
@@ -376,7 +376,7 @@ export default function DecisionWizard({
           type="button"
           disabled={!allAnswered}
           onClick={() => setShowResult(true)}
-          className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
+          className="btn-primary"
         >
           {allAnswered
             ? "Check the risk"

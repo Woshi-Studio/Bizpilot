@@ -48,9 +48,9 @@ export default async function DecisionsPage() {
   const decisions = (data ?? []) as DecisionRow[];
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <h1 className="text-2xl font-bold text-slate-900">Decision Guard</h1>
-      <p className="mt-1 text-sm text-slate-500">
+    <div className="mx-auto max-w-6xl [&>*]:max-w-3xl">
+      <h1 className="page-title">Decision Guard</h1>
+      <p className="page-sub">
         Before you say yes — a gut check that catches expensive mistakes, and
         learns your business as you use it.
       </p>
@@ -62,14 +62,14 @@ export default async function DecisionsPage() {
 
       {decisions.length > 0 && (
         <div className="mt-10">
-          <h2 className="text-sm font-semibold text-slate-800">
+          <h2 className="section-title">
             Past decisions
           </h2>
           <p className="mt-1 text-xs text-slate-400">
             Mark how each one turned out — it teaches your AI advisor what
             works for your business.
           </p>
-          <ul className="mt-3 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <ul className="mt-3 divide-y divide-slate-100 overflow-hidden card">
             {decisions.map((d) => {
               const meta = RISK_META[d.risk_level] ?? RISK_META.low;
               const typeMeta = DECISION_TYPES.find(

@@ -19,7 +19,7 @@ export default function LeadStatusSelect({
         defaultValue={status}
         aria-label="Lead status"
         onChange={(e) => e.currentTarget.form?.requestSubmit()}
-        className="rounded-md border border-slate-300 px-2 py-1 text-xs"
+        className="input w-auto! py-1.5! text-xs!"
       >
         {LEAD_STATUSES.map((s) => (
           <option key={s.value} value={s.value}>

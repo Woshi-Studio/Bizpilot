@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { usePathname } from "next/navigation";
+import Icon from "./icons";
 import {
   submitFeedback,
   type FeedbackState,
@@ -18,11 +19,11 @@ export default function FeedbackWidget() {
   const pathname = usePathname();
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 print:hidden">
+    <div className="relative print:hidden">
       {open && (
-        <div className="mb-2 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
+        <div className="card absolute right-0 top-12 z-50 w-72 p-4 shadow-pop">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-800">
+            <h3 className="section-title">
               Something broken? An idea?
             </h3>
             <button
@@ -36,7 +37,7 @@ export default function FeedbackWidget() {
           </div>
 
           {state.success ? (
-            <p className="mt-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+            <p className="mt-3 alert-success">
               {state.success}
             </p>
           ) : (
@@ -47,17 +48,17 @@ export default function FeedbackWidget() {
                 rows={3}
                 required
                 placeholder="Tell us what happened or what you wish existed..."
-                className="block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="input"
               />
               {state.error && (
-                <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+                <p className="mt-2 alert-error">
                   {state.error}
                 </p>
               )}
               <button
                 type="submit"
                 disabled={pending}
-                className="mt-2 w-full rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+                className="mt-2 w-full btn-primary"
               >
                 {pending ? "Sending..." : "Send feedback"}
               </button>
@@ -68,9 +69,12 @@ export default function FeedbackWidget() {
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="ml-auto block rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-600 shadow-sm hover:border-indigo-400 hover:text-indigo-600"
+        aria-label="Send feedback"
+        title="Feedback"
+        className="flex items-center gap-1.5 rounded-xl px-2.5 py-2 text-sm font-medium text-muted transition-colors hover:bg-surface-3 hover:text-ink"
       >
-        💬 Feedback
+        <Icon name="chat" className="h-5 w-5" />
+        <span className="hidden sm:inline">Feedback</span>
       </button>
     </div>
   );

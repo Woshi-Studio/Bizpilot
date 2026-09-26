@@ -58,7 +58,7 @@ export default async function Home() {
           </Link>
           <Link
             href="/signup"
-            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+            className="btn-primary"
           >
             Get started free
           </Link>
@@ -79,7 +79,7 @@ export default async function Home() {
           <div className="mt-8 flex items-center justify-center gap-4">
             <Link
               href="/signup"
-              className="rounded-md bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+              className="btn-primary"
             >
               Start free — no card needed
             </Link>
@@ -91,10 +91,10 @@ export default async function Home() {
             {FEATURES.map((f) => (
               <div
                 key={f.title}
-                className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+                className="card p-6"
               >
                 <span className="text-2xl">{f.emoji}</span>
-                <h2 className="mt-3 text-sm font-semibold text-slate-800">
+                <h2 className="mt-3 section-title">
                   {f.title}
                 </h2>
                 <p className="mt-1.5 text-sm leading-6 text-slate-500">

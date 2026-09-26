@@ -74,7 +74,7 @@ export default function CalendarGrid({
   const week = !month;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden card">
       <div className="hidden grid-cols-7 border-b border-slate-200 bg-slate-50 sm:grid">
         {WEEKDAYS.map((d) => (
           <div

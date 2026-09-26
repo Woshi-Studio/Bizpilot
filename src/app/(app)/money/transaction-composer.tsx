@@ -7,7 +7,7 @@ import { createTransaction, type TransactionFormState } from "./actions";
 const initialState: TransactionFormState = {};
 
 const inputClass =
-  "block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "input";
 
 export default function TransactionComposer({
   customers,
@@ -30,7 +30,7 @@ export default function TransactionComposer({
   const categories = type === "income" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="card p-4">
       <div className="mb-3 inline-flex rounded-lg border border-slate-200 p-0.5">
         <button
           type="button"
@@ -109,7 +109,7 @@ export default function TransactionComposer({
         <button
           type="submit"
           disabled={pending}
-          className="shrink-0 rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+          className="shrink-0 btn-primary"
         >
           {pending ? "Adding..." : "Add"}
         </button>
@@ -135,7 +135,7 @@ export default function TransactionComposer({
         </div>
       </form>
       {state.error && (
-        <p className="mt-2 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p className="mt-2 alert-error">
           {state.error}
         </p>
       )}

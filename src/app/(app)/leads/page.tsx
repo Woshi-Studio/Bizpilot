@@ -45,9 +45,9 @@ export default async function LeadsPage({
   const converted = leads.filter((l) => l.status === "converted").length;
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <h1 className="text-2xl font-bold text-slate-900">Leads</h1>
-      <p className="mt-1 text-sm text-slate-500">
+    <div className="mx-auto max-w-6xl">
+      <h1 className="page-title">Leads</h1>
+      <p className="page-sub">
         Everyone you&apos;ve reached out to, and everyone who&apos;s reached out to
         you.
       </p>
@@ -57,26 +57,26 @@ export default async function LeadsPage({
       </div>
 
       {error ? (
-        <p className="mt-6 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <p className="mt-6 alert-warn">
           Leads aren&apos;t set up yet — the database migration for this
           feature hasn&apos;t been run.
         </p>
       ) : (
         <>
           <div className="mt-6 grid grid-cols-3 gap-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm">
+            <div className="card p-4 text-center shadow-sm">
               <p className="text-xl font-bold text-slate-900">{total}</p>
               <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">
                 Total
               </p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm">
+            <div className="card p-4 text-center shadow-sm">
               <p className="text-xl font-bold text-blue-600">{contacted}</p>
               <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">
                 In progress
               </p>
             </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-sm">
+            <div className="card p-4 text-center shadow-sm">
               <p className="text-xl font-bold text-green-600">{converted}</p>
               <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">
                 Converted
@@ -85,12 +85,12 @@ export default async function LeadsPage({
           </div>
 
           {!pageEnabled && (
-            <p className="mt-6 rounded-xl border border-dashed border-slate-300 bg-white p-4 text-center text-sm text-slate-500">
+            <p className="mt-6 card-empty p-4 text-center text-sm text-slate-500">
               Your public page is off, so inbound leads won&apos;t come in
               automatically. Turn it on in{" "}
               <Link
                 href="/settings"
-                className="font-medium text-indigo-600 hover:text-indigo-500"
+                className="link"
               >
                 Settings
               </Link>
@@ -123,7 +123,7 @@ export default async function LeadsPage({
           </div>
 
           {leads.length === 0 ? (
-            <div className="mt-6 rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center">
+            <div className="mt-6 card-empty p-8 text-center">
               <p className="text-sm font-medium text-slate-600">
                 No leads yet.
               </p>
@@ -132,7 +132,7 @@ export default async function LeadsPage({
                   Share your page:{" "}
                   <Link
                     href={`/b/${slug}`}
-                    className="font-medium text-indigo-600 hover:text-indigo-500"
+                    className="link"
                   >
                     /b/{slug}
                   </Link>
@@ -140,12 +140,12 @@ export default async function LeadsPage({
               )}
             </div>
           ) : (
-            <ul className="mt-6 divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+            <ul className="mt-6 divide-y divide-slate-100 overflow-hidden card">
               {leads.map((lead) => (
                 <li key={lead.id} className="px-5 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800">
+                      <p className="section-title">
                         <Link
                           href={`/leads/${lead.id}`}
                           className="hover:text-indigo-600 hover:underline"
@@ -182,7 +182,7 @@ export default async function LeadsPage({
                           <input type="hidden" name="id" value={lead.id} />
                           <button
                             type="submit"
-                            className="rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500"
+                            className="btn-primary btn-sm"
                           >
                             + Add to customers
                           </button>

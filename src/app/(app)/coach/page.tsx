@@ -5,9 +5,9 @@ export const metadata = { title: "Coach" };
 
 export default async function CoachPage() {
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-bold text-slate-900">🎓 Business Coach</h1>
-      <p className="mt-1 text-sm text-slate-500">
+    <div className="mx-auto max-w-6xl [&>*]:max-w-2xl">
+      <h1 className="page-title">🎓 Business Coach</h1>
+      <p className="page-sub">
         A mentor that actually knows your business — it reads your real
         numbers before answering.
       </p>

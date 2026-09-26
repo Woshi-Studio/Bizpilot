@@ -9,11 +9,11 @@ export default function AuthLayout({
         <h1 className="text-3xl font-bold tracking-tight text-indigo-600">
           Jephelen
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="page-sub">
           Your AI copilot for running a smarter business
         </p>
       </div>
-      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
+      <div className="w-full max-w-md card p-8">
         {children}
       </div>
     </div>

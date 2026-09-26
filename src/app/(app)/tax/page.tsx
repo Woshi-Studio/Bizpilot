@@ -37,9 +37,9 @@ export default async function TaxPage({
   const years = [currentYear, currentYear - 1, currentYear - 2];
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-bold text-slate-900">Tax Center</h1>
-      <p className="mt-1 text-sm text-slate-500">
+    <div className="mx-auto max-w-6xl [&>*]:max-w-2xl">
+      <h1 className="page-title">Tax Center</h1>
+      <p className="page-sub">
         Everything your accountant needs for the year — in one download.
       </p>
 
@@ -60,7 +60,7 @@ export default async function TaxPage({
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="card p-5">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
             {year} Income
           </p>
@@ -68,7 +68,7 @@ export default async function TaxPage({
             {formatMoney(income, cur)}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="card p-5">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
             {year} Expenses
           </p>
@@ -76,7 +76,7 @@ export default async function TaxPage({
             {formatMoney(expenses, cur)}
           </p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="card p-5">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
             {year} Profit
           </p>
@@ -88,18 +88,18 @@ export default async function TaxPage({
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-800">
+      <div className="mt-6 card p-6">
+        <h2 className="section-title">
           Download {year} records
         </h2>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="page-sub">
           {txCount} transaction{txCount === 1 ? "" : "s"} · {receiptCount}{" "}
           receipt{receiptCount === 1 ? "" : "s"} attached. The file is a
           spreadsheet (CSV) any accountant can open.
         </p>
         <a
           href={`/money/export?year=${year}`}
-          className="mt-4 inline-block rounded-md bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+          className="mt-4 inline-block btn-primary"
         >
           ⬇ Download {year} income &amp; expenses
         </a>

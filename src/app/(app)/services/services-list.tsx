@@ -22,7 +22,7 @@ export default function ServicesList({
 }) {
   if (!services.length) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
+      <div className="card-empty p-8 text-center text-sm text-slate-400">
         No services yet. Add your rate card above — it&apos;ll show up when you
         create tasks and invoices.
       </div>
@@ -30,7 +30,7 @@ export default function ServicesList({
   }
 
   return (
-    <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white">
+    <div className="divide-y divide-slate-100 card">
       {services.map((s) => (
         <div
           key={s.id}

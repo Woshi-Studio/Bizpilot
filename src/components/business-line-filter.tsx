@@ -32,8 +32,8 @@ export default function BusinessLineFilter({
   ];
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      <span className="mr-1 text-xs font-semibold uppercase tracking-wide text-slate-400">
+    <div className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible">
+      <span className="eyebrow mr-1 shrink-0">
         Business
       </span>
       {options.map((o) => {
@@ -42,11 +42,8 @@ export default function BusinessLineFilter({
           <Link
             key={o.value ?? "all"}
             href={href(o.value)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              active
-                ? "bg-indigo-600 text-white"
-                : "border border-slate-300 bg-white text-slate-600 hover:border-indigo-300"
-            }`}
+            aria-current={active ? "true" : undefined}
+            className={active ? "chip chip-active" : "chip"}
           >
             {o.label}
           </Link>

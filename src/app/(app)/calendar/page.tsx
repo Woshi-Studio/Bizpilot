@@ -6,6 +6,9 @@ import { NO_LINE, lineFromParam } from "@/lib/business-lines";
 import CalendarGrid, { type CalendarItem } from "./calendar-grid";
 import MeetingForm from "./meeting-form";
 
+// Only a uuid can prefill the meeting form (from a contact page).
+const isId = (v?: string) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v : undefined);
+
 export const metadata = { title: "Calendar" };
 
 // All date math here is on plain "YYYY-MM-DD" strings in UTC, so the
@@ -23,7 +26,7 @@ const addDays = (d: Date, n: number) => new Date(d.getTime() + n * 86_400_000);
 export default async function CalendarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; date?: string; line?: string }>;
+  searchParams: Promise<{ view?: string; date?: string; line?: string; customer?: string; lead?: string }>;
 }) {
   const params = await searchParams;
   const view = params.view === "week" ? "week" : "month";
@@ -177,8 +180,8 @@ export default async function CalendarPage({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="text-2xl font-bold text-slate-900">Calendar</h1>
-      <p className="mt-1 text-sm text-slate-500">
+      <h1 className="page-title">Calendar</h1>
+      <p className="page-sub">
         Tasks, follow-ups, invoice due dates and meetings — all in one place.
       </p>
 
@@ -192,7 +195,7 @@ export default async function CalendarPage({
       </div>
 
       {missing && (
-        <p className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <p className="mt-4 alert-warn">
           Some calendar data couldn&apos;t load — make sure migration 0014 has
           been run in Supabase.
         </p>
@@ -236,8 +239,10 @@ export default async function CalendarPage({
         />
       </div>
 
-      <div className="mt-6">
+      <div id="book" className="mt-6 scroll-mt-24">
         <MeetingForm
+          defaultCustomerId={isId(params.customer)}
+          defaultLeadId={isId(params.lead)}
           customers={(customerList.data ?? []) as { id: string; name: string }[]}
           leads={(leadList.data ?? []) as { id: string; name: string }[]}
           lines={lines}

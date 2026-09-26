@@ -40,17 +40,17 @@ export default async function InvoicesPage({
   const invoices = (data ?? []) as unknown as InvoiceRow[];
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-6xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Invoices</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="page-title">Invoices</h1>
+          <p className="page-sub">
             Quotes and invoices — mark them paid and the money logs itself.
           </p>
         </div>
         <Link
           href="/invoices/new"
-          className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+          className="btn-primary"
         >
           + New
         </Link>
@@ -62,12 +62,12 @@ export default async function InvoicesPage({
 
       <div className="mt-6">
         {invoices.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
+          <p className="card-empty p-8 text-center text-sm text-slate-400">
             No invoices or quotes yet. Create your first one — it takes a
             minute.
           </p>
         ) : (
-          <ul className="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+          <ul className="divide-y divide-slate-100 overflow-hidden card">
             {invoices.map((inv) => {
               const total = inv.invoice_items.reduce(
                 (sum, i) => sum + Number(i.quantity) * Number(i.unit_price),
@@ -80,7 +80,7 @@ export default async function InvoicesPage({
                     href={`/invoices/${inv.id}`}
                     className="flex items-center gap-4 px-5 py-3.5 hover:bg-slate-50"
                   >
-                    <span className="w-24 shrink-0 text-sm font-semibold text-slate-800">
+                    <span className="w-24 shrink-0 section-title">
                       {inv.number}
                     </span>
                     <div className="min-w-0 flex-1">

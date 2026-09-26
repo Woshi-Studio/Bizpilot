@@ -54,7 +54,7 @@ export default async function InvoiceDetailPage({
     .maybeSingle();
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-6xl [&>*]:max-w-3xl">
       {/* Controls — hidden when printing */}
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Link
@@ -70,7 +70,7 @@ export default async function InvoiceDetailPage({
               <input type="hidden" name="status" value="sent" />
               <button
                 type="submit"
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                className="btn-secondary"
               >
                 Mark sent
               </button>
@@ -114,13 +114,13 @@ export default async function InvoiceDetailPage({
       </div>
 
       {/* The document itself — print-friendly */}
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-8 shadow-sm print:mt-0 print:rounded-none print:border-0 print:p-0 print:shadow-none">
+      <div className="mt-4 card p-8 print:mt-0 print:rounded-none print:border-0 print:p-0 print:shadow-none">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">
+            <h1 className="page-title">
               {isQuote ? "Quote" : "Invoice"} {invoice.number}
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="page-sub">
               Issued {invoice.issue_date}
               {invoice.due_date ? ` · Due ${invoice.due_date}` : ""}
             </p>

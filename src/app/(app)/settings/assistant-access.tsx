@@ -27,17 +27,17 @@ export type AuditRow = {
 const initialState: CreateKeyState = {};
 
 const inputClass =
-  "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
+  "mt-1 input";
 
 function NewKeyBox({ keyText, name }: { keyText: string; name: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <div className="rounded-lg border border-amber-300 bg-amber-50 p-4">
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4">
       <p className="text-sm font-semibold text-amber-900">
         Key &quot;{name}&quot; created. Copy it now: it will not be shown again.
       </p>
       <div className="mt-2 flex items-center gap-2">
-        <code className="min-w-0 flex-1 break-all rounded bg-white px-2 py-1 text-xs text-slate-800">
+        <code className="min-w-0 flex-1 break-all rounded-lg bg-surface px-2 py-1 text-xs text-slate-800">
           {keyText}
         </code>
         <button
@@ -46,7 +46,7 @@ function NewKeyBox({ keyText, name }: { keyText: string; name: string }) {
             await navigator.clipboard.writeText(keyText);
             setCopied(true);
           }}
-          className="shrink-0 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500"
+          className="btn-sm btn shrink-0 bg-amber-600 text-white hover:bg-amber-500"
         >
           {copied ? "Copied!" : "Copy"}
         </button>
@@ -68,9 +68,9 @@ export default function AssistantAccess({
   const keyNames = new Map(keys.map((k) => [k.id, k.name]));
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-sm font-semibold text-slate-800">🤖 Assistant access</h2>
-      <p className="mt-1 text-sm text-slate-500">
+    <div className="card p-6">
+      <h2 className="section-title">🤖 Assistant access</h2>
+      <p className="page-sub">
         Keys let your assistant add customers, leads, tasks and meetings for
         you. Each key only does what you tick. Revoke a key and it stops
         working at once.
@@ -91,11 +91,11 @@ export default function AssistantAccess({
       {ready && (
         <form action={formAction} className="mt-4 space-y-3">
           {state.error && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p className="alert-error">
               {state.error}
             </p>
           )}
-          <label className="block text-sm font-medium text-slate-700">
+          <label className="label">
             Key name
             <input
               name="name"
@@ -123,7 +123,7 @@ export default function AssistantAccess({
             <button
               type="submit"
               disabled={pending}
-              className="rounded-md bg-indigo-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-60"
+              className="btn-primary"
             >
               {pending ? "Creating..." : "Create key"}
             </button>
@@ -132,7 +132,7 @@ export default function AssistantAccess({
       )}
 
       {keys.length > 0 && (
-        <div className="mt-6 divide-y divide-slate-100 rounded-lg border border-slate-100">
+        <div className="mt-6 divide-y divide-slate-100 rounded-2xl border border-line/70">
           {keys.map((k) => (
             <div key={k.id} className="flex items-start justify-between gap-3 px-4 py-3">
               <div className="min-w-0">
@@ -169,7 +169,7 @@ export default function AssistantAccess({
           <summary className="cursor-pointer text-sm font-medium text-slate-700">
             Last {audit.length} assistant calls
           </summary>
-          <div className="mt-2 max-h-96 overflow-y-auto rounded-lg border border-slate-100 text-xs">
+          <div className="mt-2 max-h-96 overflow-y-auto rounded-2xl border border-line/70 text-xs">
             {audit.map((a) => (
               <div key={a.id} className="flex gap-3 border-b border-slate-50 px-3 py-1.5">
                 <span className={a.ok ? "text-green-600" : "text-red-600"}>

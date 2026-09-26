@@ -47,7 +47,7 @@ export const FAQ: FaqEntry[] = [
   {
     id: "send-invoice",
     q: "How do I send an invoice?",
-    a: "Open the customer's page and press **Send invoice** in the bar at the top. It writes the email for you. You can also open the invoice (**Money → Invoices**) and print or save it as a PDF to attach.",
+    a: "Open the invoice (**Money → Invoices**) and press **Send by email**, or use **Send invoice** on the customer's page. The message is written for you with a view link. If your plan can't send from Jephelen, press **Open in my email**, then **Mark as sent**.",
     keys: [["send", "email", "share", "mail"], ["invoice", "bill"]],
   },
   {

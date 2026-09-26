@@ -290,8 +290,11 @@ export default function InvoiceForm({
               }}
               className={inputClass}
             />
+          </div>
+          <div className="col-span-2">
+            <p className="text-xs text-muted">Due:</p>
             <DateChips
-              className="mt-1.5"
+              className="mt-1"
               onPick={(d) => {
                 setDueTouched(true);
                 setDueDate(d);

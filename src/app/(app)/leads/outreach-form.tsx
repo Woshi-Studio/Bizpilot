@@ -3,13 +3,20 @@
 import { useActionState, useRef, useEffect } from "react";
 import { LEAD_CHANNELS } from "@/lib/types";
 import { logOutreach, type OutreachFormState } from "./actions";
+import BusinessLineInput from "@/components/business-line-input";
 
 const initialState: OutreachFormState = {};
 
 const inputClass =
   "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
 
-export default function OutreachForm() {
+export default function OutreachForm({
+  lines,
+  defaultLine,
+}: {
+  lines?: string[];
+  defaultLine?: string;
+}) {
   const [state, formAction, pending] = useActionState(
     logOutreach,
     initialState
@@ -70,6 +77,18 @@ export default function OutreachForm() {
           </label>
           <input name="follow_up_date" type="date" className={inputClass} />
         </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700">
+            Email
+          </label>
+          <input name="email" type="email" className={inputClass} />
+        </div>
+        <BusinessLineInput
+          id="outreach_business_line"
+          lines={lines}
+          defaultValue={defaultLine}
+          className={inputClass}
+        />
         <div className="sm:col-span-3">
           <label className="block text-sm font-medium text-slate-700">
             Notes

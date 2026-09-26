@@ -3,6 +3,7 @@
 import { formatMoney } from "@/lib/types";
 import type { Service } from "@/lib/types";
 import { deleteService } from "./actions";
+import { lineLabel } from "@/lib/business-lines";
 
 const UNIT_SUFFIX: Record<string, string> = {
   project: "/project",
@@ -38,6 +39,11 @@ export default function ServicesList({
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-slate-800">
               {s.name}
+              {s.business_line && (
+                <span className="ml-2 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-600">
+                  {lineLabel(s.business_line)}
+                </span>
+              )}
             </p>
             {s.description && (
               <p className="mt-0.5 truncate text-xs text-slate-500">

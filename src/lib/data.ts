@@ -8,7 +8,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // record can't point at another business's data.
 export async function belongsToBusiness(
   supabase: SupabaseClient,
-  table: "customers" | "services" | "tasks",
+  table: "customers" | "services" | "tasks" | "leads",
   id: string,
   businessId: string
 ): Promise<boolean> {

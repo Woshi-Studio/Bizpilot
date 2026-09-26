@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness } from "@/lib/data";
 import { SERVICE_UNITS } from "@/lib/types";
+import { normalizeLine } from "@/lib/business-lines";
 
 export type ServiceFormState = {
   error?: string;
@@ -33,6 +34,7 @@ export async function createService(
     rate,
     unit: SERVICE_UNITS.some((u) => u.value === unit) ? unit : "project",
     description: description || null,
+    business_line: normalizeLine(formData.get("business_line")),
   });
 
   if (error) {

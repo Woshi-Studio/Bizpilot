@@ -3,6 +3,10 @@ import Link from "next/link";
 import { requireUserAndBusiness } from "@/lib/data";
 import { formatMoney } from "@/lib/types";
 import DailyPlan from "./daily-plan";
+import Scoreboard, { type DueItem, type ScoreRow } from "./scoreboard";
+import BusinessLineFilter from "@/components/business-line-filter";
+import { loadBusinessLines, withLine } from "@/lib/activities";
+import { NO_LINE, lineFromParam } from "@/lib/business-lines";
 
 export const metadata = { title: "Dashboard" };
 
@@ -13,16 +17,45 @@ function greeting() {
   return "Good evening";
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ line?: string }>;
+}) {
   const { supabase, user, business } = await requireUserAndBusiness();
   const today = new Date().toISOString().slice(0, 10);
+  const line = lineFromParam((await searchParams).line);
 
   const monthStart = `${today.slice(0, 7)}-01`;
 
+  // Plain-string column lists keep the filtered query types simple.
+  const cols = (c: string) => c;
+  const dueTasksQuery = withLine(
+    supabase
+      .from("tasks")
+      .select(cols("id, title, due_date"))
+      .eq("business_id", business.id),
+    line
+  )
+    .is("completed_at", null)
+    .lte("due_date", today)
+    .order("due_date")
+    .limit(5);
+  const followUpsQuery = withLine(
+    supabase
+      .from("customers")
+      .select(cols("id, name, next_follow_up"))
+      .eq("business_id", business.id),
+    line
+  )
+    .lte("next_follow_up", today)
+    .order("next_follow_up")
+    .limit(5);
+
   const [
     { data: profile },
-    { data: dueTasks },
-    { data: followUps },
+    { data: dueTasksData },
+    { data: followUpsData },
     { count: customerCount },
     { data: monthTransactions },
     { count: taskCount },
@@ -32,27 +65,18 @@ export default async function DashboardPage() {
     { data: noFollowUpCustomers },
     leadsResult,
     { data: incomeByCustomer },
+    scoreResult,
+    dueLeadsResult,
+    dueCustomersResult,
+    lines,
   ] = await Promise.all([
       supabase
         .from("profiles")
         .select("full_name")
         .eq("id", user.id)
         .maybeSingle(),
-      supabase
-        .from("tasks")
-        .select("id, title, due_date, customers(id, name)")
-        .eq("business_id", business.id)
-        .is("completed_at", null)
-        .lte("due_date", today)
-        .order("due_date")
-        .limit(5),
-      supabase
-        .from("customers")
-        .select("id, name, next_follow_up")
-        .eq("business_id", business.id)
-        .lte("next_follow_up", today)
-        .order("next_follow_up")
-        .limit(5),
+      dueTasksQuery,
+      followUpsQuery,
       supabase
         .from("customers")
         .select("id", { count: "exact", head: true })
@@ -101,8 +125,70 @@ export default async function DashboardPage() {
         .eq("type", "income")
         .not("customer_id", "is", null)
         .gte("date", `${today.slice(0, 4)}-01-01`),
+      supabase.rpc("owner_hub_scoreboard", { p_business: business.id }),
+      supabase
+        .from("leads")
+        .select("id, name, follow_up_date, business_line")
+        .eq("business_id", business.id)
+        .lte("follow_up_date", today)
+        .not("status", "in", "(converted,declined)")
+        .order("follow_up_date")
+        .limit(300),
+      supabase
+        .from("customers")
+        .select("id, name, next_follow_up, business_line")
+        .eq("business_id", business.id)
+        .lte("next_follow_up", today)
+        .order("next_follow_up")
+        .limit(300),
+      loadBusinessLines(supabase, business.id),
     ]);
 
+  // Scoreboard: one card per business line (or just the chosen one)
+  const scoreMissing = !!scoreResult.error;
+  const scoreRows = (scoreResult.data ?? []) as ScoreRow[];
+  const dueItems: DueItem[] = [
+    ...((dueLeadsResult.data ?? []) as {
+      id: string;
+      name: string;
+      follow_up_date: string;
+      business_line: string | null;
+    }[]).map((l) => ({
+      id: l.id,
+      name: l.name,
+      date: l.follow_up_date,
+      href: `/leads/${l.id}`,
+      line: l.business_line,
+      kind: "lead" as const,
+    })),
+    ...((dueCustomersResult.data ?? []) as {
+      id: string;
+      name: string;
+      next_follow_up: string;
+      business_line: string | null;
+    }[]).map((c) => ({
+      id: c.id,
+      name: c.name,
+      date: c.next_follow_up,
+      href: `/customers/${c.id}`,
+      line: c.business_line,
+      kind: "customer" as const,
+    })),
+  ].sort((a, b) => a.date.localeCompare(b.date));
+  const scoreLines: (string | null)[] = line
+    ? [line === NO_LINE ? null : line]
+    : [...lines, null];
+
+  const dueTasks = (dueTasksData ?? []) as unknown as {
+    id: string;
+    title: string;
+    due_date: string | null;
+  }[];
+  const followUps = (followUpsData ?? []) as unknown as {
+    id: string;
+    name: string;
+    next_follow_up: string | null;
+  }[];
   const firstName = (profile?.full_name ?? "").split(" ")[0] || "there";
   const tasks = dueTasks ?? [];
   const reminders = followUps ?? [];
@@ -204,6 +290,10 @@ export default async function DashboardPage() {
         </Link>
       </p>
 
+      <div className="mt-4">
+        <BusinessLineFilter basePath="/dashboard" lines={lines} current={line} />
+      </div>
+
       {showChecklist && (
         <div className="mt-8 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-sm font-semibold text-slate-800">
@@ -243,7 +333,20 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <div className={showChecklist ? "mt-4" : "mt-8"}>
+      <div className="mt-4">
+        <h2 className="mb-2 text-sm font-semibold text-slate-800">
+          📊 Scoreboard by business
+        </h2>
+        <Scoreboard
+          rows={scoreRows}
+          due={dueItems}
+          lines={scoreLines}
+          today={today}
+          missing={scoreMissing}
+        />
+      </div>
+
+      <div className="mt-4">
         <DailyPlan />
         <AiCreditMeter className="mt-2" />
       </div>

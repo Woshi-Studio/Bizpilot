@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { CUSTOMER_STATUSES, type Customer } from "@/lib/types";
+import { lineLabel } from "@/lib/business-lines";
 
 function statusBadge(status: string) {
   const s = CUSTOMER_STATUSES.find((s) => s.value === status);
@@ -113,6 +114,11 @@ export default function CustomersList({
                     {c.company && (
                       <span className="ml-2 font-normal text-slate-400">
                         {c.company}
+                      </span>
+                    )}
+                    {c.business_line && (
+                      <span className="ml-2 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-600">
+                        {lineLabel(c.business_line)}
                       </span>
                     )}
                   </p>

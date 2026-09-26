@@ -3,13 +3,20 @@
 import { useActionState, useRef, useEffect } from "react";
 import { SERVICE_UNITS } from "@/lib/types";
 import { createService, type ServiceFormState } from "./actions";
+import BusinessLineInput from "@/components/business-line-input";
 
 const initialState: ServiceFormState = {};
 
 const inputClass =
   "mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
 
-export default function ServiceForm() {
+export default function ServiceForm({
+  lines,
+  defaultLine,
+}: {
+  lines?: string[];
+  defaultLine?: string;
+}) {
   const [state, formAction, pending] = useActionState(
     createService,
     initialState
@@ -78,7 +85,15 @@ export default function ServiceForm() {
             ))}
           </select>
         </div>
-        <div className="sm:col-span-4">
+        <div className="sm:col-span-2">
+          <BusinessLineInput
+            id="service_business_line"
+            lines={lines}
+            defaultValue={defaultLine}
+            className={inputClass}
+          />
+        </div>
+        <div className="sm:col-span-2">
           <label className="block text-sm font-medium text-slate-700">
             Description (shows on tasks/invoices)
           </label>

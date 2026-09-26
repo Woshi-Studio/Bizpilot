@@ -5,6 +5,9 @@ import {
   INVOICE_STATUS_META,
   type Invoice,
 } from "@/lib/types";
+import BusinessLineFilter from "@/components/business-line-filter";
+import { loadBusinessLines, withLine } from "@/lib/activities";
+import { lineFromParam, lineLabel } from "@/lib/business-lines";
 
 export const metadata = { title: "Invoices" };
 
@@ -13,16 +16,28 @@ type InvoiceRow = Invoice & {
   invoice_items: { quantity: number; unit_price: number }[];
 };
 
-export default async function InvoicesPage() {
+export default async function InvoicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ line?: string }>;
+}) {
   const { supabase, business } = await requireUserAndBusiness();
+  const line = lineFromParam((await searchParams).line);
 
-  const { data } = await supabase
-    .from("invoices")
-    .select("*, customers(name), invoice_items(quantity, unit_price)")
-    .eq("business_id", business.id)
-    .order("created_at", { ascending: false });
+  const INVOICE_COLUMNS: string =
+    "*, customers(name), invoice_items(quantity, unit_price)";
+  const [{ data }, lines] = await Promise.all([
+    withLine(
+      supabase
+        .from("invoices")
+        .select(INVOICE_COLUMNS)
+        .eq("business_id", business.id),
+      line
+    ).order("created_at", { ascending: false }),
+    loadBusinessLines(supabase, business.id),
+  ]);
 
-  const invoices = (data ?? []) as InvoiceRow[];
+  const invoices = (data ?? []) as unknown as InvoiceRow[];
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -39,6 +54,10 @@ export default async function InvoicesPage() {
         >
           + New
         </Link>
+      </div>
+
+      <div className="mt-4">
+        <BusinessLineFilter basePath="/invoices" lines={lines} current={line} />
       </div>
 
       <div className="mt-6">
@@ -72,6 +91,9 @@ export default async function InvoicesPage() {
                         {inv.doc_type === "quote" ? "Quote" : "Invoice"} ·{" "}
                         {inv.issue_date}
                         {inv.due_date ? ` · due ${inv.due_date}` : ""}
+                        {inv.business_line
+                          ? ` · ${lineLabel(inv.business_line)}`
+                          : ""}
                       </p>
                     </div>
                     <span className="shrink-0 text-sm font-semibold text-slate-900">

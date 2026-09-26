@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { TASK_STATUSES, formatMoney, type TaskStatus } from "@/lib/types";
 import { setTaskStatus, deleteTask } from "./actions";
+import { lineLabel } from "@/lib/business-lines";
 
 export type TaskWithCustomer = {
   id: string;
@@ -12,6 +13,7 @@ export type TaskWithCustomer = {
   status: TaskStatus;
   due_date: string | null;
   completed_at: string | null;
+  business_line?: string | null;
   customers: { id: string; name: string } | null;
 };
 
@@ -78,6 +80,11 @@ export default function TaskRow({
         >
           {task.title}
         </p>
+        {task.business_line && (
+          <span className="mr-2 text-xs font-medium text-slate-400">
+            {lineLabel(task.business_line)}
+          </span>
+        )}
         {task.customers && (
           <Link
             href={`/customers/${task.customers.id}`}

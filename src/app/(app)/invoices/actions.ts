@@ -2,7 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { requireUserAndBusiness, belongsToBusiness } from "@/lib/data";
+import { requireUserAndBusiness } from "@/lib/data";
+import { normalizeLine } from "@/lib/business-lines";
+import { logActivity } from "@/lib/activities";
 
 export type InvoiceFormState = {
   error?: string;
@@ -59,8 +61,20 @@ export async function createInvoice(
 
   const { supabase, business } = await requireUserAndBusiness();
 
-  if (customerId && !(await belongsToBusiness(supabase, "customers", customerId, business.id))) {
-    return { error: "That customer wasn't found." };
+  // No line picked: use the customer's line, if there is a customer.
+  let businessLine = normalizeLine(formData.get("business_line"));
+  if (customerId) {
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("id, business_line")
+      .eq("id", customerId)
+      .eq("business_id", business.id)
+      .maybeSingle();
+    if (!customer) {
+      return { error: "That customer wasn't found." };
+    }
+    businessLine ??=
+      (customer as { business_line?: string | null }).business_line ?? null;
   }
 
   // Sequential number per document type: INV-0001 / QUO-0001
@@ -83,6 +97,7 @@ export async function createInvoice(
       issue_date: issueDate,
       due_date: dueDate || null,
       notes: notes || null,
+      business_line: businessLine,
     })
     .select("id")
     .single();
@@ -104,6 +119,18 @@ export async function createInvoice(
   if (itemsError) {
     return { error: itemsError.message };
   }
+
+  const total = items.reduce((sum, i) => sum + i.quantity * i.unit_price, 0);
+  await logActivity(supabase, {
+    business_id: business.id,
+    customer_id: customerId || null,
+    business_line: businessLine,
+    kind: "invoice",
+    subject: `${docType === "quote" ? "Quote" : "Invoice"} ${number} created`,
+    body: `Total ${total.toFixed(2)} ${business.currency}${dueDate ? ` · due ${dueDate}` : ""}`,
+  });
+  if (customerId) revalidatePath(`/customers/${customerId}`);
+  revalidatePath("/calendar");
 
   revalidatePath("/invoices");
   redirect(`/invoices/${invoice.id}`);

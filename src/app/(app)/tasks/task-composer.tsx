@@ -3,15 +3,20 @@
 import { useActionState, useRef, useEffect, useState } from "react";
 import type { Service } from "@/lib/types";
 import { createTask, type TaskFormState } from "./actions";
+import BusinessLineInput from "@/components/business-line-input";
 
 const initialState: TaskFormState = {};
 
 export default function TaskComposer({
   customers,
   services,
+  lines,
+  defaultLine,
 }: {
   customers: { id: string; name: string }[];
   services: Service[];
+  lines?: string[];
+  defaultLine?: string;
 }) {
   const [state, formAction, pending] = useActionState(
     createTask,
@@ -111,6 +116,15 @@ export default function TaskComposer({
             />
           </div>
         )}
+
+        <BusinessLineInput
+          id="task_business_line"
+          lines={lines}
+          defaultValue={defaultLine}
+          showLabel={false}
+          label="Business (empty = the customer's business)"
+          className={inputClass}
+        />
 
         <textarea
           name="description"

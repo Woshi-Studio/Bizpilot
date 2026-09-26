@@ -7,6 +7,10 @@ import { updateCustomer, setFollowUpIn } from "../actions";
 import NotesSection from "./notes-section";
 import DeleteCustomerButton from "./delete-button";
 import WeeklyReport from "./weekly-report";
+import DocumentsSection, { type CustomerDocument } from "./documents-section";
+import Timeline from "@/components/timeline";
+import type { Activity } from "@/lib/activities";
+import { lineLabel } from "@/lib/business-lines";
 
 export const metadata = { title: "Customer" };
 
@@ -29,8 +33,13 @@ export default async function CustomerDetailPage({
     notFound();
   }
 
-  const [{ data: notes }, { data: customerTxs }, { data: doneTasks }] =
-    await Promise.all([
+  const [
+    { data: notes },
+    { data: customerTxs },
+    { data: doneTasks },
+    activitiesResult,
+    documentsResult,
+  ] = await Promise.all([
       supabase
         .from("customer_notes")
         .select("*")
@@ -46,6 +55,19 @@ export default async function CustomerDetailPage({
         .eq("customer_id", id)
         .eq("status", "done")
         .order("completed_at", { ascending: false }),
+      supabase
+        .from("activities")
+        .select("*")
+        .eq("business_id", business.id)
+        .eq("customer_id", id)
+        .order("occurred_at", { ascending: false })
+        .limit(500),
+      supabase
+        .from("documents")
+        .select("id, name, size, mime, uploaded_at")
+        .eq("business_id", business.id)
+        .eq("customer_id", id)
+        .order("uploaded_at", { ascending: false }),
     ]);
 
   const revenue = (customerTxs ?? [])
@@ -70,8 +92,16 @@ export default async function CustomerDetailPage({
       <h1 className="mt-2 text-2xl font-bold text-slate-900">
         {customer.name}
       </h1>
-      {customer.company && (
-        <p className="mt-0.5 text-sm text-slate-500">{customer.company}</p>
+      {(customer.company || customer.business_line) && (
+        <p className="mt-0.5 text-sm text-slate-500">
+          {customer.company}
+          {customer.company && customer.business_line && " · "}
+          {customer.business_line && (
+            <span className="font-medium text-indigo-600">
+              {lineLabel(customer.business_line)}
+            </span>
+          )}
+        </p>
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
@@ -127,6 +157,25 @@ export default async function CustomerDetailPage({
           action={updateCustomer}
           customer={customer as Customer}
           submitLabel="Save changes"
+        />
+      </div>
+
+      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-2 text-sm font-semibold text-slate-800">Timeline</h2>
+        <Timeline
+          activities={(activitiesResult.data ?? []) as Activity[]}
+          customerId={customer.id}
+          missing={!!activitiesResult.error}
+          nowIso={new Date().toISOString()}
+        />
+      </div>
+
+      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-sm font-semibold text-slate-800">Documents</h2>
+        <DocumentsSection
+          customerId={customer.id}
+          documents={(documentsResult.data ?? []) as CustomerDocument[]}
+          missing={!!documentsResult.error}
         />
       </div>
 

@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { formatMoney, type PaymentMethod } from "@/lib/types";
 import { createInvoice, type InvoiceFormState } from "./actions";
+import BusinessLineInput from "@/components/business-line-input";
 
 const initialState: InvoiceFormState = {};
 
@@ -15,10 +16,12 @@ export default function InvoiceForm({
   customers,
   currency,
   paymentMethods,
+  lines,
 }: {
   customers: { id: string; name: string }[];
   currency: string;
   paymentMethods: PaymentMethod[];
+  lines?: string[];
 }) {
   const [state, formAction, pending] = useActionState(
     createInvoice,
@@ -134,6 +137,12 @@ export default function InvoiceForm({
           </label>
           <input id="due_date" name="due_date" type="date" className={inputClass} />
         </div>
+        <BusinessLineInput
+          id="invoice_business_line"
+          lines={lines}
+          label="Business (empty = the customer's business)"
+          className={inputClass}
+        />
       </div>
 
       <h2 className="mt-6 text-sm font-semibold text-slate-800">Line items</h2>

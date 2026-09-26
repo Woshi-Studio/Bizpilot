@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness } from "@/lib/data";
 import { CUSTOMER_STATUSES } from "@/lib/types";
+import { normalizeLine } from "@/lib/business-lines";
+import { logActivity } from "@/lib/activities";
 
 export type CustomerFormState = {
   error?: string;
@@ -25,6 +27,7 @@ function readCustomerForm(formData: FormData) {
     company: company || null,
     status: CUSTOMER_STATUSES.some((s) => s.value === status) ? status : "lead",
     next_follow_up: nextFollowUp || null,
+    business_line: normalizeLine(formData.get("business_line")),
   };
 }
 
@@ -90,6 +93,19 @@ export async function deleteCustomer(formData: FormData) {
 
   const { supabase, business } = await requireUserAndBusiness();
 
+  // Remove the customer's stored files first; the documents rows go with
+  // the customer (on delete cascade), but storage files would be orphaned.
+  const { data: docs } = await supabase
+    .from("documents")
+    .select("path")
+    .eq("customer_id", id)
+    .eq("business_id", business.id);
+  if (docs && docs.length > 0) {
+    await supabase.storage
+      .from("client-docs")
+      .remove(docs.map((d) => d.path as string));
+  }
+
   await supabase
     .from("customers")
     .delete()
@@ -116,7 +132,7 @@ export async function addNote(
   // Confirm the customer belongs to this business (RLS backs this up too)
   const { data: customer } = await supabase
     .from("customers")
-    .select("id")
+    .select("id, business_line")
     .eq("id", customerId)
     .eq("business_id", business.id)
     .maybeSingle();
@@ -132,6 +148,15 @@ export async function addNote(
   if (error) {
     return { error: error.message };
   }
+
+  await logActivity(supabase, {
+    business_id: business.id,
+    customer_id: customerId,
+    business_line:
+      (customer as { business_line?: string | null }).business_line ?? null,
+    kind: "note",
+    body,
+  });
 
   revalidatePath(`/customers/${customerId}`);
   return { success: "Note added." };

@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { requireUserAndBusiness } from "@/lib/data";
-import { LEAD_CHANNELS, LEAD_STATUSES, type Lead } from "@/lib/types";
-import { convertLead, deleteLead, setLeadStatus } from "./actions";
+import { LEAD_CHANNELS, type Lead } from "@/lib/types";
+import { convertLead, deleteLead } from "./actions";
 import OutreachForm from "./outreach-form";
+import LeadStatusSelect from "./lead-status-select";
+import BusinessLineFilter from "@/components/business-line-filter";
+import { loadBusinessLines, withLine } from "@/lib/activities";
+import { NO_LINE, lineFromParam, lineLabel } from "@/lib/business-lines";
 
 export const metadata = { title: "Leads" };
 
@@ -10,14 +14,21 @@ const CHANNEL_LABEL = Object.fromEntries(
   LEAD_CHANNELS.map((c) => [c.value, c.label])
 );
 
-export default async function LeadsPage() {
+export default async function LeadsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ line?: string }>;
+}) {
   const { supabase, business } = await requireUserAndBusiness();
+  const line = lineFromParam((await searchParams).line);
 
-  const { data, error } = await supabase
-    .from("leads")
-    .select("*")
-    .eq("business_id", business.id)
-    .order("created_at", { ascending: false });
+  const [{ data, error }, lines] = await Promise.all([
+    withLine(
+      supabase.from("leads").select("*").eq("business_id", business.id),
+      line
+    ).order("created_at", { ascending: false }),
+    loadBusinessLines(supabase, business.id),
+  ]);
 
   const leads = (data ?? []) as Lead[];
   const pageEnabled =
@@ -40,6 +51,10 @@ export default async function LeadsPage() {
         Everyone you&apos;ve reached out to, and everyone who&apos;s reached out to
         you.
       </p>
+
+      <div className="mt-4">
+        <BusinessLineFilter basePath="/leads" lines={lines} current={line} />
+      </div>
 
       {error ? (
         <p className="mt-6 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -91,7 +106,9 @@ export default async function LeadsPage() {
               <ul className="mt-2 space-y-1 text-sm text-amber-700">
                 {dueFollowUps.map((l) => (
                   <li key={l.id}>
-                    {l.name} — {l.follow_up_date}
+                    <Link href={`/leads/${l.id}`} className="hover:underline">
+                      {l.name} — {l.follow_up_date}
+                    </Link>
                   </li>
                 ))}
               </ul>
@@ -99,7 +116,10 @@ export default async function LeadsPage() {
           )}
 
           <div className="mt-6">
-            <OutreachForm />
+            <OutreachForm
+              lines={lines}
+              defaultLine={line && line !== NO_LINE ? line : undefined}
+            />
           </div>
 
           {leads.length === 0 ? (
@@ -126,7 +146,17 @@ export default async function LeadsPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-800">
-                        {lead.name}
+                        <Link
+                          href={`/leads/${lead.id}`}
+                          className="hover:text-indigo-600 hover:underline"
+                        >
+                          {lead.name}
+                        </Link>
+                        {lead.business_line && (
+                          <span className="ml-2 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium text-indigo-600">
+                            {lineLabel(lead.business_line)}
+                          </span>
+                        )}
                         <span className="ml-2 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-slate-500">
                           {CHANNEL_LABEL[lead.channel] ?? lead.channel}
                         </span>
@@ -146,21 +176,7 @@ export default async function LeadsPage() {
                       )}
                     </div>
                     <div className="flex shrink-0 flex-col items-end gap-2">
-                      <form action={setLeadStatus}>
-                        <input type="hidden" name="id" value={lead.id} />
-                        <select
-                          name="status"
-                          defaultValue={lead.status}
-                          onChange={(e) => e.currentTarget.form?.requestSubmit()}
-                          className="rounded-md border border-slate-300 px-2 py-1 text-xs"
-                        >
-                          {LEAD_STATUSES.map((s) => (
-                            <option key={s.value} value={s.value}>
-                              {s.label}
-                            </option>
-                          ))}
-                        </select>
-                      </form>
+                      <LeadStatusSelect id={lead.id} status={lead.status} />
                       {lead.status !== "converted" && (
                         <form action={convertLead}>
                           <input type="hidden" name="id" value={lead.id} />

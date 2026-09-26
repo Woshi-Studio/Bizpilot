@@ -2,17 +2,27 @@ import { requireUserAndBusiness } from "@/lib/data";
 import type { Service } from "@/lib/types";
 import ServiceForm from "./service-form";
 import ServicesList from "./services-list";
+import BusinessLineFilter from "@/components/business-line-filter";
+import { loadBusinessLines, withLine } from "@/lib/activities";
+import { NO_LINE, lineFromParam } from "@/lib/business-lines";
 
 export const metadata = { title: "Pricing" };
 
-export default async function ServicesPage() {
+export default async function ServicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ line?: string }>;
+}) {
   const { supabase, business } = await requireUserAndBusiness();
+  const line = lineFromParam((await searchParams).line);
 
-  const { data: services } = await supabase
-    .from("services")
-    .select("*")
-    .eq("business_id", business.id)
-    .order("name");
+  const [{ data: services }, lines] = await Promise.all([
+    withLine(
+      supabase.from("services").select("*").eq("business_id", business.id),
+      line
+    ).order("name"),
+    loadBusinessLines(supabase, business.id),
+  ]);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -22,8 +32,15 @@ export default async function ServicesPage() {
         automatically.
       </p>
 
+      <div className="mt-4">
+        <BusinessLineFilter basePath="/services" lines={lines} current={line} />
+      </div>
+
       <div className="mt-6">
-        <ServiceForm />
+        <ServiceForm
+          lines={lines}
+          defaultLine={line && line !== NO_LINE ? line : undefined}
+        />
       </div>
 
       <div className="mt-6">

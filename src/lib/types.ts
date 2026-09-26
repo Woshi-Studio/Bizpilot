@@ -34,6 +34,7 @@ export type Customer = {
   company: string | null;
   status: CustomerStatus;
   next_follow_up: string | null;
+  business_line?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -65,6 +66,7 @@ export type Task = {
   status: TaskStatus;
   due_date: string | null;
   completed_at: string | null;
+  business_line?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -86,6 +88,7 @@ export type Service = {
   rate: number;
   unit: ServiceUnit;
   description: string | null;
+  business_line?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -204,6 +207,7 @@ export type Invoice = {
   issue_date: string;
   due_date: string | null;
   notes: string | null;
+  business_line?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -278,6 +282,7 @@ export type Lead = {
   channel: LeadChannel;
   follow_up_date: string | null;
   status: LeadStatus;
+  business_line?: string | null;
   created_at: string;
 };
 

@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { requireUserAndBusiness, belongsToBusiness } from "@/lib/data";
 import { TASK_STATUSES } from "@/lib/types";
+import { normalizeLine } from "@/lib/business-lines";
+import { logActivity } from "@/lib/activities";
 
 export type TaskFormState = {
   error?: string;
@@ -32,8 +34,20 @@ export async function createTask(
 
   const { supabase, business } = await requireUserAndBusiness();
 
-  if (customerId && !(await belongsToBusiness(supabase, "customers", customerId, business.id))) {
-    return { error: "That customer wasn't found." };
+  // No line picked: use the customer's line, if the task has a customer.
+  let businessLine = normalizeLine(formData.get("business_line"));
+  if (customerId) {
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("id, business_line")
+      .eq("id", customerId)
+      .eq("business_id", business.id)
+      .maybeSingle();
+    if (!customer) {
+      return { error: "That customer wasn't found." };
+    }
+    businessLine ??=
+      (customer as { business_line?: string | null }).business_line ?? null;
   }
   if (serviceId && !(await belongsToBusiness(supabase, "services", serviceId, business.id))) {
     return { error: "That service wasn't found." };
@@ -47,11 +61,25 @@ export async function createTask(
     service_id: serviceId || null,
     description: description || null,
     value,
+    business_line: businessLine,
   });
 
   if (error) {
     return { error: error.message };
   }
+
+  await logActivity(supabase, {
+    business_id: business.id,
+    customer_id: customerId || null,
+    business_line: businessLine,
+    kind: "task",
+    subject: `Task created: ${title}`,
+    body: [dueDate ? `Due ${dueDate}` : null, description || null]
+      .filter(Boolean)
+      .join("\n") || null,
+  });
+  revalidatePath("/calendar");
+  if (customerId) revalidatePath(`/customers/${customerId}`);
 
   revalidatePath("/tasks");
   revalidatePath("/dashboard");

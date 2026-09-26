@@ -1,0 +1,131 @@
+import {
+  ACTIVITY_KINDS,
+  summarizeActivities,
+  type Activity,
+} from "@/lib/activities";
+import { lineLabel } from "@/lib/business-lines";
+import { deleteActivity } from "@/app/(app)/activities/actions";
+import LocalTime from "./local-time";
+import AddActivityForm from "./add-activity-form";
+
+const KIND_META = Object.fromEntries(ACTIVITY_KINDS.map((k) => [k.value, k]));
+
+const SOURCE_LABEL: Record<string, string> = {
+  mailer: "mailer",
+  gmail: "Gmail",
+  phone_line: "phone line",
+  import: "imported",
+};
+
+// Everything that happened with one customer or lead, newest first.
+export default function Timeline({
+  activities,
+  customerId,
+  leadId,
+  missing,
+  nowIso,
+}: {
+  activities: Activity[];
+  // current time, from the page (keeps this component pure)
+  nowIso: string;
+  customerId?: string;
+  leadId?: string;
+  // true when the activities table isn't there yet (0014 not run)
+  missing?: boolean;
+}) {
+  if (missing) {
+    return (
+      <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        The timeline isn&apos;t set up yet — run migration 0014 in Supabase.
+      </p>
+    );
+  }
+
+  const { parts, lastContact } = summarizeActivities(activities);
+
+  return (
+    <div>
+      <p className="text-sm text-slate-600">
+        {parts.join(" · ")}
+        {lastContact ? (
+          <>
+            {" "}
+            · last contact <LocalTime iso={lastContact} mode="date" />
+          </>
+        ) : (
+          " · no contact yet"
+        )}
+      </p>
+
+      <div className="mt-4">
+        <AddActivityForm customerId={customerId} leadId={leadId} />
+      </div>
+
+      {activities.length === 0 ? (
+        <p className="mt-4 text-sm text-slate-400">
+          Nothing on the timeline yet. Emails, calls, notes, files, tasks and
+          invoices for this contact show up here.
+        </p>
+      ) : (
+        <ol className="mt-4 space-y-3">
+          {activities.map((a) => {
+            const meta = KIND_META[a.kind];
+            const upcoming =
+              new Date(a.occurred_at).getTime() > new Date(nowIso).getTime();
+            return (
+              <li
+                key={a.id}
+                className="group flex items-start gap-3 rounded-lg bg-slate-50 px-4 py-3"
+              >
+                <span className="mt-0.5 text-base" aria-hidden>
+                  {meta?.icon ?? "•"}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-slate-800">
+                    <span className="font-medium">{meta?.label ?? a.kind}</span>
+                    {a.subject && (
+                      <span className="text-slate-700"> — {a.subject}</span>
+                    )}
+                    {upcoming && (
+                      <span className="ml-2 rounded-full border border-indigo-200 bg-indigo-50 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-indigo-600">
+                        upcoming
+                      </span>
+                    )}
+                  </p>
+                  {a.body &&
+                    (a.body.length > 240 ? (
+                      <details className="mt-1 text-sm text-slate-600">
+                        <summary className="cursor-pointer text-slate-500">
+                          {a.body.slice(0, 200)}… <span className="text-indigo-600">more</span>
+                        </summary>
+                        <p className="mt-1 whitespace-pre-line">{a.body}</p>
+                      </details>
+                    ) : (
+                      <p className="mt-1 whitespace-pre-line text-sm text-slate-600">
+                        {a.body}
+                      </p>
+                    ))}
+                  <p className="mt-1 text-xs text-slate-400">
+                    <LocalTime iso={a.occurred_at} />
+                    {a.business_line && <> · {lineLabel(a.business_line)}</>}
+                    {SOURCE_LABEL[a.source] && <> · {SOURCE_LABEL[a.source]}</>}
+                  </p>
+                </div>
+                <form action={deleteActivity}>
+                  <input type="hidden" name="id" value={a.id} />
+                  <button
+                    type="submit"
+                    aria-label="Delete activity"
+                    className="text-slate-300 opacity-0 transition-opacity hover:text-red-500 group-hover:opacity-100"
+                  >
+                    &times;
+                  </button>
+                </form>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}

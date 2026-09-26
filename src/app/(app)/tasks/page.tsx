@@ -2,22 +2,32 @@ import { requireUserAndBusiness } from "@/lib/data";
 import type { Service } from "@/lib/types";
 import TaskComposer from "./task-composer";
 import TaskRow, { type TaskWithCustomer } from "./task-row";
+import BusinessLineFilter from "@/components/business-line-filter";
+import { loadBusinessLines, withLine } from "@/lib/activities";
+import { NO_LINE, lineFromParam } from "@/lib/business-lines";
 
 export const metadata = { title: "Tasks" };
 
-export default async function TasksPage() {
+export default async function TasksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ line?: string }>;
+}) {
   const { supabase, business } = await requireUserAndBusiness();
+  const line = lineFromParam((await searchParams).line);
 
-  const [{ data: tasks }, { data: customers }, { data: services }] =
+  const TASK_COLUMNS: string =
+    "id, title, description, value, status, due_date, completed_at, business_line, customers(id, name)";
+  const tasksQuery = withLine(
+    supabase.from("tasks").select(TASK_COLUMNS).eq("business_id", business.id),
+    line
+  )
+    .order("due_date", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: false });
+
+  const [{ data: tasks }, { data: customers }, { data: services }, lines] =
     await Promise.all([
-      supabase
-        .from("tasks")
-        .select(
-          "id, title, description, value, status, due_date, completed_at, customers(id, name)"
-        )
-        .eq("business_id", business.id)
-        .order("due_date", { ascending: true, nullsFirst: false })
-        .order("created_at", { ascending: false }),
+      tasksQuery,
       supabase
         .from("customers")
         .select("id, name")
@@ -28,6 +38,7 @@ export default async function TasksPage() {
         .select("*")
         .eq("business_id", business.id)
         .order("name"),
+      loadBusinessLines(supabase, business.id),
     ]);
 
   const allTasks = (tasks ?? []) as unknown as TaskWithCustomer[];
@@ -42,10 +53,16 @@ export default async function TasksPage() {
         Your daily action list — small steps, every day.
       </p>
 
+      <div className="mt-4">
+        <BusinessLineFilter basePath="/tasks" lines={lines} current={line} />
+      </div>
+
       <div className="mt-6">
         <TaskComposer
           customers={customers ?? []}
           services={(services ?? []) as Service[]}
+          lines={lines}
+          defaultLine={line && line !== NO_LINE ? line : undefined}
         />
       </div>
 

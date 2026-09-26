@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { CUSTOMER_STATUSES, type Customer } from "@/lib/types";
 import type { CustomerFormState } from "./actions";
+import BusinessLineInput from "@/components/business-line-input";
 
 const initialState: CustomerFormState = {};
 
@@ -13,6 +14,7 @@ export default function CustomerForm({
   action,
   customer,
   submitLabel,
+  lines,
 }: {
   action: (
     prevState: CustomerFormState,
@@ -20,6 +22,7 @@ export default function CustomerForm({
   ) => Promise<CustomerFormState>;
   customer?: Customer;
   submitLabel: string;
+  lines?: string[];
 }) {
   const [state, formAction, pending] = useActionState(action, initialState);
 
@@ -139,6 +142,12 @@ export default function CustomerForm({
             We&apos;ll remind you on the dashboard when it&apos;s due.
           </p>
         </div>
+        <BusinessLineInput
+          id="business_line"
+          defaultValue={customer?.business_line}
+          lines={lines}
+          className={inputClass}
+        />
       </div>
 
       <div className="flex justify-end">

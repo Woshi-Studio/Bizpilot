@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AppShell from "@/components/app-shell";
 import { signOut } from "@/app/(auth)/actions";
+import Athena from "@/components/athena";
 
 export default async function AppLayout({
   children,
@@ -33,11 +34,14 @@ export default async function AppLayout({
     redirect("/onboarding");
   }
 
+  const userName = profile?.full_name ?? user.email ?? "";
+
   return (
     <AppShell
       businessName={business.name}
-      userName={profile?.full_name ?? user.email ?? ""}
+      userName={userName}
       signOutAction={signOut}
+      athena={<Athena firstName={userName.split(/[\s@]/)[0] || "there"} />}
     >
       {children}
     </AppShell>

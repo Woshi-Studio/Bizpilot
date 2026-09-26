@@ -21,6 +21,7 @@
 // Users never see a raw provider error: use aiFailure() in a catch block.
 
 export { MESSAGE_TYPES, TONES } from "@/lib/ai-options";
+import { isDemoMode } from "@/lib/demo";
 
 export type AiProvider = "gemini" | "anthropic";
 
@@ -104,6 +105,7 @@ function geminiKeys(): string[] {
 }
 
 export function aiConfigured() {
+  if (isDemoMode()) return true;
   if (AI_PROVIDER === "anthropic") return !!process.env.ANTHROPIC_API_KEY;
   return geminiKeys().length > 0;
 }
@@ -147,6 +149,8 @@ export type AiClient = {
 export function createAiClient(
   provider: AiProvider = AI_PROVIDER
 ): AiClient {
+  // DEMO MODE (dev only): canned answers, no real AI call, no keys used.
+  if (isDemoMode()) return demoAiClient();
   return {
     messages: {
       create: (req) =>
@@ -405,5 +409,40 @@ async function anthropicCreate(req: AiRequest): Promise<AiResponse> {
   return {
     content: [{ type: "text", text }],
     stop_reason: response.stop_reason === "max_tokens" ? "max_tokens" : "end_turn",
+  };
+}
+
+// ------------------------------------------------------------------
+// DEMO MODE only: canned answers for screenshots (see lib/demo.ts)
+// ------------------------------------------------------------------
+
+function demoAiClient(): AiClient {
+  return {
+    messages: {
+      async create(req) {
+        const sys = req.system ?? "";
+        let text =
+          "Here's a thought: follow up with your two overdue clients first, then send the Northwind invoice.";
+        if (sys.includes("Athena")) {
+          text =
+            "Easy one! Open People → Customers, tap Ava's name, then hit **Send email** in the bar at the top. Want me to draft it for you? 💜";
+        } else if (sys.includes("communication assistant")) {
+          text = `Subject: Quick check-in on your new logo
+
+Hi Ava,
+
+Hope the week is going well! I wanted to check in on the logo concepts I sent on Friday. If #2 is still the favorite, I can have the warmer color version ready by Thursday.
+
+Happy to hop on a quick call if that's easier.
+
+Best,
+Maya`;
+        } else if (sys.includes("daily plans")) {
+          text =
+            "- Invoice Marcus for September — it's overdue\n- Send Ava the warmer logo version\n- Call Diego about the café menu\n- Set a follow-up date for Hannah";
+        }
+        return { content: [{ type: "text", text }], stop_reason: "end_turn" };
+      },
+    },
   };
 }

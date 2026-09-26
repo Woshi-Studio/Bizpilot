@@ -6,8 +6,8 @@ import { lineFromParam } from "@/lib/business-lines";
 import CalendarGrid, { type CalendarContact, type CalendarItem } from "./calendar-grid";
 import NewEntryButton from "./new-entry-button";
 import { emailStatus } from "@/lib/email";
-import CopyBookingLink from "@/components/copy-booking-link";
-import { myBookingLink } from "@/lib/booking-server";
+import BookingPublishPanel from "@/components/booking-publish-panel";
+import { myBookingState } from "@/lib/booking-server";
 
 // Only a uuid can prefill the meeting form (from a contact page).
 const isId = (v?: string) => (v && /^[0-9a-f-]{36}$/i.test(v) ? v : undefined);
@@ -126,11 +126,11 @@ export default async function CalendarPage({
 
   // Meetings made on the booking page (0018): badge + Attended / No-show.
   const bookedIds = rows(meetings).filter((m) => m.source === "booking").map((m) => m.id as string);
-  const [bookingRes, bookingLink] = await Promise.all([
+  const [bookingRes, booking] = await Promise.all([
     bookedIds.length
       ? supabase.from("bookings").select("id, activity_id, status").eq("business_id", business.id).in("activity_id", bookedIds)
       : Promise.resolve({ data: [] as unknown[] }),
-    myBookingLink(supabase, business.id),
+    myBookingState(supabase, business),
   ]);
   const bookingByActivity = new Map(
     ((bookingRes.data ?? []) as { id: string; activity_id: string; status: string }[]).map((b) => [b.activity_id, b])
@@ -246,9 +246,12 @@ export default async function CalendarPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <CopyBookingLink url={bookingLink} />
           <NewEntryButton />
         </div>
+      </div>
+
+      <div className="mt-4">
+        <BookingPublishPanel state={booking} />
       </div>
 
       <div className="mt-4">

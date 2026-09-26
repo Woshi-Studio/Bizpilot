@@ -121,7 +121,7 @@ export default async function SettingsPage({
       business ? loadBusinessLines(supabase, business.id) : Promise.resolve([] as string[]),
       business ? loadLineSettings(supabase, business.id) : Promise.resolve([]),
       business ? listTemplates() : Promise.resolve([]),
-      business ? myBookingLink(supabase, business.id) : Promise.resolve(null),
+      business ? myBookingLink(supabase, business) : Promise.resolve(null),
     ]);
   const lineSettings = usedLines.map((l) =>
     settingsFor(l, savedLineSettings, business?.currency ?? "USD")

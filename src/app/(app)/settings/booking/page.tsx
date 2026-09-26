@@ -8,9 +8,10 @@ import { isDemoMode } from "@/lib/demo";
 import { PLAN_LABELS, normalizePlanValue } from "@/lib/plans";
 import { OWNER_DEFAULT_SLUG, bookingLinkLimit, depositAllowed, maskIcalUrl, slugify } from "@/lib/booking";
 import { defaultWeekly } from "@/lib/booking-time";
-import { SETTINGS_COLUMNS, TYPE_COLUMNS, logoUrl, siteUrl, toSettings, toType } from "@/lib/booking-server";
+import { SETTINGS_COLUMNS, TYPE_COLUMNS, logoUrl, myBookingState, siteUrl, toSettings, toType } from "@/lib/booking-server";
 import { emailStatus } from "@/lib/email";
-import CopyBookingLink from "@/components/copy-booking-link";
+import BookingPublishPanel from "@/components/booking-publish-panel";
+import UnpublishButton from "./unpublish-button";
 import BookingSettingsForm from "./booking-settings-form";
 import MeetingTypes from "./meeting-types";
 import LogoForm from "./logo-form";
@@ -23,7 +24,7 @@ export default async function BookingSettingsPage() {
   const plan = normalizePlanValue(business.plan);
   const limit = bookingLinkLimit(plan, owner);
 
-  const [settingsRes, icalRow, typesRes, lines] = await Promise.all([
+  const [settingsRes, icalRow, typesRes, lines, booking] = await Promise.all([
     supabase.from("booking_settings").select(SETTINGS_COLUMNS).eq("business_id", business.id).maybeSingle(),
     supabase.from("booking_settings").select("ical_url").eq("business_id", business.id).maybeSingle(),
     supabase
@@ -34,6 +35,7 @@ export default async function BookingSettingsPage() {
       .order("created_at")
       .limit(100),
     loadBusinessLines(supabase, business.id),
+    myBookingState(supabase, business),
   ]);
 
   const missing = !!settingsRes.error && /does not exist|schema cache|relation/i.test(settingsRes.error.message);
@@ -53,7 +55,6 @@ export default async function BookingSettingsPage() {
   }
 
   const base = siteUrl(await headers());
-  const link = saved?.enabled ? `${base}/book/${saved.slug}` : null;
   const send = emailStatus(business);
 
   const defaults = saved ?? {
@@ -86,12 +87,24 @@ export default async function BookingSettingsPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <CopyBookingLink url={link} />
           <Link href="/bookings" className="btn-ghost btn-sm">
             See bookings
           </Link>
         </div>
       </div>
+
+      {limit !== 0 && (
+        <div className="mt-6">
+          <BookingPublishPanel state={booking}>
+            <UnpublishButton />
+          </BookingPublishPanel>
+          {!booking.url && booking.enabled && (
+            <div className="mt-2 flex justify-end">
+              <UnpublishButton />
+            </div>
+          )}
+        </div>
+      )}
 
       {missing && (
         <p className="alert-warn mt-6">
@@ -125,6 +138,7 @@ export default async function BookingSettingsPage() {
         <>
           <div className="mt-6">
             <BookingSettingsForm
+              key={`${saved?.enabled ? "on" : "off"}-${saved?.slug ?? ""}`}
               defaults={defaults}
               base={base}
               lines={lines}

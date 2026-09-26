@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import Icon from "@/components/icons";
+import { copyText } from "@/lib/copy-text";
 
 // "Copy my booking link". With no booking page yet, it links to
 // Settings -> Booking instead.
@@ -30,13 +31,14 @@ export default function CopyBookingLink({
       title={url}
       className={className}
       onClick={async () => {
-        try {
-          await navigator.clipboard.writeText(url);
-        } catch {
-          window.prompt("Copy your booking link:", url);
+        // Clipboard API first, then the old select + copy; if the browser
+        // blocks both, show the link so it can be copied by hand.
+        if (await copyText(url)) {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        } else {
+          window.prompt("Your browser blocked copying. Select the link and copy it:", url);
         }
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
       }}
     >
       <Icon name={copied ? "check" : "copy"} className="h-4 w-4" />

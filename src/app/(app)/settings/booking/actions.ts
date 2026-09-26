@@ -2,6 +2,7 @@
 
 import { randomBytes } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { requireUserAndBusiness } from "@/lib/data";
 import { isOwnerBusiness } from "@/lib/ai-quota";
 import { checkLineLimit, ensureUnlimitedFlag } from "@/lib/plan-limits";
@@ -9,14 +10,21 @@ import { normalizeLine } from "@/lib/business-lines";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoMode } from "@/lib/demo";
 import {
+  OWNER_DEFAULT_SLUG,
   RESERVED_SLUGS,
+  bookableTypes,
   bookingLinkLimit,
+  bookingUrl,
   depositAllowed,
   isGoogleIcalUrl,
+  isValidSlug,
   parseMeetingType,
   parseSettings,
+  slugify,
+  sortTypes,
 } from "@/lib/booking";
-import { getIcalBusy } from "@/lib/booking-server";
+import { defaultWeekly, isValidTimeZone } from "@/lib/booking-time";
+import { SETTINGS_COLUMNS, getIcalBusy, siteUrl, toSettings } from "@/lib/booking-server";
 import { PLAN_LABELS, normalizePlanValue } from "@/lib/plans";
 
 export type BookingFormState = { error?: string; success?: string; upgrade?: boolean; savedAt?: number };
@@ -221,6 +229,133 @@ export async function saveMeetingType(_prev: BookingFormState, formData: FormDat
   }
   revalidate();
   return { success: id ? "Saved." : "Meeting type added.", savedAt: Date.now() };
+}
+
+// ------------------------------------------------------------------
+// One click: "Publish booking page"
+// ------------------------------------------------------------------
+
+export type PublishResult = {
+  ok: boolean;
+  url?: string;
+  error?: string;
+  upgrade?: boolean;
+  created?: string[]; // what the click set up, e.g. "a 30-min call"
+};
+
+const DEFAULT_TYPE = { slug: "30-min-call", name: "30-min call", duration_min: 30, location_kind: "we_call" } as const;
+
+// Turns booking on, and fills in whatever is missing so the link works
+// straight away: a link name, Mon–Fri 9:00–17:00 hours, and a 30-min call
+// if there are no meeting types. Never changes what the owner already set,
+// except switching one meeting type back on when all of them are off.
+// Every read and write is the owner's own client (RLS) on their business.
+export async function publishBookingPage(zoneHint?: string): Promise<PublishResult> {
+  const { supabase, business } = await requireUserAndBusiness();
+  const owner = isOwnerBusiness(business.id);
+  await ensureUnlimitedFlag(business.id);
+
+  const limit = bookingLinkLimit(business.plan, owner);
+  if (limit === 0) {
+    return {
+      ok: false,
+      upgrade: true,
+      error: `A booking page comes with Hustle (1 link) and Boss (unlimited). You're on ${PLAN_LABELS[normalizePlanValue(business.plan)]}.`,
+    };
+  }
+
+  const created: string[] = [];
+  const { data: current, error: readErr } = await supabase
+    .from("booking_settings")
+    .select(SETTINGS_COLUMNS)
+    .eq("business_id", business.id)
+    .maybeSingle();
+  if (readErr) return { ok: false, error: dbError(readErr.message, owner) };
+
+  let slug: string;
+  if (current) {
+    const s = toSettings(current as Record<string, unknown>);
+    slug = s.slug;
+    const patch: Record<string, unknown> = { enabled: true };
+    // A page with no open hours at all would show no times.
+    if (s.weekly.every((d) => d.length === 0)) {
+      patch.weekly = defaultWeekly();
+      created.push("Mon–Fri 9:00–17:00 hours");
+    }
+    const { error } = await supabase.from("booking_settings").update(patch).eq("business_id", business.id);
+    if (error) return { ok: false, error: dbError(error.message, owner) };
+  } else {
+    const hint = String(zoneHint ?? "");
+    const timezone = isValidTimeZone(hint) ? hint : "America/Toronto";
+    const base = owner ? OWNER_DEFAULT_SLUG : (slugify(business.name, 30) || "my-booking").padEnd(3, "0");
+    let saved: string | null = null;
+    // The name may be taken by another business: try a few endings.
+    for (const candidate of [base, `${base}-${randomBytes(2).toString("hex")}`, `booking-${randomBytes(4).toString("hex")}`]) {
+      if (!isValidSlug(candidate)) continue;
+      if (!owner && RESERVED_SLUGS.includes(candidate)) continue;
+      const { error } = await supabase.from("booking_settings").insert({
+        business_id: business.id,
+        slug: candidate,
+        enabled: true,
+        timezone,
+        weekly: defaultWeekly(),
+      });
+      if (!error) {
+        saved = candidate;
+        break;
+      }
+      const msg = dbError(error.message, owner);
+      if (!/taken|reserved/.test(msg)) return { ok: false, error: msg };
+    }
+    if (!saved) return { ok: false, error: "Couldn't find a free link name. Pick one in Settings → Booking." };
+    slug = saved;
+    created.push(`the link /book/${slug}`, "Mon–Fri 9:00–17:00 hours");
+  }
+
+  // At least one meeting type a visitor can book.
+  const { data: typeRows, error: typesErr } = await supabase
+    .from("booking_meeting_types")
+    .select("id, name, active, position, created_at")
+    .eq("business_id", business.id)
+    .limit(100);
+  if (typesErr) return { ok: false, error: dbError(typesErr.message, owner) };
+  const types = (typeRows ?? []) as { id: string; name: string; active: boolean; position: number; created_at?: string }[];
+  if (bookableTypes(types, limit).length === 0) {
+    if (types.length === 0) {
+      const { error } = await supabase.from("booking_meeting_types").insert({ ...DEFAULT_TYPE, business_id: business.id });
+      if (error) {
+        if (/plan_limit:booking/.test(error.message)) return { ok: false, error: "Your plan's booking links are all in use.", upgrade: true };
+        return { ok: false, error: dbError(error.message, owner) };
+      }
+      created.push(`a ${DEFAULT_TYPE.name} (Mon–Fri)`);
+    } else {
+      // All switched off: switch the first one back on.
+      const first = sortTypes(types)[0];
+      const { error } = await supabase
+        .from("booking_meeting_types")
+        .update({ active: true })
+        .eq("id", first.id)
+        .eq("business_id", business.id);
+      if (error) {
+        if (/plan_limit:booking/.test(error.message)) return { ok: false, error: "Your plan's booking links are all in use.", upgrade: true };
+        return { ok: false, error: dbError(error.message, owner) };
+      }
+      created.push(`"${first.name}" switched on`);
+    }
+  }
+
+  revalidate();
+  revalidatePath("/bookings");
+  return { ok: true, url: bookingUrl(siteUrl(await headers()), slug), created };
+}
+
+export async function unpublishBookingPage(): Promise<PublishResult> {
+  const { supabase, business } = await requireUserAndBusiness();
+  const { error } = await supabase.from("booking_settings").update({ enabled: false }).eq("business_id", business.id);
+  if (error) return { ok: false, error: dbError(error.message, isOwnerBusiness(business.id)) };
+  revalidate();
+  revalidatePath("/bookings");
+  return { ok: true };
 }
 
 export async function deleteMeetingType(formData: FormData) {

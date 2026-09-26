@@ -431,17 +431,48 @@ export async function mailContextFor(
   };
 }
 
-// The signed-in business's live booking link, or null (not set up / off /
-// 0018 not run). For the "Copy my booking link" buttons.
-export async function myBookingLink(db: SupabaseClient, businessId: string): Promise<string | null> {
-  const { data, error } = await db
-    .from("booking_settings")
-    .select("slug, enabled")
-    .eq("business_id", businessId)
-    .maybeSingle();
+export type MyBookingState = {
+  // The link, once the page is on AND has at least one meeting type a
+  // visitor can book. null = not published (or the page would say
+  // "isn't available right now").
+  url: string | null;
+  slug: string | null;
+  enabled: boolean;
+  liveTypes: number;
+  missing: boolean; // 0018 not run
+};
+
+// The signed-in business's booking page, as the owner sees it. Reads with
+// the owner's own client (RLS), filtered to their business.
+export async function myBookingState(
+  db: SupabaseClient,
+  business: { id: string; plan?: string | null }
+): Promise<MyBookingState> {
+  const [{ data, error }, { data: typeRows }] = await Promise.all([
+    db.from("booking_settings").select("slug, enabled").eq("business_id", business.id).maybeSingle(),
+    db.from("booking_meeting_types").select("id, active, position, created_at").eq("business_id", business.id).limit(100),
+  ]);
   const row = data as { slug?: string; enabled?: boolean } | null;
-  if (error || !row?.enabled || !row.slug) return null;
-  return `${siteUrl(await headers())}/book/${row.slug}`;
+  const missing = !!error && /does not exist|schema cache|relation/i.test(error.message);
+  const types = ((typeRows ?? []) as { id: string; active: boolean; position: number; created_at?: string }[]).map((t) => ({
+    ...t,
+    position: Number(t.position ?? 0),
+    active: t.active !== false,
+  }));
+  const liveTypes = bookableTypes(types, bookingLinkLimit(business.plan, isOwnerBusiness(business.id))).length;
+  const enabled = !error && !!row?.enabled;
+  const slug = row?.slug ?? null;
+  const url = enabled && slug && liveTypes > 0 ? `${siteUrl(await headers())}/book/${slug}` : null;
+  return { url, slug, enabled, liveTypes, missing };
+}
+
+// The signed-in business's live booking link, or null (not set up / off /
+// no meeting types / 0018 not run). For the "Copy my booking link" buttons.
+export async function myBookingLink(
+  db: SupabaseClient,
+  business: { id: string; plan?: string | null }
+): Promise<string | null> {
+  return (await myBookingState(db, business)).url;
 }
 
 // The time of this request (pages call it once per render on the server).

@@ -140,7 +140,7 @@ export default async function DashboardPage({
         .order("next_follow_up")
         .limit(300),
       loadBusinessLines(supabase, business.id),
-      myBookingLink(supabase, business.id),
+      myBookingLink(supabase, business),
     ]);
 
   // Scoreboard: one card per business line (or just the chosen one)

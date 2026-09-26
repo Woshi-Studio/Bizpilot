@@ -53,7 +53,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
   else if (tab === "past") q = q.neq("status", "cancelled").lt("ends_at", now).order("starts_at", { ascending: false });
   else q = q.eq("status", "cancelled").order("starts_at", { ascending: false });
 
-  const [res, link] = await Promise.all([q.limit(200), myBookingLink(supabase, business.id)]);
+  const [res, link] = await Promise.all([q.limit(200), myBookingLink(supabase, business)]);
   const missing = !!res.error;
   const rows = (res.data ?? []) as unknown as Row[];
   const owner = isOwnerBusiness(business.id);

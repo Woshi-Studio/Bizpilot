@@ -45,6 +45,23 @@ Lucy's link once it's live: **https://jephelen.vercel.app/book/woshi**
    `python jeph.py bookings` works with the existing key. A new key: tick
    "Read bookings".
 
+## One-click publish (branch `booking-publish`)
+
+Screenshots: `D:\Claude\Game\HQ\03_BUSINESS\Jephelen\UI-PREVIEW\booking-publish\`. No SQL.
+
+- **Calendar** and **Settings → Booking** show one big **Publish booking page** button until
+  the page is really bookable. One click: page on; link name if missing (`woshi` for the
+  owner); Mon–Fri 9:00–17:00 if no hours; a **30-min call** if there are no meeting types
+  (or the first one switched back on if all are off). Then a popup: the full link, Copy,
+  Open page, "✓ Copied".
+- Once live: a bar "Your booking link: <url> [Copy] [Open]" on Calendar and Settings →
+  Booking; **Unpublish** is in Settings → Booking only.
+- Copy: Clipboard API → old select + `execCommand("copy")` → the link is selected in its
+  box for Ctrl+C. "Copied" only shows when it really copied.
+- "Copy my booking link" (Home, Bookings, Settings) now only appears when the page has a
+  bookable meeting type; before, it copied a link that said "isn't available right now".
+- Demo: `DEMO_BOOKING_OFF=1` shows the page before publishing.
+
 ## What was built
 
 | Part | Where |

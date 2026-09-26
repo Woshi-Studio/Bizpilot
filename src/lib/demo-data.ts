@@ -275,7 +275,8 @@ export function buildDemoData(): Record<string, Row[]> {
     {
       business_id: B,
       slug: "bright-harbor",
-      enabled: true,
+      // DEMO_BOOKING_OFF=1: the page before "Publish booking page" (screenshots).
+      enabled: process.env.DEMO_BOOKING_OFF !== "1",
       timezone: "America/Toronto",
       weekly: [[], [["09:00", "12:00"], ["13:00", "17:00"]], [["09:00", "17:00"]], [["09:00", "17:00"]], [["09:00", "17:00"]], [["09:00", "15:00"]], []],
       min_notice_hours: 4,
@@ -294,7 +295,7 @@ export function buildDemoData(): Record<string, Row[]> {
     },
   ];
 
-  const booking_meeting_types: Row[] = [
+  const booking_meeting_types: Row[] = process.env.DEMO_BOOKING_OFF === "1" ? [] : [
     {
       id: id("b7", 1),
       business_id: B,

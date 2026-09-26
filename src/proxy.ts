@@ -14,6 +14,8 @@ const PUBLIC_PATHS = [
   "/api/",
   "/i/", // shared invoice / quote view (token)
   "/d/", // shared file download (token)
+  "/book/", // public booking page (/book/<slug>)
+  "/booking/", // a visitor's own booking: confirm, reschedule, cancel (token)
 ];
 
 export async function proxy(request: NextRequest) {

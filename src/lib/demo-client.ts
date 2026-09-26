@@ -163,7 +163,18 @@ export function createDemoClient() {
 
   const client = {
     from: (table: string) => new Query(db, table),
-    rpc: async (fn: string) => {
+    rpc: async (fn: string, args: Record<string, unknown> = {}) => {
+      // Booking page (0018): pretend it worked; the demo booking is Olivia's.
+      if (fn === "booking_create" || fn === "booking_reschedule") {
+        const b = (db.bookings ?? [])[0];
+        const start = String(args.p_starts ?? b?.starts_at);
+        const end = new Date(Date.parse(start) + Number(b?.duration_min ?? 30) * 60_000).toISOString();
+        return {
+          data: { booking_id: b?.id, activity_id: b?.activity_id, lead_id: b?.lead_id, customer_id: null, starts_at: start, ends_at: end, old_starts_at: b?.starts_at, contact_saved: true },
+          error: null,
+        };
+      }
+      if (fn === "booking_cancel") return { data: { booking_id: (db.bookings ?? [])[0]?.id }, error: null };
       if (fn === "owner_hub_scoreboard") return { data: demoScoreboard(db), error: null };
       if (fn === "consume_ai_credit") return { data: { allowed: true, used: 8, limit: 100 }, error: null };
       if (fn === "consume_email_send") return { data: { allowed: true, used: 3, limit: 50 }, error: null };

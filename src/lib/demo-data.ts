@@ -6,6 +6,9 @@ import { DEMO_BUSINESS_ID, DEMO_USER_ID } from "./demo.ts";
 
 export type Row = Record<string, unknown>;
 
+// The demo booking's manage link: /booking/<this> (43 characters).
+export const DEMO_BOOKING_TOKEN = "demoBookingToken_Olivia_0000000000000000001";
+
 const B = DEMO_BUSINESS_ID;
 
 function day(offset: number) {
@@ -229,6 +232,168 @@ export function buildDemoData(): Record<string, Row[]> {
     }
   );
 
+  // Booking page (0018): Olivia booked a free intro call online.
+  // the next weekday at least 2 days out, 2 PM Toronto (18:00 UTC in summer)
+  let bookedDay = 2;
+  while ([0, 6].includes(new Date(Date.now() + bookedDay * 86_400_000).getUTCDay())) bookedDay++;
+  const bookedAt = ts(bookedDay, 18);
+  const bookedEnd = new Date(Date.parse(bookedAt) + 30 * 60_000).toISOString();
+  activities.push(
+    {
+      id: id("ac", 60),
+      business_id: B,
+      customer_id: null,
+      lead_id: l(1),
+      business_line: "Woshi Studio",
+      kind: "meeting",
+      subject: "Free intro call with Olivia Park",
+      body: ["Booked online.", "Email: olivia@parkcoffee.example", "What do you need help with?: A new menu and logo"].join("\n"),
+      occurred_at: bookedAt,
+      ends_at: bookedEnd,
+      source: "booking",
+      external_id: "booking:demo",
+      created_at: ts(-1),
+    },
+    {
+      id: id("ac", 61),
+      business_id: B,
+      customer_id: null,
+      lead_id: null,
+      business_line: null,
+      kind: "block",
+      subject: "School run",
+      body: null,
+      occurred_at: ts(2, 19),
+      ends_at: new Date(Date.parse(ts(2, 19)) + 90 * 60_000).toISOString(),
+      source: "manual",
+      external_id: null,
+      created_at: ts(-3),
+    }
+  );
+
+  const booking_settings: Row[] = [
+    {
+      business_id: B,
+      slug: "bright-harbor",
+      enabled: true,
+      timezone: "America/Toronto",
+      weekly: [[], [["09:00", "12:00"], ["13:00", "17:00"]], [["09:00", "17:00"]], [["09:00", "17:00"]], [["09:00", "17:00"]], [["09:00", "15:00"]], []],
+      min_notice_hours: 4,
+      horizon_days: 45,
+      buffer_before_min: 0,
+      buffer_after_min: 15,
+      max_per_day: 6,
+      language: process.env.DEMO_BOOKING_LANG === "fr" || process.env.DEMO_BOOKING_LANG === "es" ? process.env.DEMO_BOOKING_LANG : "en",
+      logo_path: null,
+      accent: "#7c3aed",
+      intro: "Pick a time for a free chat about your brand, menu or website. No pressure, no sales pitch.",
+      business_line: "Woshi Studio",
+      ical_url: null,
+      created_at: created,
+      updated_at: created,
+    },
+  ];
+
+  const booking_meeting_types: Row[] = [
+    {
+      id: id("b7", 1),
+      business_id: B,
+      slug: "intro-call",
+      name: "Free intro call",
+      duration_min: 30,
+      description: "A quick video call to hear what you need and see if we're a fit.",
+      location_kind: "video",
+      location_detail: "https://meet.google.com/abc-defg-hij",
+      questions: [
+        { id: "q1", label: "What do you need help with?", kind: "long", required: true, options: [] },
+        { id: "q2", label: "Budget", kind: "choice", required: false, options: ["Under $500", "$500 – $2,000", "$2,000+"] },
+      ],
+      deposit_cents: null,
+      business_line: "Woshi Studio",
+      active: true,
+      position: 0,
+      created_at: created,
+    },
+    {
+      id: id("b7", 2),
+      business_id: B,
+      slug: "project-kickoff",
+      name: "Project kickoff",
+      duration_min: 60,
+      description: "For signed projects: goals, timeline and first drafts.",
+      location_kind: "in_person",
+      location_detail: "5800 Ambler Drive, Mississauga",
+      questions: [],
+      deposit_cents: 5000,
+      business_line: "Woshi Studio",
+      active: true,
+      position: 1,
+      created_at: ts(-60),
+    },
+  ];
+
+  const bookings: Row[] = [
+    {
+      id: id("b0", 1),
+      business_id: B,
+      meeting_type_id: id("b7", 1),
+      activity_id: id("ac", 60),
+      customer_id: null,
+      lead_id: l(1),
+      type_name: "Free intro call",
+      duration_min: 30,
+      location_kind: "video",
+      location_detail: "https://meet.google.com/abc-defg-hij",
+      starts_at: bookedAt,
+      ends_at: bookedEnd,
+      status: "confirmed",
+      name: "Olivia Park",
+      email: "olivia@parkcoffee.example",
+      phone: "(416) 555-0188",
+      note: "Mornings are best for me.",
+      answers: [
+        { id: "q1", label: "What do you need help with?", value: "A new menu and logo for our café." },
+        { id: "q2", label: "Budget", value: "$500 – $2,000" },
+      ],
+      visitor_tz: "America/Toronto",
+      language: "en",
+      deposit_cents: null,
+      manage_token: DEMO_BOOKING_TOKEN,
+      email_status: "sent",
+      created_at: ts(-1),
+      cancelled_at: null,
+      rescheduled_at: null,
+    },
+    {
+      id: id("b0", 2),
+      business_id: B,
+      meeting_type_id: id("b7", 1),
+      activity_id: null,
+      customer_id: c(3),
+      lead_id: null,
+      type_name: "Free intro call",
+      duration_min: 30,
+      location_kind: "video",
+      location_detail: null,
+      starts_at: ts(-3, 15),
+      ends_at: new Date(Date.parse(ts(-3, 15)) + 30 * 60_000).toISOString(),
+      status: "attended",
+      name: "Priya Nair",
+      email: "priya@lotusyoga.example",
+      phone: null,
+      note: null,
+      answers: [],
+      visitor_tz: "America/New_York",
+      language: "en",
+      deposit_cents: null,
+      manage_token: "demo0000000000000000000000000000000000past1",
+      email_status: "not_configured",
+      created_at: ts(-6),
+      cancelled_at: null,
+      rescheduled_at: null,
+    },
+  ];
+
   const documents: Row[] = [
     ["Signed contract.pdf", 184_000, "application/pdf", -30],
     ["Logo concepts v1.png", 2_400_000, "image/png", -6],
@@ -365,6 +530,10 @@ export function buildDemoData(): Record<string, Row[]> {
     invoice_items,
     transactions,
     activities,
+    booking_settings,
+    booking_meeting_types,
+    bookings,
+    booking_ical_cache: [],
     documents,
     customer_notes,
     services,

@@ -15,7 +15,7 @@ const FEATURES = [
   },
   {
     emoji: "✨",
-    title: "AI writes your messages",
+    title: "Messages, ready to send",
     text: "Follow-ups, payment reminders, quotes — professional, personal, ready to send.",
   },
   {
@@ -31,7 +31,7 @@ const FEATURES = [
   {
     emoji: "📋",
     title: "A plan for every day",
-    text: "Your tasks, follow-ups, and an AI daily plan telling you what to tackle first.",
+    text: "Your tasks, follow-ups, and a daily plan telling you what to tackle first.",
   },
 ];
 
@@ -68,12 +68,12 @@ export default async function Home() {
       <main className="flex-1">
         <section className="mx-auto max-w-3xl px-6 pb-16 pt-16 text-center sm:pt-24">
           <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-            Your AI copilot for running a{" "}
+            One app for running a{" "}
             <span className="text-indigo-600">smarter business</span>
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-lg leading-8 text-slate-600">
-            Customers, tasks, money, invoices, and an AI that writes your
-            messages and stops your bad decisions — all in one simple hub built
+            Customers, bookings, tasks, money, invoices, and a helper that drafts your
+            messages and flags risky decisions — all in one simple hub built
             for freelancers and small businesses.
           </p>
           <div className="mt-8 flex items-center justify-center gap-4">

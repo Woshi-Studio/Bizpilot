@@ -10,7 +10,7 @@ export default function AuthLayout({
           Jephelen
         </h1>
         <p className="page-sub">
-          Your AI copilot for running a smarter business
+          One app to run your whole small business
         </p>
       </div>
       <div className="w-full max-w-md card p-8">

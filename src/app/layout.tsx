@@ -30,11 +30,11 @@ const vt323 = VT323({
 
 export const metadata: Metadata = {
   title: {
-    default: "Jephelen — Your AI copilot for running a smarter business",
+    default: "Jephelen — One app to run your whole small business",
     template: "%s | Jephelen",
   },
   description:
-    "Jephelen is an AI business copilot that helps freelancers manage customers, organize tasks, generate communications, track money, and make smarter business decisions.",
+    "Jephelen runs your small business in one place: customers, bookings, invoices, tasks and money. Free to start.",
 };
 
 export default function RootLayout({

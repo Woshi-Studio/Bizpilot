@@ -13,6 +13,8 @@ import PaymentMethodsForm from "./payment-methods-form";
 import ChangeEmailForm from "./change-email-form";
 import AssistantAccess, { type ApiKeyRow, type AuditRow } from "./assistant-access";
 import PlanSection from "./plan-section";
+import FinderWorkers, { type WorkerRow } from "./finder-workers";
+import { createAdminClient } from "@/lib/supabase/admin";
 import LineSettingsForm from "./line-settings-form";
 import TemplatesSection from "./templates-section";
 import CopyBookingLink from "@/components/copy-booking-link";
@@ -123,6 +125,9 @@ export default async function SettingsPage({
       business ? listTemplates() : Promise.resolve([]),
       business ? myBookingLink(supabase, business) : Promise.resolve(null),
     ]);
+  // Lead Finder worker keys: owner only, server-only table (0019).
+  const finderWorkers = owner ? await loadFinderWorkers() : null;
+
   const lineSettings = usedLines.map((l) =>
     settingsFor(l, savedLineSettings, business?.currency ?? "USD")
   );
@@ -157,6 +162,7 @@ export default async function SettingsPage({
     ["plan", "Plan & usage"],
     ...(showEmailCard ? [["sending", "Email sending"]] : []),
     ["assistant", "Assistant"],
+    ...(owner ? [["finder-worker", "Finder worker"]] : []),
     ["booking", "Booking"],
     ["public", "Public page"],
     ["payments", "Payments"],
@@ -260,6 +266,12 @@ export default async function SettingsPage({
         )}
       </div>
 
+      {finderWorkers && (
+        <div id="finder-worker" className="mt-8 scroll-mt-24">
+          <FinderWorkers workers={finderWorkers.rows} ready={finderWorkers.ready} />
+        </div>
+      )}
+
       {business && (
         <section id="booking" className="card mt-8 scroll-mt-24 p-6">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -306,4 +318,16 @@ export default async function SettingsPage({
       )}
     </div>
   );
+}
+
+async function loadFinderWorkers(): Promise<{ rows: WorkerRow[]; ready: boolean }> {
+  const admin = createAdminClient();
+  if (!admin || !process.env.AGENT_KEY_PEPPER) return { rows: [], ready: false };
+  const { data, error } = await admin
+    .from("finder_workers")
+    .select("id, name, key_prefix, created_at, last_seen_at, revoked_at")
+    .order("created_at", { ascending: false })
+    .limit(20);
+  if (error) return { rows: [], ready: false };
+  return { rows: (data ?? []) as WorkerRow[], ready: true };
 }

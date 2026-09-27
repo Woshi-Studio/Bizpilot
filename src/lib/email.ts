@@ -75,6 +75,16 @@ export function emailStatus(business: Pick<Business, "id"> & { plan?: string | n
   };
 }
 
+// Jephelen itself sending (not on behalf of a user), e.g. the "remove my
+// data" confirmation link: Resend if set up, else the owner's SMTP.
+export function platformEmailProvider(): EmailProvider | "demo" | null {
+  if (isDemoMode()) return "demo";
+  const provider = emailProvider();
+  if (provider === "resend" && resendReady()) return "resend";
+  if (provider === "smtp" && smtpReady()) return "smtp";
+  return null;
+}
+
 // The line shown where Send would be. Never names a setting or env var.
 export function emailNote(status: EmailStatus): string {
   if (status.canSend) return "";

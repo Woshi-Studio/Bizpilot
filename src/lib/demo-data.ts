@@ -521,7 +521,73 @@ export function buildDemoData(): Record<string, Row[]> {
 
   const decisions: Row[] = [];
 
+  // Lead Finder (0019). DEMO_FINDER_EMPTY=1 shows the page before the intake.
+  const finderEmpty = process.env.DEMO_FINDER_EMPTY === "1";
+  const fid = (n: number) => id("f1d", n);
+  const finder_profiles: Row[] = finderEmpty ? [] : [
+    {
+      id: fid(1),
+      business_id: B,
+      name: "My hunt",
+      my_business: "Bright Harbor Studio",
+      offer: "A simple website with online booking, set up in a week.",
+      target: "Independent cafés and salons with no booking page",
+      industries: ["Restaurants & cafés", "Salons & beauty"],
+      company_sizes: ["solo", "2-10"],
+      place: "Mississauga",
+      radius_km: 15,
+      province: "Ontario",
+      country: "CA",
+      needs: ["phone", "website", "email"],
+      exclude: "",
+      aup_version: "2026-09-27",
+      aup_accepted_at: ts(-2),
+      updated_at: ts(-2),
+    },
+  ];
+  const finder_results: Row[] = finderEmpty ? [] : [
+    ["Harbourfront Hair Co.", "https://harbourfronthair.example", "Mississauga", "ON", "905-555-0142", "hello@harbourfronthair.example", "https://harbourfronthair.example/contact", "Salon near you, no online booking on the site.", -1, null],
+    ["Maple Leaf Plumbing", "https://mapleleafplumbing.example", "Oakville", "ON", "(289) 555-0199", null, "https://mapleleafplumbing.example/quote", "Trades business, quote form but no booking.", -40, null],
+    ["Corner Grind Café", "https://cornergrind.example", "Brampton", "ON", "905-555-0110", "info@cornergrind.example", null, "Café with an old menu page.", -120, l(1)],
+  ].map((r, i) => ({
+    id: fid(100 + i),
+    business_id: B,
+    company_name: r[0],
+    website: r[1],
+    city: r[2],
+    region: r[3],
+    country: "CA",
+    address: null,
+    phone: r[4],
+    phone_checks: { valid: true, region: "CA", on_site: day(r[8] as number) },
+    email: r[5],
+    email_checks: r[5] ? { format: true, mx: true, on_site: day(r[8] as number), role: true } : null,
+    contact_form_url: r[6],
+    source_urls: [`${r[1]}/contact`],
+    why: r[7],
+    locked: false,
+    last_checked_at: ts(r[8] as number),
+    lead_id: r[9],
+    created_at: ts(r[8] as number),
+  }));
+  const finder_job_items: Row[] = finderEmpty ? [] : [
+    { id: fid(200), job_id: fid(300), business_id: B, company: "Sunrise Nails", city: "Mississauga", website: null, status: "working", candidates: null, note: null, created_at: ts(0, 12) },
+    {
+      id: fid(201), job_id: fid(301), business_id: B, company: "Bolt Café", city: "Toronto", website: null, status: "ambiguous", note: null, created_at: ts(0, 11),
+      candidates: [
+        { name: "Bolt Café", city: "Toronto", website: "https://boltcafe-queenwest.example" },
+        { name: "Bolt Café & Bakery", city: "Toronto", website: "https://boltbakery.example" },
+      ],
+    },
+    { id: fid(202), job_id: fid(302), business_id: B, company: "Lakeview Tailors", city: "Mississauga", website: null, status: "not_found", candidates: null, note: "no website found", created_at: ts(-1) },
+  ];
+
   return {
+    finder_profiles,
+    finder_results,
+    finder_job_items,
+    finder_credit_ledger: [],
+    finder_bounce_reports: [],
     businesses,
     profiles,
     customers,

@@ -32,6 +32,7 @@ export const NAV_GROUPS: NavGroup[] = [
     pages: [
       { label: "Customers", href: "/customers" },
       { label: "Leads", href: "/leads" },
+      { label: "Found", href: "/leads/found" },
     ],
   },
   {
@@ -87,8 +88,11 @@ export function groupFor(pathname: string): NavGroup | undefined {
   return NAV_GROUPS.find((g) => g.pages.some((p) => matches(pathname, p.href)));
 }
 
+// The most specific page wins (/leads/found is "Found", not "Leads").
 export function pageFor(pathname: string): NavPage | undefined {
-  return groupFor(pathname)?.pages.find((p) => matches(pathname, p.href));
+  return groupFor(pathname)
+    ?.pages.filter((p) => matches(pathname, p.href))
+    .sort((a, b) => b.href.length - a.href.length)[0];
 }
 
 
@@ -98,6 +102,7 @@ export const PAGE_HELP: Record<string, string> = {
   "/goals": "Goals & Wins: set customer and revenue goals, a savings goal, and log wins.",
   "/customers": "People > Customers: search the list; click a name to open their one-page profile with every action on top.",
   "/leads": "People > Leads: log outreach, change lead status, turn a lead into a customer with 'Add to customers'.",
+  "/leads/found": "People > Found: the Lead Finder. Type a company name plus a city or website to get its phone, website and contact form; tap Add to leads to keep one. Edit what you hunt with 'What are you hunting?'.",
   "/tasks": "Work > Tasks: add a task at the top, then move it through To Do, In Progress, Review and Done.",
   "/calendar": "Work > Calendar: month or week view of tasks, follow-ups, invoices due and meetings; book a meeting from the form.",
   "/bookings": "Work > Bookings: everyone who booked through your booking page; mark Attended or No-show, cancel, copy your booking link.",

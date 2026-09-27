@@ -62,7 +62,7 @@ export default function OutreachForm({
             Channel
           </label>
           <select name="channel" defaultValue="email" className={inputClass}>
-            {LEAD_CHANNELS.filter((c) => c.value !== "inbound").map((c) => (
+            {LEAD_CHANNELS.filter((c) => c.value !== "inbound" && c.value !== "finder").map((c) => (
               <option key={c.value} value={c.value}>
                 {c.label}
               </option>

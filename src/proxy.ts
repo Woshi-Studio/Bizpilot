@@ -10,6 +10,9 @@ const PUBLIC_PATHS = [
   "/auth",
   "/terms",
   "/privacy",
+  "/acceptable-use",
+  "/data-sources",
+  "/remove-my-data", // public removal form + /remove-my-data/confirm (token)
   "/b/",
   "/api/",
   "/i/", // shared invoice / quote view (token)

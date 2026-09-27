@@ -616,6 +616,26 @@ body {
     color: var(--surface);
   }
 
+  /* A chip that is a checkbox (<label class="chip"><input type=checkbox>…) */
+  .chip-check { position: relative; cursor: pointer; user-select: none; }
+  .chip-check > input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .chip-check:has(> input:checked),
+  .chip-check:has(> input:checked):hover {
+    background: var(--text);
+    border-color: var(--text);
+    color: var(--surface);
+  }
+  .chip-check:has(> input:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
   /* notices */
   .alert-error,
   .alert-success,

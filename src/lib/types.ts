@@ -253,10 +253,12 @@ export type LeadChannel =
   | "freelancer"
   | "referral"
   | "inbound"
-  | "other";
+  | "other"
+  | "finder"; // migration 0019: added from the Lead Finder's Found tab
 
 export const LEAD_CHANNELS: { value: LeadChannel; label: string }[] = [
   { value: "inbound", label: "Public page (inbound)" },
+  { value: "finder", label: "Lead Finder" },
   { value: "email", label: "Cold email" },
   { value: "upwork", label: "Upwork" },
   { value: "linkedin", label: "LinkedIn" },

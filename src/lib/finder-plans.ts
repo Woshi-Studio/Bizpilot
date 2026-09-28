@@ -8,7 +8,7 @@ type Env = Record<string, string | undefined>;
 export const BOSS_CREDITS_PER_PERIOD = 40;
 
 // Lead credits the lead subscription gives on every paid invoice.
-export const LEADSUB_CREDITS_PER_PERIOD = 100;
+export const LEADSUB_CREDITS_PER_PERIOD = 200; // Lucy 2026-09-27: 200 leads every 4 weeks for $29
 
 // false = unused plan / lead-sub credits are removed when the next
 // grant of the same kind arrives (and when that subscription ends).

@@ -10,13 +10,15 @@
 //   bounce / wrong number refund    -> automatic while refunds stay within
 //                                      20% of the credits used in 90 days
 
-export type LedgerReason = "grant" | "hold" | "release" | "spend" | "refund" | "unlock" | "adjust";
+export type LedgerReason = "grant" | "hold" | "release" | "spend" | "refund" | "unlock" | "adjust" | "expire";
 
 export type LedgerRow = {
   delta: number;
   reason: LedgerReason;
   created_at?: string;
   item_id?: string | null;
+  // 'plan' / 'leadsub' / 'pack' / 'beta' on grants; the pool on 'expire'
+  note?: string | null;
 };
 
 export function balanceOf(rows: LedgerRow[]): number {
@@ -80,7 +82,72 @@ export function refundIsAutomatic(used90: number, refunded90: number): boolean {
 }
 
 export function creditLine(balance: number, held: number, unlimited: boolean): string {
-  if (unlimited) return "Finder credits: unlimited (owner)";
+  if (unlimited) return "Lead credits: unlimited (owner)";
   const heldText = held > 0 ? ` · ${held} held for searches in progress` : "";
-  return `Finder credits: ${balance}${heldText}`;
+  return `Lead credits: ${balance}${heldText}`;
+}
+
+// ------------------------------------------------------------------
+// Grants and "no rollover" (0020: finder_pool_left + finder_grant)
+// ------------------------------------------------------------------
+
+export type Pool = "plan" | "leadsub" | "pack";
+
+// What is left of the grants of one kind. Walks the ledger in order:
+//   grant with note plan/leadsub -> a new entry of that kind
+//   expire (note = kind)         -> empties entries of that kind
+//   hold / release               -> skipped (they pair up)
+//   any other +                  -> never-expiring credits
+//   any other -                  -> oldest grant entry first, then the rest
+export function poolLeft(rows: LedgerRow[], pool: "plan" | "leadsub"): number {
+  const entries: { kind: string; left: number }[] = [];
+  for (const r of rows) {
+    if (r.reason === "hold" || r.reason === "release") continue;
+    if (r.reason === "grant" && (r.note === "plan" || r.note === "leadsub") && r.delta > 0) {
+      entries.push({ kind: r.note, left: r.delta });
+      continue;
+    }
+    if (r.reason === "expire") {
+      let need = -r.delta;
+      for (const e of entries) {
+        if (e.kind === r.note && need > 0) {
+          const take = Math.min(e.left, need);
+          e.left -= take;
+          need -= take;
+        }
+      }
+      continue;
+    }
+    if (r.delta < 0) {
+      let need = -r.delta;
+      for (const e of entries) {
+        if (need === 0) break;
+        const take = Math.min(e.left, need);
+        e.left -= take;
+        need -= take;
+      }
+    }
+  }
+  return entries.filter((e) => e.kind === pool).reduce((n, e) => n + e.left, 0);
+}
+
+export type GrantOutcome = { status: "granted" | "duplicate"; rows: LedgerRow[]; expired: number };
+
+// The rows one grant adds. `seen` = Stripe references already granted
+// (invoice ids, checkout session ids): a repeat adds nothing.
+export function grantRows(
+  rows: LedgerRow[],
+  seen: Set<string>,
+  g: { pool: Pool; credits: number; ref: string; rollover: boolean }
+): GrantOutcome {
+  if (seen.has(g.ref)) return { status: "duplicate", rows: [], expired: 0 };
+  let expired = 0;
+  if (g.pool !== "pack" && !g.rollover) {
+    expired = Math.min(poolLeft(rows, g.pool), Math.max(balanceOf(rows), 0));
+  }
+  const out: LedgerRow[] = [];
+  if (expired > 0) out.push({ delta: -expired, reason: "expire", note: g.pool });
+  if (g.credits > 0) out.push({ delta: g.credits, reason: "grant", note: g.pool });
+  if (out.length) seen.add(g.ref);
+  return { status: "granted", rows: out, expired };
 }

@@ -254,7 +254,7 @@ export type LeadChannel =
   | "referral"
   | "inbound"
   | "other"
-  | "finder"; // migration 0019: added from the Lead Finder's Found tab
+  | "finder"; // migration 0019: added from the Lead Finder (Search leads)
 
 export const LEAD_CHANNELS: { value: LeadChannel; label: string }[] = [
   { value: "inbound", label: "Public page (inbound)" },

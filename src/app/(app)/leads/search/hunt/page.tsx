@@ -1,20 +1,23 @@
 import Link from "next/link";
 import { requireUserAndBusiness } from "@/lib/data";
-import { AUP_VERSION } from "@/lib/finder";
-import { getFinderAccess, loadProfile } from "@/lib/finder-server";
+import { AUP_VERSION, kmToMiles } from "@/lib/finder";
+import { canDiscover, getFinderAccess, loadProfile } from "@/lib/finder-server";
+import { DISCOVER_DEFAULT_COUNT } from "@/lib/finder-plans";
 import IntakeForm from "./intake-form";
+import FindCustomers from "../find-customers";
 
 export const metadata = { title: "What are you hunting?" };
 
-export default async function HuntPage() {
+export default async function HuntPage({ searchParams }: { searchParams: Promise<{ need?: string }> }) {
+  const { need } = await searchParams;
   const { supabase, business } = await requireUserAndBusiness();
-  const access = getFinderAccess(business.id);
+  const access = getFinderAccess(business);
 
   if (access === "none") {
     return (
       <div className="mx-auto max-w-3xl">
         <h1 className="page-title">Lead Finder</h1>
-        <p className="mt-6 card-empty p-6 text-sm">The Lead Finder is invite-only while we test it.</p>
+        <p className="mt-6 card-empty p-6 text-sm">The Lead Finder opens soon.</p>
       </div>
     );
   }
@@ -23,19 +26,22 @@ export default async function HuntPage() {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <Link href="/leads/found" className="text-sm font-medium text-muted hover:text-ink">
-        ← Found
+      <Link href="/leads/search" className="text-sm font-medium text-muted hover:text-ink">
+        ← Search leads
       </Link>
       <h1 className="page-title mt-2">What are you hunting?</h1>
       <p className="page-sub">
-        Tell us about your business and who you want to reach. We use it to find the right
-        companies, and every search keeps a copy of it.
+        Optional for a single search. Tell us about your business and who your customers are:
+        &quot;Find me customers&quot; and the lead subscription use it to go find companies for you.
       </p>
+      {need === "leadsub" && (
+        <p className="alert-info mt-4">Fill this in first: the lead subscription uses it to find companies for you.</p>
+      )}
 
       {!ready ? (
         <p className="mt-6 alert-warn">
           {access === "owner"
-            ? "Not set up yet: run migration 0019 in Supabase first."
+            ? "Not set up yet: run migrations 0019 and 0020 in Supabase first."
             : "The Lead Finder isn't switched on yet. Please check back soon."}
         </p>
       ) : (
@@ -46,16 +52,25 @@ export default async function HuntPage() {
               offer: profile?.offer ?? "",
               target: profile?.target ?? "",
               industries: profile?.industries ?? [],
+              industry_other: profile?.industry_other ?? "",
               company_sizes: profile?.company_sizes ?? [],
               place: profile?.place ?? "",
-              radius_km: profile?.radius_km ?? null,
+              radius_mi: kmToMiles(profile?.radius_km),
               province: profile?.province ?? "",
-              country: profile?.country ?? "",
+              area: profile?.area ?? profile?.country ?? "CA",
               needs: profile?.needs ?? ["phone", "website"],
               exclude: profile?.exclude ?? "",
               aupAccepted: profile?.aup_version === AUP_VERSION,
             }}
           />
+          <div className="mt-6">
+            <FindCustomers
+              ready={canDiscover(profile)}
+              summary={null}
+              count={DISCOVER_DEFAULT_COUNT}
+              locked={access === "locked"}
+            />
+          </div>
         </div>
       )}
     </div>

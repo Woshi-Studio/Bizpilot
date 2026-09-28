@@ -4,7 +4,8 @@
 type Env = Record<string, string | undefined>;
 
 // Bump when the Acceptable Use page changes in a way users must re-accept.
-export const AUP_VERSION = "2026-09-27";
+// 2026-09-27.2: + "Business contacts only, never people-searching".
+export const AUP_VERSION = "2026-09-27.2";
 
 export const FINDER_NEEDS = [
   { value: "phone", label: "Phone" },
@@ -22,36 +23,108 @@ export const FINDER_SIZES = [
   { value: "200+", label: "200+" },
 ] as const;
 
+// Who the user wants as customers. Each bucket maps to OpenStreetMap tags
+// in zilla\finder.py (INDUSTRY_TAGS; the table is in LEAD-FINDER.md) for
+// "Find me customers". Keep the ids in sync with it.
 export const FINDER_INDUSTRIES = [
-  "Restaurants & cafés",
-  "Salons & beauty",
-  "Trades & home services",
-  "Retail shops",
-  "Health & wellness",
-  "Fitness",
-  "Auto",
-  "Professional services",
-  "Real estate",
-  "Events",
-  "Non-profits",
-  "Other",
+  { value: "offices", label: "Offices & professional services" },
+  { value: "medical", label: "Medical & dental clinics" },
+  { value: "seniors", label: "Seniors' homes & care" },
+  { value: "pharmacy", label: "Pharmacies" },
+  { value: "restaurants", label: "Restaurants, cafés & bars" },
+  { value: "grocery", label: "Grocery & convenience" },
+  { value: "retail", label: "Retail shops" },
+  { value: "construction", label: "Construction & trades" },
+  { value: "home_services", label: "Home services & landscaping" },
+  { value: "manufacturing", label: "Manufacturing & industrial" },
+  { value: "warehousing", label: "Warehousing & logistics" },
+  { value: "trucking", label: "Trucking, moving & couriers" },
+  { value: "property", label: "Property management" },
+  { value: "real_estate", label: "Real estate" },
+  { value: "auto", label: "Auto repair & dealers" },
+  { value: "beauty", label: "Beauty & salons" },
+  { value: "fitness", label: "Fitness & sports" },
+  { value: "education", label: "Schools & education" },
+  { value: "daycare", label: "Daycare & childcare" },
+  { value: "hotels", label: "Hotels & motels" },
+  { value: "churches", label: "Churches & places of worship" },
+  { value: "nonprofits", label: "Non-profits & community" },
+  { value: "government", label: "Government & public buildings" },
+  { value: "tech", label: "Tech & IT" },
+  { value: "legal", label: "Legal" },
+  { value: "accounting", label: "Accounting & tax" },
+  { value: "finance", label: "Banks, finance & insurance" },
+  { value: "cleaning", label: "Cleaning & laundry" },
+  { value: "events", label: "Events & venues" },
+  { value: "entertainment", label: "Entertainment & nightlife" },
+  { value: "pets", label: "Pets & vets" },
+  { value: "agriculture", label: "Farms & agriculture" },
+  { value: "media", label: "Media, photo & advertising" },
 ] as const;
 
-export const FINDER_RADII = [5, 15, 50] as const;
+export function industryLabel(value: string): string {
+  return FINDER_INDUSTRIES.find((i) => i.value === value)?.label ?? value;
+}
 
-export const FINDER_COUNTRIES = [
+// Where to hunt: ONE area choice. Single-country areas also set the
+// profile's country (the worker narrows its map lookups to it).
+export const FINDER_AREAS = [
   { value: "CA", label: "Canada" },
-  { value: "US", label: "United States" },
-  { value: "GB", label: "United Kingdom" },
-  { value: "AU", label: "Australia" },
-  { value: "DO", label: "Dominican Republic" },
+  { value: "US", label: "USA" },
+  { value: "CAUS", label: "Canada + USA" },
+  { value: "WORLD", label: "Worldwide" },
 ] as const;
 
+export type FinderArea = (typeof FINDER_AREAS)[number]["value"];
+
+export function isFinderArea(v: unknown): v is FinderArea {
+  return FINDER_AREAS.some((a) => a.value === v);
+}
+
+export function areaCountry(area: string | null | undefined): string | null {
+  return area === "CA" || area === "US" ? area : null;
+}
+
+// Radius around the city: shown in miles, stored in km (0020).
+// null = N/A, the whole area.
+export const FINDER_RADII = [
+  { miles: null, km: null, label: "N/A (whole area)" },
+  { miles: 15, km: 24, label: "Within 15 miles" },
+  { miles: 50, km: 80, label: "Within 50 miles" },
+  { miles: 200, km: 322, label: "Within 200 miles" },
+] as const;
+
+export function milesToKm(miles: unknown): number | null {
+  const n = Number(miles);
+  return FINDER_RADII.find((r) => r.miles !== null && r.miles === n)?.km ?? null;
+}
+
+// The closest miles option for a stored km value (old rows used 5/15/50 km).
+export function kmToMiles(km: number | null | undefined): number | null {
+  if (km === null || km === undefined || !Number.isFinite(km)) return null;
+  let best: number | null = null;
+  let gap = Infinity;
+  for (const r of FINDER_RADII) {
+    if (r.km === null) continue;
+    const g = Math.abs(r.km - km);
+    if (g < gap) {
+      gap = g;
+      best = r.miles;
+    }
+  }
+  return best;
+}
+
 // ------------------------------------------------------------------
-// Who may use it (F1: the owner, plus businesses on the invite list)
+// Who may use it, and how (the owner's rules, 2026-09-27):
+//   owner   OWNER_BUSINESS_IDS: unlimited, never locked
+//   full    Boss (plan 'pro'), or an invited tester: credits, unlocked
+//   locked  Starter / Hustle: free searches, locked results
+//   none    the Lead Finder isn't open yet (FINDER_OPEN not set) and the
+//           business isn't the owner's or on the invite list
 // ------------------------------------------------------------------
 
-export type FinderAccess = "owner" | "beta" | "none";
+export type FinderAccess = "owner" | "full" | "locked" | "none";
 
 function idList(value: string | undefined) {
   return (value ?? "")
@@ -60,12 +133,26 @@ function idList(value: string | undefined) {
     .filter(Boolean);
 }
 
-export function finderAccess(businessId: string, env: Env): FinderAccess {
+export function isFinderBeta(businessId: string, env: Env): boolean {
+  return idList(env.FINDER_BETA_BUSINESS_IDS).includes(businessId.trim().toLowerCase());
+}
+
+export function finderOpen(env: Env): boolean {
+  return /^(1|true|yes|on)$/i.test((env.FINDER_OPEN ?? "").trim());
+}
+
+export function finderAccess(businessId: string, env: Env, plan?: string | null): FinderAccess {
   const id = businessId.trim().toLowerCase();
   if (!id) return "none";
   if (idList(env.OWNER_BUSINESS_IDS).includes(id)) return "owner";
-  if (idList(env.FINDER_BETA_BUSINESS_IDS).includes(id)) return "beta";
-  return "none";
+  if (idList(env.FINDER_BETA_BUSINESS_IDS).includes(id)) return "full";
+  if (!finderOpen(env)) return "none";
+  return plan === "pro" ? "full" : "locked";
+}
+
+// The database's access mode for finder_submit (0020).
+export function submitMode(access: FinderAccess): "owner" | "full" | "locked" | null {
+  return access === "none" ? null : access;
 }
 
 // Starting credits for an invited tester (granted once). 1..100, default 10.
@@ -127,10 +214,12 @@ export type IntakeInput = {
   offer: string;
   target: string;
   industries: string[];
+  industry_other: string | null;
   company_sizes: string[];
   place: string | null;
   radius_km: number | null;
   province: string | null;
+  area: FinderArea;
   country: string | null;
   needs: string[];
   exclude: string;
@@ -140,21 +229,21 @@ export type IntakeInput = {
 export function parseIntake(f: Fields): Ok<IntakeInput> | Bad {
   const my_business = text(f, "my_business", 200);
   const offer = text(f, "offer", 500);
-  if (!my_business) return { ok: false, error: "Tell us about your business." };
-  if (!offer) return { ok: false, error: "Tell us what you offer (up to 500 characters)." };
+  if (!my_business) return { ok: false, error: "Tell us what your business does." };
+  if (!offer) return { ok: false, error: "Tell us the services you provide (up to 500 characters)." };
   if (String(f.get("aup") ?? "") !== "yes") {
     return { ok: false, error: "Please read and accept the Acceptable Use rules." };
   }
-  const allowedIndustries = new Set<string>(FINDER_INDUSTRIES);
+  const allowedIndustries = new Set<string>(FINDER_INDUSTRIES.map((i) => i.value));
   const industries = [...new Set(f.getAll("industries").map(String))]
     .filter((v) => allowedIndustries.has(v))
-    .slice(0, 12);
+    .slice(0, 40);
   const sizes = new Set<string>(FINDER_SIZES.map((s) => s.value));
   const company_sizes = [...new Set(f.getAll("company_sizes").map(String))].filter((v) => sizes.has(v));
   const needValues = new Set<string>(FINDER_NEEDS.map((n) => n.value));
   const needs = [...new Set(f.getAll("needs").map(String))].filter((v) => needValues.has(v));
-  const radius = Number(f.get("radius_km"));
-  const country = text(f, "country", 2).toUpperCase();
+  const areaIn = text(f, "area", 5).toUpperCase();
+  const area: FinderArea = isFinderArea(areaIn) ? areaIn : "CA";
   return {
     ok: true,
     value: {
@@ -162,44 +251,16 @@ export function parseIntake(f: Fields): Ok<IntakeInput> | Bad {
       offer,
       target: text(f, "target", 500),
       industries,
+      industry_other: text(f, "industry_other", 120) || null,
       company_sizes,
       place: text(f, "place", 120) || null,
-      radius_km: (FINDER_RADII as readonly number[]).includes(radius) ? radius : null,
+      radius_km: milesToKm(f.get("radius_mi")),
       province: text(f, "province", 60) || null,
-      country: FINDER_COUNTRIES.some((c) => c.value === country) ? country : null,
+      area,
+      country: areaCountry(area),
       needs: needs.length ? needs : ["phone", "website"],
       exclude: text(f, "exclude", 1000),
       aup_version: AUP_VERSION,
-    },
-  };
-}
-
-export type SearchInput = {
-  company: string;
-  city: string | null;
-  website: string | null;
-  region: string | null;
-  country: string | null;
-};
-
-export function parseSearch(f: Fields): Ok<SearchInput> | Bad {
-  const company = text(f, "company", 200);
-  const city = text(f, "city", 120) || null;
-  const website = text(f, "website", 300) || null;
-  if (!company) return { ok: false, error: "Type the company's name." };
-  if (!city && !website) return { ok: false, error: "Add a city or their website, so we find the right one." };
-  if (website && !WEBSITE_RE.test(website)) {
-    return { ok: false, error: "That website doesn't look right (example: acmeplumbing.ca)." };
-  }
-  const country = text(f, "country", 2).toUpperCase();
-  return {
-    ok: true,
-    value: {
-      company,
-      city,
-      website,
-      region: text(f, "region", 60) || null,
-      country: /^[A-Z]{2}$/.test(country) ? country : null,
     },
   };
 }
@@ -244,9 +305,13 @@ export function parseRemoval(body: Record<string, unknown>, now = Date.now()): O
 // ------------------------------------------------------------------
 
 const FINDER_ERRORS: Record<string, string> = {
-  no_credits: "You're out of Finder credits.",
-  no_profile: "Fill in \"What are you hunting?\" first. It takes a minute.",
-  bad_input: "Something in the search didn't look right. Check the name, city and website.",
+  no_credits: "You're out of lead credits. Get more in Settings → Lead Finder.",
+  no_profile: "Tick the Acceptable Use box first.",
+  bad_input: "Something in the search didn't look right. Check what you typed.",
+  upgrade: "Upgrade to Boss to unlock this result.",
+  locked_cap: `You've used today's free searches. Boss has no daily limit.`,
+  no_industries: "Pick at least one kind of customer (or type one under Other) first.",
+  discover_busy: "A \"Find me customers\" run is already going. It shows under In progress.",
   rate: "That's a lot of searches in one hour. Try again a little later.",
   kind: "Only single-company searches are open right now.",
   not_found: "That result wasn't found.",
@@ -364,11 +429,27 @@ export type FinderResult = {
   last_checked_at: string;
   lead_id: string | null;
   created_at: string;
+  // Person searches: the name the user typed, confirmed on the company's
+  // own site. Only on unlocked results.
+  contact_name?: string | null;
 };
 
+// A locked result shows the company name, place and why it fits. Nothing
+// else is ever passed to the page (the database holds none of it either).
 export function visibleResult(r: FinderResult): FinderResult {
   if (!r.locked) return r;
-  return { ...r, phone: null, phone_checks: null, email: null, email_checks: null, contact_form_url: null };
+  return {
+    ...r,
+    website: null,
+    address: null,
+    phone: null,
+    phone_checks: null,
+    email: null,
+    email_checks: null,
+    contact_form_url: null,
+    source_urls: [],
+    contact_name: null,
+  };
 }
 
 // Only http(s) links are ever rendered.

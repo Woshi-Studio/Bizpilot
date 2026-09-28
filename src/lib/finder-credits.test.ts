@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import {
   balanceOf,
   canAfford,
+  grantRows,
+  poolLeft,
   creditLine,
   heldOf,
   refundIsAutomatic,
@@ -78,7 +80,49 @@ test("used and refunded only count rows inside the window", () => {
 });
 
 test("credit line in plain words", () => {
-  assert.equal(creditLine(3, 0, false), "Finder credits: 3");
-  assert.equal(creditLine(3, 2, false), "Finder credits: 3 · 2 held for searches in progress");
-  assert.equal(creditLine(0, 0, true), "Finder credits: unlimited (owner)");
+  assert.equal(creditLine(3, 0, false), "Lead credits: 3");
+  assert.equal(creditLine(3, 2, false), "Lead credits: 3 · 2 held for searches in progress");
+  assert.equal(creditLine(0, 0, true), "Lead credits: unlimited (owner)");
+});
+
+test("grants: the same Stripe invoice twice adds credits once", () => {
+  const seen = new Set<string>();
+  const rows: LedgerRow[] = [];
+  const a = grantRows(rows, seen, { pool: "plan", credits: 40, ref: "in:1:plan", rollover: false });
+  rows.push(...a.rows);
+  const b = grantRows(rows, seen, { pool: "plan", credits: 40, ref: "in:1:plan", rollover: false });
+  assert.equal(a.status, "granted");
+  assert.equal(b.status, "duplicate");
+  assert.equal(b.rows.length, 0);
+  assert.equal(balanceOf(rows), 40);
+  rows.push(...grantRows(rows, seen, { pool: "pack", credits: 25, ref: "cs:1", rollover: false }).rows);
+  rows.push(...grantRows(rows, seen, { pool: "pack", credits: 25, ref: "cs:1", rollover: false }).rows);
+  assert.equal(balanceOf(rows), 65, "one pack session = one grant");
+});
+
+test("no rollover: a new 4-week grant removes what is left of the last one; packs stay", () => {
+  const seen = new Set<string>();
+  const rows: LedgerRow[] = [];
+  const add = (g: Parameters<typeof grantRows>[2]) => {
+    const out = grantRows(rows, seen, g);
+    rows.push(...out.rows);
+    return out;
+  };
+  add({ pool: "plan", credits: 40, ref: "in:1", rollover: false });
+  add({ pool: "pack", credits: 25, ref: "cs:1", rollover: false });
+  rows.push({ delta: -1, reason: "spend" });
+  rows.push({ delta: -1, reason: "hold", item_id: "i1" }, { delta: 1, reason: "release", item_id: "i1" }, { delta: -1, reason: "spend", item_id: "i1" });
+  assert.equal(balanceOf(rows), 63);
+  assert.equal(poolLeft(rows, "plan"), 38, "spends come out of the plan grant first");
+  const next = add({ pool: "plan", credits: 40, ref: "in:2", rollover: false });
+  assert.equal(next.expired, 38);
+  assert.equal(balanceOf(rows), 65, "40 new + 25 pack; the 38 left over are gone");
+  add({ pool: "leadsub", credits: 100, ref: "in:3", rollover: false });
+  assert.equal(poolLeft(rows, "leadsub"), 100);
+  assert.equal(add({ pool: "leadsub", credits: 100, ref: "in:4", rollover: false }).expired, 100);
+  assert.equal(balanceOf(rows), 165);
+  assert.equal(add({ pool: "plan", credits: 40, ref: "in:5", rollover: true }).expired, 0, "rollover on: nothing expires");
+  assert.equal(balanceOf(rows), 205);
+  assert.equal(add({ pool: "leadsub", credits: 0, ref: "end:1", rollover: false }).expired, 100, "sub ended");
+  assert.equal(balanceOf(rows), 105);
 });

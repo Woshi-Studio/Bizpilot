@@ -42,6 +42,12 @@ export default function PrivacyPage() {
           website. We don&apos;t ask mail servers whether a mailbox exists.
         </li>
         <li>
+          People: a search for a person only works at the company they work for, and only finds
+          them where that company lists them as a business contact on its own website. We never
+          search personal social media or people-finder sites, and we don&apos;t keep people&apos;s
+          names in our shared records.
+        </li>
+        <li>
           Legal basis: business contact information used to reach people about their work. For
           Quebec, the EU and the UK we keep company-level contacts only (like info@).
         </li>

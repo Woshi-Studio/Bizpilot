@@ -223,3 +223,39 @@ export function parseCompletion(body: Obj): Completion {
 
   return { item_id, payload };
 }
+
+// "Find me customers": the new businesses the worker found on the map for a
+// discovery item. The database skips ones the user already has.
+export type Discovered = {
+  item_id: string;
+  payload: {
+    companies: { name: string; website: string | null; city: string | null; region: string | null; country: string | null; source_url: string }[];
+    note: string | null;
+  };
+};
+
+export function parseDiscovered(body: Obj): Discovered {
+  onlyKeys(body, ["item_id", "companies", "note"], "discovered");
+  const item_id = String(body.item_id ?? "");
+  if (!UUID_RE.test(item_id)) throw new WorkerInputError("item_id looks wrong");
+  const list = body.companies ?? [];
+  if (!Array.isArray(list) || list.length > 150) throw new WorkerInputError("companies must be a list of up to 150");
+  const companies = list.map((raw, i) => {
+    if (!isObj(raw)) throw new WorkerInputError(`companies[${i}] must be an object`);
+    onlyKeys(raw, ["name", "website", "city", "region", "country", "source_url", "category"], `companies[${i}]`);
+    const name = str(raw.name, 200, `companies[${i}].name`);
+    if (!name) throw new WorkerInputError(`companies[${i}].name is required`);
+    const country = str(raw.country, 2, `companies[${i}].country`);
+    if (country && !/^[A-Za-z]{2}$/.test(country)) throw new WorkerInputError(`companies[${i}].country looks wrong`);
+    str(raw.category, 60, `companies[${i}].category`);
+    return {
+      name,
+      website: httpUrl(raw.website, `companies[${i}].website`, false),
+      city: str(raw.city, 120, `companies[${i}].city`),
+      region: str(raw.region, 60, `companies[${i}].region`),
+      country: country ? country.toUpperCase() : null,
+      source_url: httpUrl(raw.source_url, `companies[${i}].source_url`, true) as string,
+    };
+  });
+  return { item_id, payload: { companies, note: str(body.note, 300, "note") } };
+}

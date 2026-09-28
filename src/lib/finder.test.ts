@@ -15,7 +15,9 @@ import {
   outreachTemplate,
   parseIntake,
   parseRemoval,
-  parseSearch,
+  kmToMiles,
+  milesToKm,
+  submitMode,
   phoneCheckText,
   safeHttpUrl,
   telHref,
@@ -40,15 +42,28 @@ const OWNER = "11111111-1111-4111-8111-111111111111";
 const BETA = "22222222-2222-4222-8222-222222222222";
 const OTHER = "33333333-3333-4333-8333-333333333333";
 
-test("access: owner, invited tester, everyone else", () => {
+test("access: owner, invited tester, and nobody else while the Finder is closed", () => {
   const env = { OWNER_BUSINESS_IDS: ` ${OWNER.toUpperCase()} , x`, FINDER_BETA_BUSINESS_IDS: `${BETA}` };
-  assert.equal(finderAccess(OWNER, env), "owner");
-  assert.equal(finderAccess(BETA, env), "beta");
-  assert.equal(finderAccess(OTHER, env), "none");
+  assert.equal(finderAccess(OWNER, env, "free"), "owner");
+  assert.equal(finderAccess(BETA, env, "free"), "full");
+  assert.equal(finderAccess(OTHER, env, "pro"), "none", "closed: even Boss waits");
   assert.equal(finderAccess("", env), "none");
   assert.equal(finderAccess(BETA, {}), "none", "no env = nobody");
   // The owner list wins over the beta list
   assert.equal(finderAccess(OWNER, { OWNER_BUSINESS_IDS: OWNER, FINDER_BETA_BUSINESS_IDS: OWNER }), "owner");
+});
+
+test("access when open: Starter and Hustle get locked results, Boss unlocked, owner unlimited", () => {
+  const env = { OWNER_BUSINESS_IDS: OWNER, FINDER_OPEN: "1" };
+  assert.equal(finderAccess(OTHER, env, "free"), "locked", "Starter");
+  assert.equal(finderAccess(OTHER, env, "premium"), "locked", "Hustle");
+  assert.equal(finderAccess(OTHER, env, "pro"), "full", "Boss");
+  assert.equal(finderAccess(OTHER, env, null), "locked", "unknown plan = Starter");
+  assert.equal(finderAccess(OWNER, env, "free"), "owner", "owner stays unlimited on any plan");
+  assert.equal(submitMode(finderAccess(OTHER, env, "free")), "locked");
+  assert.equal(submitMode(finderAccess(OTHER, env, "pro")), "full");
+  assert.equal(submitMode("none"), null);
+  assert.equal(finderAccess(OTHER, { FINDER_OPEN: "no" }, "pro"), "none");
 });
 
 test("beta credits: default 10, only 1..100", () => {
@@ -77,42 +92,51 @@ test("intake needs the business, the offer and the Acceptable Use tick", () => {
     fields({
       ...base,
       aup: "yes",
-      industries: ["Fitness", "Hacking"],
+      industries: ["fitness", "offices", "hacking"],
+      industry_other: "  dental labs ",
       company_sizes: ["2-10", "huge"],
       needs: ["email", "phone", "spam"],
-      radius_km: "15",
-      country: "ca",
+      radius_mi: "50",
+      area: "caus",
       target: "  cafés   near me ",
     })
   );
   assert.ok(ok.ok);
   if (!ok.ok) return;
-  assert.deepEqual(ok.value.industries, ["Fitness"]);
+  assert.deepEqual(ok.value.industries, ["fitness", "offices"]);
+  assert.equal(ok.value.industry_other, "dental labs");
   assert.deepEqual(ok.value.company_sizes, ["2-10"]);
   assert.deepEqual(ok.value.needs, ["email", "phone"]);
-  assert.equal(ok.value.radius_km, 15);
-  assert.equal(ok.value.country, "CA");
+  assert.equal(ok.value.radius_km, 80, "50 miles stored as 80 km");
+  assert.equal(ok.value.area, "CAUS");
+  assert.equal(ok.value.country, null, "Canada + USA sets no single country");
   assert.equal(ok.value.target, "cafés near me");
   assert.equal(ok.value.aup_version, AUP_VERSION);
-  const odd = parseIntake(fields({ ...base, aup: "yes", radius_km: "7", country: "ZZ" }));
-  assert.ok(odd.ok && odd.value.radius_km === null && odd.value.country === null);
+  const odd = parseIntake(fields({ ...base, aup: "yes", radius_mi: "7", area: "EU" }));
+  assert.ok(odd.ok && odd.value.radius_km === null, "N/A = whole area");
+  assert.ok(odd.ok && odd.value.area === "CA" && odd.value.country === "CA", "unknown area = Canada");
+  const us = parseIntake(fields({ ...base, aup: "yes", radius_mi: "200", area: "US" }));
+  assert.ok(us.ok && us.value.country === "US" && us.value.radius_km === 322);
   assert.ok(odd.ok && odd.value.needs.join() === "phone,website", "default needs");
   assert.equal(parseIntake(fields({ offer: "x", aup: "yes" })).ok, false);
 });
 
-test("search needs a name plus a city or a website", () => {
-  assert.equal(parseSearch(fields({ company: "Acme" })).ok, false);
-  assert.equal(parseSearch(fields({ city: "Toronto" })).ok, false);
-  assert.ok(parseSearch(fields({ company: "Acme", city: "Toronto" })).ok);
-  assert.ok(parseSearch(fields({ company: "Acme", website: "acme.ca" })).ok);
-  assert.ok(parseSearch(fields({ company: "Acme", website: "https://www.acme.ca/contact" })).ok);
-  assert.equal(parseSearch(fields({ company: "Acme", website: "javascript:alert(1)" })).ok, false);
-  assert.equal(parseSearch(fields({ company: "Acme", website: "not a site" })).ok, false);
+test("radius: miles in the form, km in the database", () => {
+  assert.equal(milesToKm("15"), 24);
+  assert.equal(milesToKm(50), 80);
+  assert.equal(milesToKm("200"), 322);
+  assert.equal(milesToKm(""), null);
+  assert.equal(milesToKm("7"), null);
+  assert.equal(kmToMiles(80), 50);
+  assert.equal(kmToMiles(15), 15, "old 15 km rows show as 15 miles, the closest");
+  assert.equal(kmToMiles(null), null);
 });
 
 test("database errors become plain words", () => {
   assert.equal(finderErrorKey('ERROR: finder:no_credits'), "no_credits");
-  assert.match(finderErrorMessage("finder:no_credits"), /out of Finder credits/);
+  assert.match(finderErrorMessage("finder:no_credits"), /out of lead credits/);
+  assert.match(finderErrorMessage("finder:upgrade"), /Upgrade to Boss/);
+  assert.match(finderErrorMessage("finder:locked_cap"), /free searches/);
   assert.equal(finderErrorKey("finder:unknown_thing"), null);
   assert.match(finderErrorMessage("boom"), /try again/);
 });
@@ -146,18 +170,26 @@ test("first-email template identifies the sender and offers an opt-out", () => {
   assert.match(t2.body, /\[your name\]/);
 });
 
-test("a locked result shows no contact values", () => {
+test("a locked result shows only the name, place and why (Starter / Hustle)", () => {
   const r: FinderResult = {
     id: "r", company_name: "Acme", website: "https://acme.ca", city: null, region: null, country: null, address: null,
     phone: "416", phone_checks: { valid: true }, email: "a@acme.ca", email_checks: {}, contact_form_url: "https://acme.ca/c",
-    source_urls: [], why: null, locked: true, last_checked_at: "2026-09-01", lead_id: null, created_at: "2026-09-01",
+    source_urls: ["https://acme.ca/contact"], why: "Plumber", locked: true, contact_name: "Jane Doe", last_checked_at: "2026-09-01", lead_id: null, created_at: "2026-09-01",
   };
   const v = visibleResult(r);
   assert.equal(v.phone, null);
   assert.equal(v.email, null);
   assert.equal(v.contact_form_url, null);
-  assert.equal(v.website, "https://acme.ca");
-  assert.equal(visibleResult({ ...r, locked: false }).phone, "416");
+  assert.equal(v.website, null, "website hidden");
+  assert.equal(v.address, null);
+  assert.deepEqual(v.source_urls, [], "source hidden");
+  assert.equal(v.contact_name, null, "contact name hidden");
+  assert.equal(v.company_name, "Acme");
+  assert.equal(v.why, "Plumber");
+  const open = visibleResult({ ...r, locked: false, contact_name: "Jane Doe" });
+  assert.equal(open.phone, "416", "Boss: unlocked");
+  assert.equal(open.website, "https://acme.ca");
+  assert.equal(open.contact_name, "Jane Doe");
 });
 
 test("remove-my-data form: bot guards, confirm tick, sane fields", () => {

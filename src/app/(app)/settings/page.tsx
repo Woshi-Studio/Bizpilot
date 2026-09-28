@@ -14,6 +14,9 @@ import ChangeEmailForm from "./change-email-form";
 import AssistantAccess, { type ApiKeyRow, type AuditRow } from "./assistant-access";
 import PlanSection from "./plan-section";
 import FinderWorkers, { type WorkerRow } from "./finder-workers";
+import FinderSection from "./finder-section";
+import { getFinderAccess, intakeFilled, loadCredits, loadLeadSub, loadProfile } from "@/lib/finder-server";
+import { canBuyLeadProducts, finderProductReady } from "@/lib/finder-plans";
 import { createAdminClient } from "@/lib/supabase/admin";
 import LineSettingsForm from "./line-settings-form";
 import TemplatesSection from "./templates-section";
@@ -33,6 +36,9 @@ const BILLING_MESSAGES: Record<string, string> = {
   error: "Something went wrong starting checkout. Please try again.",
   unconfigured: "Upgrades aren't switched on yet. Check back soon.",
   nocustomer: "No billing account found yet.",
+  leads_ok: "🎉 Thanks! Your lead subscription is on. The credits arrive in a minute.",
+  pack_ok: "🎉 Thanks! Your lead credits arrive in a minute.",
+  boss_only: "Lead subscriptions and packs come with Boss.",
 };
 
 const EMAIL_MESSAGES: Record<string, string> = {
@@ -128,6 +134,17 @@ export default async function SettingsPage({
   // Lead Finder worker keys: owner only, server-only table (0019).
   const finderWorkers = owner ? await loadFinderWorkers() : null;
 
+  // Lead Finder: credits + lead subscription (0020).
+  const finderAccess = business ? getFinderAccess(business) : "none";
+  const [finderCredits, leadSub, finderProfile] =
+    business && finderAccess !== "none"
+      ? await Promise.all([
+          loadCredits(supabase, business.id),
+          loadLeadSub(supabase, business.id),
+          loadProfile(supabase, business.id).then((r) => r.profile),
+        ])
+      : [null, null, null];
+
   const lineSettings = usedLines.map((l) =>
     settingsFor(l, savedLineSettings, business?.currency ?? "USD")
   );
@@ -160,6 +177,7 @@ export default async function SettingsPage({
     ["login", "Login email"],
     ["theme", "Theme"],
     ["plan", "Plan & usage"],
+    ...(finderAccess !== "none" ? [["lead-finder", "Lead Finder"]] : []),
     ...(showEmailCard ? [["sending", "Email sending"]] : []),
     ["assistant", "Assistant"],
     ...(owner ? [["finder-worker", "Finder worker"]] : []),
@@ -222,6 +240,24 @@ export default async function SettingsPage({
             billingReady={stripeConfigured()}
             tierReady={{ premium: tierConfigured("premium"), pro: tierConfigured("pro") }}
             message={billingMessage}
+          />
+        </div>
+      )}
+
+      {business && finderAccess !== "none" && (
+        <div className="mt-8">
+          <FinderSection
+            access={finderAccess}
+            canBuy={finderAccess === "full" && canBuyLeadProducts({ plan: business.plan, owner })}
+            credits={finderCredits}
+            sub={leadSub}
+            intakeFilled={intakeFilled(finderProfile)}
+            ready={{
+              leadsub: finderProductReady("leadsub", process.env),
+              pack25: finderProductReady("pack25", process.env),
+              pack100: finderProductReady("pack100", process.env),
+            }}
+            message={billing && ["leads_ok", "pack_ok", "boss_only"].includes(billing) ? billingMessage : null}
           />
         </div>
       )}

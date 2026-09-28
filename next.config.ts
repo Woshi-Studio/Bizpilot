@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
       { source: "/people", destination: "/customers", permanent: false },
       { source: "/work", destination: "/tasks", permanent: false },
       { source: "/ai", destination: "/messages", permanent: false },
+      // The Lead Finder's tab was "Found"; it is "Search leads" now.
+      { source: "/leads/found", destination: "/leads/search", permanent: false },
+      { source: "/leads/found/:path*", destination: "/leads/search/:path*", permanent: false },
     ];
   },
   experimental: {

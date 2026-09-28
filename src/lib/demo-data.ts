@@ -521,8 +521,10 @@ export function buildDemoData(): Record<string, Row[]> {
 
   const decisions: Row[] = [];
 
-  // Lead Finder (0019). DEMO_FINDER_EMPTY=1 shows the page before the intake.
+  // Lead Finder (0019/0020). DEMO_FINDER_EMPTY=1 shows the page before the
+  // intake; DEMO_FINDER_ACCESS=locked shows a Starter's locked results.
   const finderEmpty = process.env.DEMO_FINDER_EMPTY === "1";
+  const finderLocked = process.env.DEMO_FINDER_ACCESS === "locked";
   const fid = (n: number) => id("f1d", n);
   const finder_profiles: Row[] = finderEmpty ? [] : [
     {
@@ -532,15 +534,17 @@ export function buildDemoData(): Record<string, Row[]> {
       my_business: "Bright Harbor Studio",
       offer: "A simple website with online booking, set up in a week.",
       target: "Independent cafés and salons with no booking page",
-      industries: ["Restaurants & cafés", "Salons & beauty"],
+      industries: ["restaurants", "beauty"],
+      industry_other: null,
       company_sizes: ["solo", "2-10"],
       place: "Mississauga",
       radius_km: 15,
       province: "Ontario",
+      area: "CA",
       country: "CA",
       needs: ["phone", "website", "email"],
       exclude: "",
-      aup_version: "2026-09-27",
+      aup_version: "2026-09-27.2",
       aup_accepted_at: ts(-2),
       updated_at: ts(-2),
     },
@@ -552,20 +556,21 @@ export function buildDemoData(): Record<string, Row[]> {
   ].map((r, i) => ({
     id: fid(100 + i),
     business_id: B,
+    item_id: fid(210 + i),
     company_name: r[0],
-    website: r[1],
+    website: finderLocked ? null : r[1],
     city: r[2],
     region: r[3],
     country: "CA",
     address: null,
-    phone: r[4],
-    phone_checks: { valid: true, region: "CA", on_site: day(r[8] as number) },
-    email: r[5],
-    email_checks: r[5] ? { format: true, mx: true, on_site: day(r[8] as number), role: true } : null,
-    contact_form_url: r[6],
-    source_urls: [`${r[1]}/contact`],
+    phone: finderLocked ? null : r[4],
+    phone_checks: finderLocked ? null : { valid: true, region: "CA", on_site: day(r[8] as number) },
+    email: finderLocked ? null : r[5],
+    email_checks: !finderLocked && r[5] ? { format: true, mx: true, on_site: day(r[8] as number), role: true } : null,
+    contact_form_url: finderLocked ? null : r[6],
+    source_urls: finderLocked ? [] : [`${r[1]}/contact`],
     why: r[7],
-    locked: false,
+    locked: finderLocked,
     last_checked_at: ts(r[8] as number),
     lead_id: r[9],
     created_at: ts(r[8] as number),
@@ -580,13 +585,24 @@ export function buildDemoData(): Record<string, Row[]> {
       ],
     },
     { id: fid(202), job_id: fid(302), business_id: B, company: "Lakeview Tailors", city: "Mississauga", website: null, status: "not_found", candidates: null, note: "no website found", created_at: ts(-1) },
+    // the items behind the results; the first was a person search
+    { id: fid(210), job_id: fid(310), business_id: B, company: "Harbourfront Hair Co.", city: "Mississauga", website: null, status: "found", query_kind: "person", person: "Dana Whitfield", candidates: null, note: null, created_at: ts(-1) },
+    { id: fid(211), job_id: fid(311), business_id: B, company: "Maple Leaf Plumbing", city: "Oakville", website: null, status: "found", query_kind: "company", person: null, candidates: null, note: null, created_at: ts(-40) },
+    { id: fid(212), job_id: fid(312), business_id: B, company: "cornergrind.example", city: null, website: "cornergrind.example", status: "found", query_kind: "domain", person: null, candidates: null, note: null, created_at: ts(-120) },
   ];
 
   return {
     finder_profiles,
     finder_results,
     finder_job_items,
-    finder_credit_ledger: [],
+    finder_credit_ledger: finderEmpty || finderLocked ? [] : [
+      { business_id: B, delta: 40, reason: "grant", note: "plan", item_id: null, created_at: ts(-10) },
+      { business_id: B, delta: 25, reason: "grant", note: "pack", item_id: null, created_at: ts(-5) },
+      { business_id: B, delta: -3, reason: "spend", note: null, item_id: null, created_at: ts(-1) },
+    ],
+    finder_lead_subs: finderEmpty || finderLocked ? [] : [
+      { business_id: B, stripe_subscription_id: "sub_demo", status: "active", credits: 100, current_period_end: ts(18), cancel_at_period_end: false, updated_at: ts(-10) },
+    ],
     finder_bounce_reports: [],
     businesses,
     profiles,

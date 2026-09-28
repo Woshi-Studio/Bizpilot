@@ -28,14 +28,51 @@ function day(iso: string) {
   return iso.slice(0, 10);
 }
 
+// What a locked card shows in place of the contacts: fixed shapes, never
+// the real values (the server never sends them).
+const LOCKED_ROWS = [
+  ["Phone", "(000) 000-0000"],
+  ["Email", "hello@business.example"],
+  ["Website", "www.business.example"],
+  ["Contact", "Name Surname"],
+] as const;
+
+function LockedContacts({ canUnlock }: { canUnlock: boolean }) {
+  return (
+    <div className="mt-3 rounded-xl border border-line/70 bg-surface-2 p-3">
+      <dl className="grid gap-2 text-sm sm:grid-cols-2" aria-hidden>
+        {LOCKED_ROWS.map(([label, shape]) => (
+          <div key={label} className="min-w-0">
+            <dt className="text-xs font-medium text-muted">{label}</dt>
+            <dd className="select-none truncate font-medium text-ink blur-[5px]">{shape}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-2 text-xs text-muted">Source: hidden</p>
+      {canUnlock ? (
+        <p className="mt-3 text-sm text-muted">This result is no longer available.</p>
+      ) : (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <Link href="/settings#plan" className="btn-primary btn-sm">
+            Upgrade to Boss to unlock
+          </Link>
+          <span className="text-xs text-muted">Saved here: it unlocks when you upgrade.</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ResultCard({
   result,
   sender,
   reportedStatus,
+  canUnlock = false,
 }: {
   result: FinderResult;
   sender: { name: string | null; business: string; offer: string | null };
   reportedStatus: string | null;
+  canUnlock?: boolean;
 }) {
   const r = visibleResult(result);
   const [addState, addAction, adding] = useActionState(addFoundToLeads, initial);
@@ -73,11 +110,16 @@ export default function ResultCard({
       {r.why && <p className="mt-3 text-sm text-ink-2">{r.why}</p>}
 
       {r.locked ? (
-        <p className="mt-3 rounded-lg bg-surface-2 px-3 py-2 text-sm text-muted">
-          Contacts are hidden until you unlock this result.
-        </p>
+        <LockedContacts canUnlock={canUnlock} />
       ) : (
         <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+          {r.contact_name && (
+            <div className="min-w-0">
+              <dt className="text-xs font-medium text-muted">Contact</dt>
+              <dd className="font-medium text-ink">{r.contact_name}</dd>
+              <dd className="text-xs text-muted">Listed on their own website</dd>
+            </div>
+          )}
           {r.phone && (
             <div className="min-w-0">
               <dt className="text-xs font-medium text-muted">Phone</dt>
@@ -115,7 +157,7 @@ export default function ResultCard({
         </dl>
       )}
 
-      {sources.length > 0 && (
+      {!r.locked && sources.length > 0 && (
         <p className="mt-3 truncate text-xs text-muted">
           Source:{" "}
           <a href={sources[0]} target="_blank" rel="noopener noreferrer nofollow" className="link">

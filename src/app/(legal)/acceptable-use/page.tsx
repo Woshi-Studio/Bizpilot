@@ -41,12 +41,20 @@ export default function AcceptableUsePage() {
         build another database.
       </p>
 
-      <h2>5. No harassment or fraud</h2>
+      <h2>5. Business contacts only, never people-searching</h2>
+      <p>
+        You can look up a person only at the business they work for, and we only find them where
+        that business lists them as a contact on its own website. Don&apos;t use the Lead Finder to
+        find someone&apos;s personal details, home address or private accounts. We never search
+        personal social media or people-finder sites.
+      </p>
+
+      <h2>6. No harassment or fraud</h2>
       <p>
         No threats, no misleading claims, no pretending to be someone else, and nothing illegal.
       </p>
 
-      <h2>6. What happens if the rules are broken</h2>
+      <h2>7. What happens if the rules are broken</h2>
       <p>
         We may suspend the account, and unused credits are lost. Repeated spam complaints about an
         account lead to suspension.

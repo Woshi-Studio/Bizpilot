@@ -7,6 +7,7 @@ import {
   looksLikeWorkerKey,
   parseClaim,
   parseCompletion,
+  parseDiscovered,
   parseHeartbeat,
   parseLookup,
 } from "@/lib/finder-worker";
@@ -17,6 +18,8 @@ import {
 //   heartbeat  {item_ids: [...]}       -> keeps claimed items (15-min timeout)
 //   complete   {item_id, outcome, ...} -> saves what was found, settles credits
 //   lookup     {website? | name, city?} -> what the knowledge base already has
+//   discovered {item_id, companies[]}  -> "Find me customers": new businesses
+//                                         found for a discovery item (0020)
 //
 // Security model (same pattern as the agent API):
 // - Only HMAC(AGENT_KEY_PEPPER, key) is stored; revoked keys fail.
@@ -138,6 +141,23 @@ export async function POST(request: Request, { params }: { params: Promise<{ act
         await audit(true, { item: item_id, outcome: payload.outcome });
         return reply(200, { ok: true, data });
       }
+      case "discovered": {
+        const { item_id, payload } = parseDiscovered(body);
+        const { data, error } = await db.rpc("finder_worker_discovered", {
+          p_worker: workerId,
+          p_item: item_id,
+          p_payload: payload,
+        });
+        if (error) {
+          if (/finder:not_yours/.test(error.message)) {
+            await audit(false, { item: item_id, error: "not yours" });
+            return reply(409, { ok: false, error: "that item is not a discovery run claimed by this worker" });
+          }
+          throw new Error(error.message);
+        }
+        await audit(true, { item: item_id, companies: payload.companies.length });
+        return reply(200, { ok: true, data });
+      }
       case "lookup": {
         const q = parseLookup(body);
         const { data, error } = await db.rpc("finder_worker_lookup", {
@@ -151,7 +171,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ act
       }
       default:
         await audit(false, { error: "unknown action" });
-        return reply(404, { ok: false, error: "unknown action; use claim, heartbeat, complete or lookup" });
+        return reply(404, { ok: false, error: "unknown action; use claim, heartbeat, complete, discovered or lookup" });
     }
   } catch (err) {
     if (err instanceof WorkerInputError) {

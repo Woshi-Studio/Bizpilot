@@ -9,6 +9,7 @@ import {
   looksLikeWorkerKey,
   parseClaim,
   parseCompletion,
+  parseDiscovered,
   parseHeartbeat,
   parseLookup,
 } from "./finder-worker.ts";
@@ -111,4 +112,22 @@ test("completion: not found, failed and ambiguous", () => {
     () => parseCompletion({ item_id: ITEM, outcome: "ambiguous", candidates: [{ name: "A", website: "ftp://a" }, { name: "B" }] }),
     /http\(s\) link/
   );
+});
+
+test("discovered: new businesses need a name and a source link; nothing else gets through", () => {
+  const id = "11111111-1111-4111-8111-111111111111";
+  const ok = parseDiscovered({
+    item_id: id,
+    companies: [
+      { name: "KW Widgets", website: "https://kwwidgets.example", city: "Kitchener", country: "ca", source_url: "https://www.openstreetmap.org/node/1", category: "manufacturing" },
+      { name: "No Site Co", source_url: "https://www.openstreetmap.org/way/2" },
+    ],
+  });
+  assert.equal(ok.payload.companies.length, 2);
+  assert.equal(ok.payload.companies[0].country, "CA");
+  assert.equal(ok.payload.companies[1].website, null);
+  assert.throws(() => parseDiscovered({ item_id: id, companies: [{ name: "x" }] }), /source_url is required/);
+  assert.throws(() => parseDiscovered({ item_id: id, companies: [{ name: "x", source_url: "https://a.example", email: "a@b.c" }] }), /unknown field email/);
+  assert.throws(() => parseDiscovered({ item_id: id, companies: [{ name: "x", website: "javascript:alert(1)", source_url: "https://a.example" }] }), /http/);
+  assert.throws(() => parseDiscovered({ item_id: "nope", companies: [] }), /item_id/);
 });

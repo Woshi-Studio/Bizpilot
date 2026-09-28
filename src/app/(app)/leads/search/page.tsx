@@ -1,8 +1,13 @@
 import Link from "next/link";
 import { requireUserAndBusiness } from "@/lib/data";
 import { creditLine } from "@/lib/finder-credits";
+import { AUP_VERSION, areaCountry, industryLabel } from "@/lib/finder";
+import { DISCOVER_DEFAULT_COUNT, LOCKED_SEARCHES_PER_DAY } from "@/lib/finder-plans";
+import FindCustomers from "./find-customers";
 import {
+  canDiscover,
   getFinderAccess,
+  intakeFilled,
   loadFinderPage,
   loadProfile,
   pendingItems,
@@ -12,10 +17,10 @@ import SearchForm from "./search-form";
 import ResultCard from "./result-card";
 import { pickCandidate } from "./actions";
 
-export const metadata = { title: "Found" };
+export const metadata = { title: "Search for leads" };
 
 function PendingItem({ item }: { item: FinderItem }) {
-  const where = [item.city, item.website].filter(Boolean).join(" · ");
+  const where = [item.person ? `${item.person} at` : null, item.city, item.website].filter(Boolean).join(" · ");
   if (item.status === "ambiguous" && item.candidates?.length) {
     return (
       <li className="card p-4">
@@ -45,8 +50,13 @@ function PendingItem({ item }: { item: FinderItem }) {
       </li>
     );
   }
+  const discover = item.query_kind === "discover";
   const label =
-    item.status === "queued" || item.status === "working"
+    discover && (item.status === "queued" || item.status === "working")
+      ? "Looking for new matching companies: usually within 1 hour."
+      : discover
+        ? item.note ?? "No new matching companies this time."
+        : item.status === "queued" || item.status === "working"
       ? "Researching: usually within 1 hour, at most 24 hours."
       : item.status === "not_found"
         ? "Not found. No charge."
@@ -64,18 +74,18 @@ function PendingItem({ item }: { item: FinderItem }) {
   );
 }
 
-export default async function FoundPage() {
+export default async function SearchLeadsPage() {
   const { supabase, business, user } = await requireUserAndBusiness();
-  const access = getFinderAccess(business.id);
+  const access = getFinderAccess(business);
 
   if (access === "none") {
     return (
       <div className="mx-auto max-w-6xl">
-        <h1 className="page-title">Found</h1>
-        <p className="page-sub">Companies the Lead Finder found for you.</p>
+        <h1 className="page-title">Search for leads</h1>
+        <p className="page-sub">Find a business and the right way to reach it.</p>
         <div className="mt-6 card-empty p-6 text-sm">
-          <p className="font-medium text-ink">The Lead Finder is invite-only while we test it.</p>
-          <p className="mt-1">Type a company name and get its phone, website and contact form. It opens to everyone soon.</p>
+          <p className="font-medium text-ink">The Lead Finder opens soon.</p>
+          <p className="mt-1">Type a company, a website, an email or a phone number and get the business&apos;s phone, website and contact form.</p>
         </div>
       </div>
     );
@@ -83,17 +93,17 @@ export default async function FoundPage() {
 
   const [{ profile, ready }, page, { data: me }] = await Promise.all([
     loadProfile(supabase, business.id),
-    loadFinderPage(supabase, business.id),
+    loadFinderPage(supabase, business.id, access),
     supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
   ]);
 
   if (!ready || !page.ready) {
     return (
       <div className="mx-auto max-w-6xl">
-        <h1 className="page-title">Found</h1>
+        <h1 className="page-title">Search for leads</h1>
         <p className="mt-6 alert-warn">
           {access === "owner"
-            ? "Not set up yet: run migration 0019 in Supabase first."
+            ? "Not set up yet: run migrations 0019 and 0020 in Supabase first."
             : "The Lead Finder isn't switched on yet. Please check back soon."}
         </p>
       </div>
@@ -101,47 +111,65 @@ export default async function FoundPage() {
   }
 
   const unlimited = access === "owner";
+  const locked = access === "locked";
   const pending = pendingItems(page.items);
-  const canSearch = !!profile && (unlimited || page.balance > 0);
-  const note = !profile
-    ? "Fill in \"What are you hunting?\" first. It takes a minute."
-    : unlimited || page.balance > 0
-      ? "Type the name and a city or their website. Known companies show at once (1 credit)."
-      : "You're out of Finder credits. Invited testers get more from us: reply to your invite.";
+  const outOfCredits = access === "full" && page.balance <= 0;
+  const note = locked
+    ? `Free search (${LOCKED_SEARCHES_PER_DAY} a day): you see the company, city and why it fits. Boss unlocks the phone, email, website and source.`
+    : outOfCredits
+      ? "You're out of lead credits. Get more in Settings → Lead Finder."
+      : "Known companies show at once (1 credit). Not found = no charge.";
 
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="page-title">Found</h1>
+          <h1 className="page-title">Search for leads</h1>
           <p className="page-sub">
-            Companies we found for you. They join your leads only when you tap Add to leads, so they
-            don&apos;t count toward your plan until then.
+            Find a business and the right way to reach it. Results join your leads only when you tap
+            Add to leads, so they don&apos;t count toward your plan until then.
           </p>
         </div>
-        <Link href="/leads/found/hunt" className="btn-secondary btn-sm">
-          {profile ? "Edit what you're hunting" : "What are you hunting?"}
-        </Link>
+        {!locked && (
+          <p className="inline-flex rounded-full border border-line/70 bg-surface px-3 py-1 text-xs font-medium text-ink-2">
+            {creditLine(page.balance, page.held, unlimited)}
+          </p>
+        )}
+        {locked && (
+          <Link href="/settings#plan" className="btn-primary btn-sm">
+            Upgrade to Boss to unlock
+          </Link>
+        )}
       </div>
 
-      <p className="mt-4 inline-flex rounded-full border border-line/70 bg-surface px-3 py-1 text-xs font-medium text-ink-2">
-        {creditLine(page.balance, page.held, unlimited)}
-      </p>
-
-      {!profile && (
-        <div className="mt-6 rounded-2xl border border-accent/40 bg-accent-soft p-5">
-          <p className="text-sm font-semibold text-accent-text">Start here</p>
-          <p className="mt-1 text-sm text-ink-2">
-            Tell us your business, your offer and who you want to reach. One minute, once.
-          </p>
-          <Link href="/leads/found/hunt" className="btn-primary btn-sm mt-3">
-            What are you hunting?
+      <div className="mt-6">
+        <SearchForm
+          disabled={outOfCredits}
+          note={note}
+          needsAup={!profile || profile.aup_version !== AUP_VERSION}
+          defaultCountry={areaCountry(profile?.area) ?? profile?.country ?? "CA"}
+          intakeFilled={intakeFilled(profile)}
+        />
+        {outOfCredits && (
+          <Link href="/settings#lead-finder" className="btn-secondary btn-sm mt-3">
+            Get more lead credits
           </Link>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="mt-6">
-        <SearchForm disabled={!canSearch} note={note} />
+        <FindCustomers
+          ready={canDiscover(profile)}
+          summary={
+            profile
+              ? [...(profile.industries ?? []).map(industryLabel), ...(profile.industry_other ? [profile.industry_other] : [])]
+                  .slice(0, 3)
+                  .join(", ") || null
+              : null
+          }
+          count={DISCOVER_DEFAULT_COUNT}
+          locked={locked}
+        />
       </div>
 
       {pending.length > 0 && (
@@ -170,7 +198,7 @@ export default async function FoundPage() {
         <h2 className="section-title">Results</h2>
         {page.results.length === 0 ? (
           <p className="mt-3 card-empty p-6 text-center text-sm">
-            Nothing yet. Search for a company above.
+            Nothing yet. Search for a business above.
           </p>
         ) : (
           <ul className="mt-3 grid gap-4 lg:grid-cols-2">
@@ -178,6 +206,7 @@ export default async function FoundPage() {
               <ResultCard
                 key={r.id}
                 result={r}
+                canUnlock={!locked}
                 reportedStatus={page.reported.get(r.id) ?? null}
                 sender={{
                   name: (me as { full_name?: string | null } | null)?.full_name ?? null,
@@ -193,7 +222,8 @@ export default async function FoundPage() {
       <p className="mt-8 text-xs text-muted">
         We check, we don&apos;t guarantee: format, mail server and &quot;still on their
         website&quot; for emails; format and &quot;listed on their website&quot; for phones. A
-        bounce or wrong number reported within 30 days gets the credit back.{" "}
+        bounce or wrong number reported within 30 days gets the credit back. People are only found
+        where their own business lists them.{" "}
         <Link href="/data-sources" className="link">Where the data comes from</Link> ·{" "}
         <Link href="/acceptable-use" className="link">Acceptable Use</Link>
       </p>

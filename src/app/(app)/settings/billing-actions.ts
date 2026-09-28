@@ -11,6 +11,7 @@ import {
   tierConfigured,
 } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { finderPriceId } from "@/lib/finder-plans";
 
 type Stripe = ReturnType<typeof getStripe>;
 
@@ -104,8 +105,13 @@ export async function startCheckout(formData: FormData) {
     const run = async (customer: string): Promise<string> => {
       // Already paying (e.g. Premium -> Pro)? A second checkout would make
       // a second subscription, so switch plans in the Stripe portal instead.
-      const existing = await stripe.subscriptions.list({ customer, status: "active", limit: 1 });
-      if (existing.data.length > 0) {
+      // (The Lead Finder's lead subscription doesn't count: it's not a plan.)
+      const existing = await stripe.subscriptions.list({ customer, status: "active", limit: 10 });
+      const leadPrice = finderPriceId("leadsub", process.env);
+      const planSubs = existing.data.filter(
+        (s) => !s.items.data.some((i) => leadPrice && i.price?.id === leadPrice) && s.metadata?.kind !== "finder_leadsub"
+      );
+      if (planSubs.length > 0) {
         const portal = await stripe.billingPortal.sessions.create({
           customer,
           return_url: `${siteUrl()}/settings`,

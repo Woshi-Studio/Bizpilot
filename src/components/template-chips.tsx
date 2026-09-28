@@ -1,11 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { fillTemplate, mergeTemplates, type SavedTemplate, type TemplateLang, type TemplateVars } from "@/lib/templates";
 import { listTemplates } from "@/app/(app)/templates/actions";
 
 // One-click message starters (free, no AI). Filled with the contact's
-// name, the business, amounts and dates. Edit them in Settings → Templates.
+// name, the business, amounts and dates. Edit them in AI → Templates.
 export default function TemplateChips({
   vars,
   onPick,
@@ -39,7 +40,12 @@ export default function TemplateChips({
   return (
     <div className={className}>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-xs font-semibold text-ink-2">Quick start (free)</p>
+        <p className="text-xs font-semibold text-ink-2">
+          Quick start (free){" "}
+          <Link href="/messages/templates" className="link ml-1 font-medium">
+            Manage templates
+          </Link>
+        </p>
         <div className="flex gap-1 text-[11px]" role="group" aria-label="Template language">
           {(["en", "fr"] as const).map((l) => (
             <button

@@ -40,7 +40,7 @@ export async function createApiKey(
   const { supabase, business } = await requireUserAndBusiness();
 
   if (!canUseAssistant(business)) {
-    return { error: "Assistant access comes with Hustle and Boss. Upgrade in Settings → Plan." };
+    return { error: "Assistant access comes with Hustle and Boss. Upgrade in Settings → Plans." };
   }
 
   const pepper = getPepper();

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { saveLineSettings, type SettingsState } from "./actions";
+import { saveLineSettings, type SettingsState } from "@/app/(app)/settings/actions";
 import { CURRENCIES, TAX_PRESETS, type LineSettings } from "@/lib/line-settings";
 import { lineLabel } from "@/lib/business-lines";
 

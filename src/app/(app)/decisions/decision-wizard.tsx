@@ -93,7 +93,7 @@ function AiAdvicePanel({
             decision history.
           </p>
           <Link
-            href="/settings"
+            href="/plans"
             className="mt-2 inline-block rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500"
           >
             See plans

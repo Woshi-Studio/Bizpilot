@@ -204,9 +204,9 @@ export function ThemePicker({ plan, unlimited }: { plan: Plan; unlimited: boolea
           ) : (
             <Link
               key={t.id}
-              href="#plan"
+              href="/plans"
               className={`${cls} opacity-80 hover:opacity-100`}
-              title={`${t.label} comes with Hustle — see plans below`}
+              title={`${t.label} comes with Hustle — see Plans`}
             >
               {tile}
             </Link>

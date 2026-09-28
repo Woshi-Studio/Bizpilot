@@ -14,7 +14,7 @@ import { getFinderAccess, intakeFilled, loadProfile } from "@/lib/finder-server"
 //            paid session (webhook: checkout.session.completed).
 // The form sends only the product name; the price id is read here.
 
-const BACK = "/settings";
+const BACK = "/plans";
 
 function isRedirect(err: unknown) {
   const d = (err as { digest?: string } | null)?.digest;
@@ -48,7 +48,7 @@ export async function buyLeadProduct(formData: FormData) {
       // Already subscribed? Manage it in the portal instead of a second one.
       const existing = await stripe.subscriptions.list({ customer, price, status: "active", limit: 1 });
       if (existing.data.length > 0) {
-        url = (await stripe.billingPortal.sessions.create({ customer, return_url: `${siteUrl()}/settings#lead-finder` })).url;
+        url = (await stripe.billingPortal.sessions.create({ customer, return_url: `${siteUrl()}/plans#lead-finder` })).url;
       } else {
         const session = await stripe.checkout.sessions.create({
           mode: "subscription",
@@ -57,8 +57,8 @@ export async function buyLeadProduct(formData: FormData) {
           line_items: [{ price, quantity: 1 }],
           metadata: { kind: "finder_leadsub", business_id: business.id },
           subscription_data: { metadata: { kind: "finder_leadsub", business_id: business.id } },
-          success_url: `${siteUrl()}/settings?billing=leads_ok#lead-finder`,
-          cancel_url: `${siteUrl()}/settings?billing=cancelled#lead-finder`,
+          success_url: `${siteUrl()}/plans?billing=leads_ok#lead-finder`,
+          cancel_url: `${siteUrl()}/plans?billing=cancelled#lead-finder`,
         });
         if (!session.url) redirect(`${BACK}?billing=error#lead-finder`);
         url = session.url;
@@ -70,8 +70,8 @@ export async function buyLeadProduct(formData: FormData) {
         client_reference_id: business.id,
         line_items: [{ price, quantity: 1 }],
         metadata: { kind: "finder_pack", business_id: business.id, product },
-        success_url: `${siteUrl()}/settings?billing=pack_ok#lead-finder`,
-        cancel_url: `${siteUrl()}/settings?billing=cancelled#lead-finder`,
+        success_url: `${siteUrl()}/plans?billing=pack_ok#lead-finder`,
+        cancel_url: `${siteUrl()}/plans?billing=cancelled#lead-finder`,
       });
       if (!session.url) redirect(`${BACK}?billing=error#lead-finder`);
       url = session.url;

@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { mergeTemplates, type SavedTemplate, type Template, type TemplateLang } from "@/lib/templates";
-import { resetTemplate, saveTemplate, type TemplateState } from "../templates/actions";
+import { resetTemplate, saveTemplate, type TemplateState } from "@/app/(app)/templates/actions";
 import { EditButton, RowActionForm } from "@/components/row-actions";
 
 const initial: TemplateState = {};
@@ -32,7 +32,7 @@ function TemplateForm({ t, lang, onDone }: { t?: Template; lang: TemplateLang; o
   );
 }
 
-// Settings > Templates: change the built-in quick templates or add your own.
+// AI > Templates: change the built-in quick templates or add your own.
 export default function TemplatesSection({ saved }: { saved: SavedTemplate[] }) {
   const [lang, setLang] = useState<TemplateLang>("en");
   const [editing, setEditing] = useState<string | null>(null);

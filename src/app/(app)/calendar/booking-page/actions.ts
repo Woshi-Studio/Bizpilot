@@ -42,8 +42,8 @@ function dbError(message: string | undefined, owner: boolean): string {
 }
 
 function revalidate() {
-  revalidatePath("/settings/booking");
-  revalidatePath("/settings");
+  revalidatePath("/calendar/booking-page");
+  revalidatePath("/calendar");
   revalidatePath("/dashboard");
   revalidatePath("/calendar");
 }
@@ -307,7 +307,7 @@ export async function publishBookingPage(zoneHint?: string): Promise<PublishResu
       const msg = dbError(error.message, owner);
       if (!/taken|reserved/.test(msg)) return { ok: false, error: msg };
     }
-    if (!saved) return { ok: false, error: "Couldn't find a free link name. Pick one in Settings → Booking." };
+    if (!saved) return { ok: false, error: "Couldn't find a free link name. Pick one in Calendar → Booking page." };
     slug = saved;
     created.push(`the link /book/${slug}`, "Mon–Fri 9:00–17:00 hours");
   }

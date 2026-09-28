@@ -67,7 +67,7 @@ export default async function BookingsPage({ searchParams }: { searchParams: Pro
         </div>
         <div className="flex flex-wrap gap-2">
           <CopyBookingLink url={link} />
-          <Link href="/settings/booking" className="btn-ghost btn-sm">
+          <Link href="/calendar/booking-page" className="btn-ghost btn-sm">
             Booking settings
           </Link>
         </div>

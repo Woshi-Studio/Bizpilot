@@ -111,7 +111,7 @@ Feature guide:
 ${guide}
 - Every contact page has a sticky action bar: Add invoice, Send invoice, Send email, Write message (AI), Book meeting, Add task, Upload file. Below it: key facts, the Timeline, Documents.
 - Themes (Clean, Dark, Woshi Neon, Retro): Settings → Theme. Neon and Retro come with Hustle and Boss. The moon button in the top bar flips light/dark.
-- Plans: Starter (free), Hustle ($5 every 4 weeks), Boss ($15 every 4 weeks). Settings → Plan shows limits and usage.
+- Plans: Starter (free), Hustle ($5 every 4 weeks), Boss ($15 every 4 weeks). Settings → Plans shows the plans; Settings shows usage.
 - Sending email straight from Jephelen isn't on for every plan. If there's no Send button, use Copy or "Open in my email", which opens their own email app with the message filled in.
 - The "?" button in the top bar replays the welcome tour.
 

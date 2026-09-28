@@ -16,7 +16,7 @@ import BookingSettingsForm from "./booking-settings-form";
 import MeetingTypes from "./meeting-types";
 import LogoForm from "./logo-form";
 
-export const metadata = { title: "Booking" };
+export const metadata = { title: "Booking page" };
 
 export default async function BookingSettingsPage() {
   const { supabase, business } = await requireUserAndBusiness();
@@ -76,10 +76,7 @@ export default async function BookingSettingsPage() {
 
   return (
     <div className="mx-auto max-w-4xl">
-      <Link href="/settings" className="text-sm text-muted hover:text-ink">
-        ← Settings
-      </Link>
-      <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="page-title">Booking page</h1>
           <p className="page-sub">
@@ -120,7 +117,7 @@ export default async function BookingSettingsPage() {
             <b>Booking links come with Hustle</b> (1 link, $5 every 4 weeks) and <b>Boss</b> (unlimited). You&apos;re on{" "}
             {PLAN_LABELS[plan]}: you can set everything up now and switch it on after upgrading.
           </p>
-          <Link href="/settings#plan" className="btn-primary btn-sm mt-3">
+          <Link href="/plans" className="btn-primary btn-sm mt-3">
             See plans
           </Link>
         </div>

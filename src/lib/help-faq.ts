@@ -89,19 +89,19 @@ export const FAQ: FaqEntry[] = [
   {
     id: "upgrade",
     q: "How do I upgrade my plan?",
-    a: "Go to **Settings → Plan** and press **Upgrade** on **Hustle** ($5 every 4 weeks) or **Boss** ($15 every 4 weeks). You pay with a card on a secure page.",
+    a: "Go to **Settings → Plans** and press **Upgrade** on **Hustle** ($5 every 4 weeks) or **Boss** ($15 every 4 weeks). You pay with a card on a secure page.",
     keys: [["upgrade", "hustle", "boss plan", "pricing", "my plan", "subscribe", "premium", "how much does", "paid plan", "more customers"]],
   },
   {
     id: "cancel",
     q: "How do I cancel or change my plan?",
-    a: "Go to **Settings → Plan** and press **Manage billing**. There you can switch plans, update your card or cancel. You keep your data.",
+    a: "Go to **Settings → Plans** and press **Manage billing**. There you can switch plans, update your card or cancel. You keep your data.",
     keys: [["cancel", "downgrade", "stop", "change", "switch"], ["plan", "subscription", "billing", "paying", "card"]],
   },
   {
     id: "limits",
     q: "What are the plan limits?",
-    a: "**Starter** (free): 10 customers + leads, 5 invoices every 4 weeks, 50 MB of files. **Hustle** ($5): 150, 50 invoices, 1 GB, 50 emails a day. **Boss** ($15): no limits on contacts or invoices, 10 GB, 200 emails a day. See **Settings → Plan** for your usage.",
+    a: "**Starter** (free): 10 customers + leads, 5 invoices every 4 weeks, 50 MB of files. **Hustle** ($5): 150, 50 invoices, 1 GB, 50 emails a day. **Boss** ($15): no limits on contacts or invoices, 10 GB, 200 emails a day. See **Settings → Plans** for the full list and **Settings** for your usage.",
     keys: [["limit", "limits", "usage", "allowed", "maximum", "max", "how many"]],
   },
   {
@@ -155,13 +155,13 @@ export const FAQ: FaqEntry[] = [
   {
     id: "public-page",
     q: "How do I get a public page for my business?",
-    a: "Go to **Settings → Public page**, turn it on and pick your link. Visitors can send you a request there and it lands in **People → Leads**.",
+    a: "Go to **People → Public page**, turn it on and pick your link. Visitors can send you a request there and it lands in **People → Leads**.",
     keys: [["public page", "public", "booking page", "lead form", "my page", "business page"]],
   },
   {
     id: "payment-methods",
     q: "How do customers pay me?",
-    a: "Add how you get paid (Zelle, PayPal, bank, …) in **Settings → Payments**. They print on your invoices so customers know how to pay.",
+    a: "Add how you get paid (Zelle, PayPal, bank, …) in **Money → Payments**. They print on your invoices so customers know how to pay.",
     keys: [["zelle", "paypal", "payment method", "payments", "get paid", "pay me", "venmo", "cash app"]],
   },
   {

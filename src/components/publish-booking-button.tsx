@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import Icon from "@/components/icons";
 import BookingLinkBox from "@/components/booking-link-box";
-import { publishBookingPage, type PublishResult } from "@/app/(app)/settings/booking/actions";
+import { publishBookingPage, type PublishResult } from "@/app/(app)/calendar/booking-page/actions";
 
 function browserZone() {
   try {
@@ -64,7 +64,7 @@ export default function PublishBookingButton({ note }: { note?: string | null })
         <p className="alert-error mt-2 text-sm">
           {result.error}{" "}
           {result.upgrade && (
-            <Link href="/settings#plan" className="link">
+            <Link href="/plans" className="link">
               See plans
             </Link>
           )}
@@ -100,8 +100,8 @@ export default function PublishBookingButton({ note }: { note?: string | null })
             {result.created && result.created.length > 0 && (
               <p className="mt-4 rounded-xl bg-surface-2 p-3 text-xs text-ink-2">
                 Set up for you: {result.created.join(" · ")}. Change it any time in{" "}
-                <Link href="/settings/booking" className="link" onClick={() => setResult(null)}>
-                  Settings → Booking
+                <Link href="/calendar/booking-page" className="link" onClick={() => setResult(null)}>
+                  Calendar → Booking page
                 </Link>
                 .
               </p>

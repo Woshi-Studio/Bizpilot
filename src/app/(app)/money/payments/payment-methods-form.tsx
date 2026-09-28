@@ -3,7 +3,7 @@
 import { useActionState, useRef, useEffect, useState } from "react";
 import { DeleteButton } from "@/components/row-actions";
 import type { PaymentMethod } from "@/lib/types";
-import { addPaymentMethod, deletePaymentMethod, type SettingsState } from "./actions";
+import { addPaymentMethod, deletePaymentMethod, type SettingsState } from "@/app/(app)/settings/actions";
 
 const initialState: SettingsState = {};
 

@@ -98,7 +98,7 @@ export async function updatePublicPage(
     return { error: error.message };
   }
 
-  revalidatePath("/settings");
+  revalidatePath("/leads/public-page");
   revalidatePath("/leads");
   return { success: "Public page saved." };
 }
@@ -132,7 +132,7 @@ export async function addPaymentMethod(
     return { error: error.message };
   }
 
-  revalidatePath("/settings");
+  revalidatePath("/money/payments");
   revalidatePath("/invoices/new");
   return { success: "Payment method added." };
 }
@@ -149,7 +149,7 @@ export async function deletePaymentMethod(formData: FormData) {
     .eq("id", id)
     .eq("business_id", business.id);
 
-  revalidatePath("/settings");
+  revalidatePath("/money/payments");
   revalidatePath("/invoices/new");
 }
 
@@ -191,7 +191,7 @@ export async function saveLineSettings(
         : error.message,
     };
   }
-  revalidatePath("/settings");
+  revalidatePath("/money/payments");
   revalidatePath("/invoices/new");
   return { success: `${line} saved.` };
 }

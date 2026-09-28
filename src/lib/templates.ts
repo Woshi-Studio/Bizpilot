@@ -1,6 +1,6 @@
 // Quick templates: free, no AI. Chips that fill a subject + message with
 // the contact's name, the business, amounts and dates. Users can change
-// them or add their own (Settings → Templates, message_templates, 0017).
+// them or add their own (AI → Templates, message_templates, 0017).
 // Pure (no imports) so `npm test` can load it (templates.test.ts).
 
 export type TemplateLang = "en" | "fr";

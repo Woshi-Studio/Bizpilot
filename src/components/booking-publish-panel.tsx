@@ -2,7 +2,7 @@ import BookingLinkBox from "@/components/booking-link-box";
 import PublishBookingButton from "@/components/publish-booking-button";
 import type { MyBookingState } from "@/lib/booking-server";
 
-// Top of Calendar and Settings → Booking.
+// Top of Calendar and Calendar → Booking page.
 //   Not live yet -> the big "Publish booking page" button.
 //   Live         -> "Your booking link: <url> [Copy] [Open]".
 export default function BookingPublishPanel({ state, children }: { state: MyBookingState; children?: React.ReactNode }) {

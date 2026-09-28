@@ -387,7 +387,7 @@ export default function InvoiceForm({
       ) : (
         <p className="mt-6 text-xs text-muted">
           Add how you get paid (Interac e-Transfer, bank transfer, PayPal) in{" "}
-          <a href="/settings#payments" className="link">Settings → Payments</a> and tick them here.
+          <a href="/money/payments" className="link">Money → Payments</a> and tick them here.
         </p>
       )}
 

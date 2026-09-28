@@ -1,45 +1,20 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { stripeConfigured, tierConfigured } from "@/lib/stripe";
 import { getAiCredits, isOwnerBusiness } from "@/lib/ai-quota";
 import { getPlanState } from "@/lib/plan-limits";
-import { normalizePlanValue, PLAN_LIMITS } from "@/lib/plans";
+import { PLAN_LABELS, normalizePlanValue, PLAN_LIMITS } from "@/lib/plans";
 import { emailNote, emailStatus } from "@/lib/email";
 import { ThemePicker } from "@/components/theme";
 import SettingsForm from "./settings-form";
-import PublicPageForm from "./public-page-form";
-import PaymentMethodsForm from "./payment-methods-form";
 import ChangeEmailForm from "./change-email-form";
 import AssistantAccess, { type ApiKeyRow, type AuditRow } from "./assistant-access";
 import PlanSection from "./plan-section";
 import FinderWorkers, { type WorkerRow } from "./finder-workers";
-import FinderSection from "./finder-section";
-import { getFinderAccess, intakeFilled, loadCredits, loadLeadSub, loadProfile } from "@/lib/finder-server";
-import { canBuyLeadProducts, finderProductReady } from "@/lib/finder-plans";
 import { createAdminClient } from "@/lib/supabase/admin";
-import LineSettingsForm from "./line-settings-form";
-import TemplatesSection from "./templates-section";
-import CopyBookingLink from "@/components/copy-booking-link";
-import { myBookingLink } from "@/lib/booking-server";
-import { listTemplates } from "../templates/actions";
-import { loadBusinessLines } from "@/lib/activities";
-import { loadLineSettings } from "@/lib/services-data";
-import { settingsFor } from "@/lib/line-settings";
-import type { Business, PaymentMethod } from "@/lib/types";
+import type { Business } from "@/lib/types";
 
 export const metadata = { title: "Settings" };
-
-const BILLING_MESSAGES: Record<string, string> = {
-  success: "🎉 Thanks for upgrading! Your new plan is on its way.",
-  cancelled: "Checkout cancelled — no charge was made.",
-  error: "Something went wrong starting checkout. Please try again.",
-  unconfigured: "Upgrades aren't switched on yet. Check back soon.",
-  nocustomer: "No billing account found yet.",
-  leads_ok: "🎉 Thanks! Your lead subscription is on. The credits arrive in a minute.",
-  pack_ok: "🎉 Thanks! Your lead credits arrive in a minute.",
-  boss_only: "Lead subscriptions and packs come with Boss.",
-};
 
 const EMAIL_MESSAGES: Record<string, string> = {
   partial:
@@ -47,18 +22,22 @@ const EMAIL_MESSAGES: Record<string, string> = {
   changed: "Your login email is updated.",
 };
 
-// What each person sees here (see PLANS-THEMES.md "Who sees what"):
-//   everyone: Profile, Login email, Theme, Plan & usage
+// Settings holds only true settings (the owner's ruling, 2026-09-27):
+//   everyone: Profile, Login email, Theme, Your plan (one line) + Usage
 //   Hustle / Boss / owner: Email sending, Assistant access
 //   Starter: a locked Assistant access teaser; no Email sending card
-//   owner only: "Owner · no limits", setup hints that name settings
+//   owner only: the Lead Finder worker
+// Moved out: plans + Lead Finder credits -> /plans; payment methods and
+// invoice settings -> Money -> Payments; booking page -> Calendar; public
+// page -> People; quick templates -> AI -> Templates. Old URLs redirect.
 export default async function SettingsPage({
   searchParams,
 }: {
   searchParams: Promise<{ billing?: string; email?: string }>;
 }) {
   const { billing, email: emailParam } = await searchParams;
-  const billingMessage = billing ? BILLING_MESSAGES[billing] ?? null : null;
+  // Stripe used to send people back here: send them to Plans.
+  if (billing) redirect(`/plans?billing=${encodeURIComponent(billing)}`);
   const emailMessage = emailParam ? EMAIL_MESSAGES[emailParam] ?? null : null;
   const supabase = await createClient();
   const {
@@ -76,98 +55,41 @@ export default async function SettingsPage({
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
-  const business = businessRow as (Business & {
-    slug?: string | null;
-    public_page_enabled?: boolean | null;
-    tagline?: string | null;
-    services?: string | null;
-  }) | null;
+  const business = businessRow as Business | null;
 
   const owner = business ? isOwnerBusiness(business.id) : false;
   const plan = normalizePlanValue(business?.plan);
   const paidFeatures = owner || plan !== "free";
 
-  const [
-    { data: profile },
-    paymentMethodsResult,
-    planState,
-    ai,
-    keysResult,
-    auditResult,
-    usedLines,
-    savedLineSettings,
-    savedTemplates,
-    bookingLink,
-  ] = await Promise.all([
-      supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
-      business
-        ? supabase
-            .from("payment_methods")
-            .select("*")
-            .eq("business_id", business.id)
-            .order("position")
-        : Promise.resolve({ data: null, error: null }),
-      business ? getPlanState(supabase, business) : Promise.resolve(null),
-      business ? getAiCredits(supabase, business) : Promise.resolve(null),
-      // Assistant access (migration 0016). Tolerate the tables not existing yet.
-      business && paidFeatures
-        ? supabase
-            .from("api_keys")
-            .select("id, name, key_prefix, scopes, created_at, last_used_at, revoked_at")
-            .eq("business_id", business.id)
-            .order("created_at", { ascending: false })
-            .limit(50)
-        : Promise.resolve(null),
-      business && paidFeatures
-        ? supabase
-            .from("agent_audit")
-            .select("id, key_id, action, result, ok, created_at")
-            .eq("business_id", business.id)
-            .order("created_at", { ascending: false })
-            .limit(50)
-        : Promise.resolve(null),
-      business ? loadBusinessLines(supabase, business.id) : Promise.resolve([] as string[]),
-      business ? loadLineSettings(supabase, business.id) : Promise.resolve([]),
-      business ? listTemplates() : Promise.resolve([]),
-      business ? myBookingLink(supabase, business) : Promise.resolve(null),
-    ]);
+  const [{ data: profile }, planState, ai, keysResult, auditResult] = await Promise.all([
+    supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
+    business ? getPlanState(supabase, business) : Promise.resolve(null),
+    business ? getAiCredits(supabase, business) : Promise.resolve(null),
+    // Assistant access (migration 0016). Tolerate the tables not existing yet.
+    business && paidFeatures
+      ? supabase
+          .from("api_keys")
+          .select("id, name, key_prefix, scopes, created_at, last_used_at, revoked_at")
+          .eq("business_id", business.id)
+          .order("created_at", { ascending: false })
+          .limit(50)
+      : Promise.resolve(null),
+    business && paidFeatures
+      ? supabase
+          .from("agent_audit")
+          .select("id, key_id, action, result, ok, created_at")
+          .eq("business_id", business.id)
+          .order("created_at", { ascending: false })
+          .limit(50)
+      : Promise.resolve(null),
+  ]);
   // Lead Finder worker keys: owner only, server-only table (0019).
   const finderWorkers = owner ? await loadFinderWorkers() : null;
-
-  // Lead Finder: credits + lead subscription (0020).
-  const finderAccess = business ? getFinderAccess(business) : "none";
-  const [finderCredits, leadSub, finderProfile] =
-    business && finderAccess !== "none"
-      ? await Promise.all([
-          loadCredits(supabase, business.id),
-          loadLeadSub(supabase, business.id),
-          loadProfile(supabase, business.id).then((r) => r.profile),
-        ])
-      : [null, null, null];
-
-  const lineSettings = usedLines.map((l) =>
-    settingsFor(l, savedLineSettings, business?.currency ?? "USD")
-  );
 
   const agentReady = !!keysResult && !keysResult.error;
   const apiKeys = agentReady ? ((keysResult.data ?? []) as ApiKeyRow[]) : [];
   const agentAudit =
     auditResult && !auditResult.error ? ((auditResult.data ?? []) as AuditRow[]) : [];
-
-  const paymentMethods = paymentMethodsResult.error
-    ? []
-    : ((paymentMethodsResult.data ?? []) as PaymentMethod[]);
-
-  // Public-page columns ship in migration 0007 — tolerate their absence
-  const publicPage =
-    business && "slug" in business
-      ? {
-          enabled: business.public_page_enabled ?? false,
-          slug: business.slug ?? "",
-          tagline: business.tagline ?? "",
-          services: business.services ?? "",
-        }
-      : null;
 
   const send = business ? emailStatus(business) : null;
   const showEmailCard = owner || PLAN_LIMITS[plan].email !== 0;
@@ -177,21 +99,15 @@ export default async function SettingsPage({
     ["login", "Login email"],
     ["theme", "Theme"],
     ["plan", "Plan & usage"],
-    ...(finderAccess !== "none" ? [["lead-finder", "Lead Finder"]] : []),
     ...(showEmailCard ? [["sending", "Email sending"]] : []),
     ["assistant", "Assistant"],
     ...(owner ? [["finder-worker", "Finder worker"]] : []),
-    ["booking", "Booking"],
-    ["public", "Public page"],
-    ["payments", "Payments"],
-    ["lines", "Invoice settings"],
-    ["templates", "Templates"],
   ] as [string, string][];
 
   return (
     <div className="mx-auto max-w-6xl [&>*]:max-w-4xl">
       <h1 className="page-title">Settings</h1>
-      <p className="page-sub">Your profile, look, plan and business details.</p>
+      <p className="page-sub">Your profile, login, look and what you&apos;ve used.</p>
 
       <nav aria-label="Settings sections" className="mt-5 flex flex-wrap gap-2">
         {jump.map(([id, label]) => (
@@ -234,31 +150,25 @@ export default async function SettingsPage({
 
       {planState && (
         <div className="mt-8">
-          <PlanSection
-            state={planState}
-            ai={ai}
-            billingReady={stripeConfigured()}
-            tierReady={{ premium: tierConfigured("premium"), pro: tierConfigured("pro") }}
-            message={billingMessage}
-          />
-        </div>
-      )}
-
-      {business && finderAccess !== "none" && (
-        <div className="mt-8">
-          <FinderSection
-            access={finderAccess}
-            canBuy={finderAccess === "full" && canBuyLeadProducts({ plan: business.plan, owner })}
-            credits={finderCredits}
-            sub={leadSub}
-            intakeFilled={intakeFilled(finderProfile)}
-            ready={{
-              leadsub: finderProductReady("leadsub", process.env),
-              pack25: finderProductReady("pack25", process.env),
-              pack100: finderProductReady("pack100", process.env),
-            }}
-            message={billing && ["leads_ok", "pack_ok", "boss_only"].includes(billing) ? billingMessage : null}
-          />
+          <div className="card flex flex-wrap items-center justify-between gap-3 p-5">
+            <p className="text-sm text-ink-2">
+              Your plan: <span className="font-semibold text-ink">{PLAN_LABELS[plan]}</span>
+              {owner ? " · Owner, no limits" : ""}
+            </p>
+            <Link href="/plans" className="btn-secondary btn-sm">
+              Plans &amp; billing →
+            </Link>
+          </div>
+          <div className="mt-5">
+            <PlanSection
+              part="usage"
+              state={planState}
+              ai={ai}
+              billingReady={false}
+              tierReady={{ premium: false, pro: false }}
+              message={null}
+            />
+          </div>
         </div>
       )}
 
@@ -295,7 +205,7 @@ export default async function SettingsPage({
               Let an assistant (a chat bot or a helper on your computer) add customers, leads,
               tasks and meetings for you with a private key.
             </p>
-            <Link href="#plan" className="btn-primary btn-sm mt-4">
+            <Link href="/plans" className="btn-primary btn-sm mt-4">
               See Hustle
             </Link>
           </div>
@@ -308,50 +218,13 @@ export default async function SettingsPage({
         </div>
       )}
 
-      {business && (
-        <section id="booking" className="card mt-8 scroll-mt-24 p-6">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="section-title">📅 Booking page</h2>
-              <p className="mt-1 text-sm text-muted">
-                Your own booking link (instead of Calendly): weekly hours, meeting types, questions,
-                reminders and Google Calendar busy times.
-                {bookingLink ? "" : " Not switched on yet."}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <CopyBookingLink url={bookingLink} />
-              <Link href="/settings/booking" className="btn-primary btn-sm">
-                Booking settings
-              </Link>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {publicPage && (
-        <div id="public" className="mt-8 scroll-mt-24">
-          <PublicPageForm defaults={publicPage} />
-        </div>
-      )}
-
-      {business && (
-        <div id="payments" className="mt-8 scroll-mt-24">
-          <PaymentMethodsForm methods={paymentMethods} />
-        </div>
-      )}
-
-      {business && (
-        <div className="mt-8">
-          <LineSettingsForm settings={lineSettings} />
-        </div>
-      )}
-
-      {business && (
-        <div className="mt-8">
-          <TemplatesSection saved={savedTemplates} />
-        </div>
-      )}
+      <p className="mt-8 text-sm text-muted">
+        Looking for something else?{" "}
+        <Link href="/calendar/booking-page" className="link">Booking page</Link> ·{" "}
+        <Link href="/leads/public-page" className="link">Public page</Link> ·{" "}
+        <Link href="/money/payments" className="link">Payments &amp; invoice settings</Link> ·{" "}
+        <Link href="/messages/templates" className="link">Email templates</Link>
+      </p>
     </div>
   );
 }

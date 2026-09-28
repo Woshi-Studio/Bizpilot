@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
-import { updatePublicPage, type SettingsState } from "./actions";
+import { updatePublicPage, type SettingsState } from "@/app/(app)/settings/actions";
 
 const initialState: SettingsState = {};
 

@@ -1,4 +1,4 @@
-// The app's navigation: 6 groups instead of 18 sidebar links.
+// The app's navigation: 7 groups instead of 18 sidebar links.
 // Every old URL still works — the groups only decide what the sidebar,
 // the mobile tab bar and the page tabs show.
 
@@ -33,6 +33,18 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Customers", href: "/customers" },
       { label: "Leads", href: "/leads" },
       { label: "Search leads", href: "/leads/search" },
+      { label: "Public page", href: "/leads/public-page" },
+    ],
+  },
+  {
+    key: "calendar",
+    label: "Calendar",
+    icon: "calendar",
+    href: "/calendar",
+    pages: [
+      { label: "Calendar", href: "/calendar" },
+      { label: "Bookings", href: "/bookings" },
+      { label: "Booking page", href: "/calendar/booking-page" },
     ],
   },
   {
@@ -40,11 +52,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Work",
     icon: "work",
     href: "/tasks",
-    pages: [
-      { label: "Tasks", href: "/tasks" },
-      { label: "Calendar", href: "/calendar" },
-      { label: "Bookings", href: "/bookings" },
-    ],
+    pages: [{ label: "Tasks", href: "/tasks" }],
   },
   {
     key: "money",
@@ -53,6 +61,7 @@ export const NAV_GROUPS: NavGroup[] = [
     href: "/invoices",
     pages: [
       { label: "Invoices", href: "/invoices" },
+      { label: "Payments", href: "/money/payments" },
       { label: "Time & Billing", href: "/time" },
       { label: "Pricing", href: "/services" },
       { label: "In & Out", href: "/money" },
@@ -67,6 +76,7 @@ export const NAV_GROUPS: NavGroup[] = [
     href: "/messages",
     pages: [
       { label: "Messages", href: "/messages" },
+      { label: "Templates", href: "/messages/templates" },
       { label: "Coach", href: "/coach" },
       { label: "Decision Guard", href: "/decisions" },
       { label: "Launchpad", href: "/launchpad" },
@@ -77,7 +87,10 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Settings",
     icon: "settings",
     href: "/settings",
-    pages: [{ label: "Settings", href: "/settings" }],
+    pages: [
+      { label: "Settings", href: "/settings" },
+      { label: "Plans", href: "/plans" },
+    ],
   },
 ];
 
@@ -103,9 +116,14 @@ export const PAGE_HELP: Record<string, string> = {
   "/customers": "People > Customers: search the list; click a name to open their one-page profile with every action on top.",
   "/leads": "People > Leads: log outreach, change lead status, turn a lead into a customer with 'Add to customers'.",
   "/leads/search": "People > Search leads: the Lead Finder. Type a company name, a website, a business email, a phone number or a person's name at a company (city optional) to get the business's phone, website and contact form; tap Add to leads to keep one. 'What are you hunting?' is optional.",
+  "/leads/public-page": "People > Public page: your public page with a contact form; new requests become leads.",
+  "/bookings": "Calendar > Bookings: everyone who booked through your booking page; mark Attended or No-show, cancel, copy your booking link.",
+  "/calendar/booking-page": "Calendar > Booking page: your booking link name, weekly hours, time zone, notice, buffers, meeting types, questions, logo, Google Calendar busy times, and Publish.",
+  "/money/payments": "Money > Payments: the payment methods you accept (Interac, bank transfer, PayPal...) and each business line's currency, tax and due days for invoices.",
+  "/messages/templates": "AI > Templates: the quick email templates (English and French); change a built-in or add your own. They show up in Send email.",
+  "/plans": "Settings > Plans: what Starter, Hustle and Boss include, the Lead Finder rules, lead subscription and packs; upgrade, switch or cancel.",
   "/tasks": "Work > Tasks: add a task at the top, then move it through To Do, In Progress, Review and Done.",
-  "/calendar": "Work > Calendar: month or week view of tasks, follow-ups, invoices due and meetings; book a meeting from the form.",
-  "/bookings": "Work > Bookings: everyone who booked through your booking page; mark Attended or No-show, cancel, copy your booking link.",
+  "/calendar": "Calendar: month or week view of tasks, follow-ups, invoices due and meetings; book a meeting from the form.",
   "/invoices": "Money > Invoices: create invoices and quotes, mark them sent or paid, print or save as PDF.",
   "/time": "Money > Time & Billing: log hours per customer and task, then bill them on an invoice.",
   "/services": "Money > Pricing: your services and rates, used when you build invoices.",
@@ -116,6 +134,5 @@ export const PAGE_HELP: Record<string, string> = {
   "/coach": "AI > Coach: ask business questions; it knows your numbers.",
   "/decisions": "AI > Decision Guard: run a big decision through a short checklist before you commit.",
   "/launchpad": "AI > Launchpad: build and rewrite a simple business plan.",
-  "/settings/booking": "Settings > Booking: your booking link name, weekly hours, time zone, notice, buffers, meeting types, questions, logo, Google Calendar busy times.",
-  "/settings": "Settings: business profile, booking page, public page, payment methods, plan & billing, email, appearance (light/dark).",
+  "/settings": "Settings: your profile, login email, theme, what you've used on your plan, email sending, assistant access. Plans, payments, booking and templates have their own pages.",
 };

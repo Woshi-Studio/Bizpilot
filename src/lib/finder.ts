@@ -305,7 +305,7 @@ export function parseRemoval(body: Record<string, unknown>, now = Date.now()): O
 // ------------------------------------------------------------------
 
 const FINDER_ERRORS: Record<string, string> = {
-  no_credits: "You're out of lead credits. Get more in Settings → Lead Finder.",
+  no_credits: "You're out of lead credits. Get more in Settings → Plans.",
   no_profile: "Tick the Acceptable Use box first.",
   bad_input: "Something in the search didn't look right. Check what you typed.",
   upgrade: "Upgrade to Boss to unlock this result.",

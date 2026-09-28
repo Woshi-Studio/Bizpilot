@@ -9,6 +9,7 @@ const PUBLIC_PATHS = [
   "/forgot-password",
   "/auth",
   "/terms",
+  "/pricing",
   "/privacy",
   "/acceptable-use",
   "/data-sources",

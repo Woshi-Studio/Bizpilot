@@ -66,7 +66,7 @@ async function createAndSaveCustomer(
   });
   const admin = createAdminClient();
   if (!admin) {
-    redirect("/settings?billing=unconfigured");
+    redirect("/plans?billing=unconfigured");
   }
   const { error: saveError } = await admin
     .from("businesses")
@@ -85,10 +85,10 @@ async function createAndSaveCustomer(
 export async function startCheckout(formData: FormData) {
   const tier = formData.get("tier");
   if (!isPaidTier(tier)) {
-    redirect("/settings?billing=error");
+    redirect("/plans?billing=error");
   }
   if (!tierConfigured(tier)) {
-    redirect("/settings?billing=unconfigured");
+    redirect("/plans?billing=unconfigured");
   }
 
   const { user, business } = await requireUserAndBusiness();
@@ -114,7 +114,7 @@ export async function startCheckout(formData: FormData) {
       if (planSubs.length > 0) {
         const portal = await stripe.billingPortal.sessions.create({
           customer,
-          return_url: `${siteUrl()}/settings`,
+          return_url: `${siteUrl()}/plans`,
         });
         return portal.url;
       }
@@ -123,12 +123,12 @@ export async function startCheckout(formData: FormData) {
         customer,
         client_reference_id: business.id,
         line_items: [{ price: priceIdFor(tier), quantity: 1 }],
-        success_url: `${siteUrl()}/settings?billing=success`,
-        cancel_url: `${siteUrl()}/settings?billing=cancelled`,
+        success_url: `${siteUrl()}/plans?billing=success`,
+        cancel_url: `${siteUrl()}/plans?billing=cancelled`,
         subscription_data: { metadata: { business_id: business.id, tier } },
       });
       if (!session.url) {
-        redirect("/settings?billing=error");
+        redirect("/plans?billing=error");
       }
       return session.url;
     };
@@ -148,7 +148,7 @@ export async function startCheckout(formData: FormData) {
     // (redirect() throws internally, so let its signal pass through.)
     if (isRedirect(err)) throw err;
     logStripeError("checkout", err);
-    redirect("/settings?billing=error");
+    redirect("/plans?billing=error");
   }
 
   redirect(checkoutUrl);
@@ -157,7 +157,7 @@ export async function startCheckout(formData: FormData) {
 // Opens the Stripe billing portal so a customer can cancel or update card.
 export async function openBillingPortal() {
   if (!stripeConfigured()) {
-    redirect("/settings?billing=unconfigured");
+    redirect("/plans?billing=unconfigured");
   }
 
   const { user, business } = await requireUserAndBusiness();
@@ -165,14 +165,14 @@ export async function openBillingPortal() {
     .stripe_customer_id;
 
   if (!customerId) {
-    redirect("/settings?billing=nocustomer");
+    redirect("/plans?billing=nocustomer");
   }
 
   let portalUrl: string;
   try {
     const stripe = getStripe();
     const open = async (customer: string) =>
-      (await stripe.billingPortal.sessions.create({ customer, return_url: `${siteUrl()}/settings` })).url;
+      (await stripe.billingPortal.sessions.create({ customer, return_url: `${siteUrl()}/plans` })).url;
     try {
       portalUrl = await open(customerId);
     } catch (err) {
@@ -183,7 +183,7 @@ export async function openBillingPortal() {
   } catch (err) {
     if (isRedirect(err)) throw err;
     logStripeError("portal", err);
-    redirect("/settings?billing=error");
+    redirect("/plans?billing=error");
   }
 
   redirect(portalUrl);

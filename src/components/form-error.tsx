@@ -19,7 +19,7 @@ export default function FormError({
       className={`alert-info flex flex-wrap items-center justify-between gap-3 ${className}`}
     >
       <span>{error}</span>
-      <Link href="/settings#plan" className="btn-primary btn-sm">
+      <Link href="/plans" className="btn-primary btn-sm">
         Upgrade
       </Link>
     </div>

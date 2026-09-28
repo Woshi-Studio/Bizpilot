@@ -56,7 +56,25 @@ How it's enforced:
   reset it.
 - Existing data over a limit stays; only new rows are refused.
 
-## Who sees what in Settings
+## Where things live (nav cleanup, 2026-09-27)
+
+Sidebar: **Home · People · Calendar · Work · Money · AI · Settings** (the phone bar has all 7).
+
+| Thing | Now | Old link (redirects) |
+|---|---|---|
+| Plan cards, Upgrade / Manage billing, Lead Finder credits, lead sub, packs | **Settings → Plans** `/plans` (+ public `/pricing`, no prices while `SHOW_PUBLIC_PRICES` is false) | `/settings#plan`, `/settings/plan` |
+| Booking page setup, meeting types, Publish, "Your booking link" | **Calendar → Booking page** `/calendar/booking-page` | `/settings/booking` |
+| Bookings list | **Calendar → Bookings** `/bookings` | same |
+| Payment methods, invoice settings (currency, tax, due days) | **Money → Payments** `/money/payments` | `/settings/payments`, `/payments` |
+| Public page | **People → Public page** `/leads/public-page` | `/settings/public-page` |
+| Quick templates | **AI → Templates** `/messages/templates`; "Manage templates" in every Send email box and on Messages | `/settings/templates`, `/templates` |
+| Settings | Profile, Login email, Theme, "Your plan: X → Plans & billing", Usage meters, Email sending, Assistant access, Lead Finder worker (owner) | |
+
+Stripe now returns people to `/plans` (an old `/settings?billing=...` link is forwarded there).
+The welcome tour has 7 steps (Calendar got its own). Screenshots: `..\UI-PREVIEW\nav-cleanup\`.
+The table below is the old Settings layout, kept for history.
+
+## Who sees what in Settings (before the nav cleanup)
 
 | Section | Starter | Hustle | Boss | Owner |
 |---|---|---|---|---|

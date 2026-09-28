@@ -1,3 +1,4 @@
+import Link from "next/link";
 import AiCreditMeter from "@/components/ai-credit-meter";
 import { requireUserAndBusiness } from "@/lib/data";
 import { aiConfigured } from "@/lib/ai";
@@ -53,7 +54,10 @@ export default async function MessagesPage({
     <div className="mx-auto max-w-6xl">
       <h1 className="page-title">AI Messages</h1>
       <p className="page-sub">
-        Follow-ups, payment reminders, quotes — written for you, ready to send.
+        Follow-ups, payment reminders, quotes — written for you, ready to send.{" "}
+        <Link href="/messages/templates" className="link">
+          Manage templates
+        </Link>
       </p>
 
       {!aiConfigured() && (

@@ -40,7 +40,7 @@ export async function saveTemplate(_prev: TemplateState, formData: FormData): Pr
   if (error) {
     return { error: /message_templates/.test(error.message) ? "Templates need a quick database update (migration 0017)." : error.message };
   }
-  revalidatePath("/settings");
+  revalidatePath("/messages/templates");
   return { success: "Saved.", savedAt: Date.now() };
 }
 
@@ -51,5 +51,5 @@ export async function resetTemplate(formData: FormData) {
   if (!key) return;
   const { supabase, business } = await requireUserAndBusiness();
   await supabase.from("message_templates").delete().eq("business_id", business.id).eq("key", key).eq("lang", lang);
-  revalidatePath("/settings");
+  revalidatePath("/messages/templates");
 }

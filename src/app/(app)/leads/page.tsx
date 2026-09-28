@@ -90,10 +90,10 @@ export default async function LeadsPage({
               Your public page is off, so inbound leads won&apos;t come in
               automatically. Turn it on in{" "}
               <Link
-                href="/settings"
+                href="/leads/public-page"
                 className="link"
               >
-                Settings
+                People → Public page
               </Link>
               . You can still log outreach manually below.
             </p>

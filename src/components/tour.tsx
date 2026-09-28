@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { firstContactHref, markTourDone } from "@/app/(app)/profile-actions";
 
-// The welcome tour: 6 short steps with a spotlight and a tooltip.
+// The welcome tour: 7 short steps with a spotlight and a tooltip.
 // Starts by itself on first login (profiles.tour_done_at is empty); the
 // "?" button in the top bar replays it (it fires TOUR_EVENT).
 // No package: plain DOM measuring + a fixed overlay.
@@ -38,14 +38,19 @@ const STEPS: Step[] = [
     fallback: "Add your first customer in People. Their page has a bar to email them, add an invoice or book a meeting in one tap.",
   },
   {
+    target: "nav-calendar",
+    title: "Calendar",
+    body: "Your meetings and what's coming up. Bookings and your booking page live here too.",
+  },
+  {
     target: "nav-work",
-    title: "Work and Calendar",
-    body: "Your to-do list and your calendar. Book meetings and see what's coming up.",
+    title: "Work",
+    body: "Your to-do list: add a task, then move it along until it's done.",
   },
   {
     target: "nav-money",
     title: "Money",
-    body: "Invoices, quotes, income and expenses. See who owes you and send reminders.",
+    body: "Invoices, quotes, payments, income and expenses. See who owes you and send reminders.",
   },
   {
     target: "athena",

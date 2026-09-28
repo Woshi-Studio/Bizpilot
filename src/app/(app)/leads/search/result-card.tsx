@@ -53,7 +53,7 @@ function LockedContacts({ canUnlock }: { canUnlock: boolean }) {
         <p className="mt-3 text-sm text-muted">This result is no longer available.</p>
       ) : (
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <Link href="/settings#plan" className="btn-primary btn-sm">
+          <Link href="/plans" className="btn-primary btn-sm">
             Upgrade to Boss to unlock
           </Link>
           <span className="text-xs text-muted">Saved here: it unlocks when you upgrade.</span>

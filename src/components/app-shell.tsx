@@ -212,7 +212,7 @@ export default function AppShell({
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-line/70 bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-md print:hidden lg:hidden"
       >
-        <div className="grid grid-cols-6">
+        <div className="grid grid-cols-7">
           {NAV_GROUPS.map((g) => {
             const active = group?.key === g.key;
             return (
@@ -221,12 +221,12 @@ export default function AppShell({
                 href={g.href}
                 data-tour={`nav-${g.key}`}
                 aria-current={active ? "page" : undefined}
-                className={`flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors ${
+                className={`flex min-w-0 flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition-colors ${
                   active ? "text-accent" : "text-muted"
                 }`}
               >
                 <span
-                  className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors ${
+                  className={`flex h-7 w-10 items-center justify-center rounded-full transition-colors ${
                     active ? "bg-accent-soft" : ""
                   }`}
                 >

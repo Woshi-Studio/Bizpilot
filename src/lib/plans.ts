@@ -15,6 +15,11 @@ export const PLAN_LABELS: Record<Plan, string> = {
   pro: "Boss",
 };
 
+// The public /pricing page shows prices only when this is true (the owner's
+// rule so far: no prices on public pages; "free to start"). In the app,
+// /plans always shows them.
+export const SHOW_PUBLIC_PRICES = false;
+
 // USD, every 4 weeks.
 export const PLAN_PRICES: Record<Plan, number> = { free: 0, premium: 5, pro: 15 };
 

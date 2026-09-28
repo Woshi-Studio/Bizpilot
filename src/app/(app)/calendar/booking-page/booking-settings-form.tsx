@@ -267,7 +267,7 @@ export default function BookingSettingsForm({
         <p className="alert-error text-sm">
           {state.error}{" "}
           {state.upgrade && (
-            <Link href="/settings#plan" className="link">
+            <Link href="/plans" className="link">
               Upgrade
             </Link>
           )}

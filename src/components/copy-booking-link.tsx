@@ -19,7 +19,7 @@ export default function CopyBookingLink({
   const [copied, setCopied] = useState(false);
   if (!url) {
     return (
-      <Link href="/settings/booking" className={className}>
+      <Link href="/calendar/booking-page" className={className}>
         <Icon name="calendar" className="h-4 w-4" />
         Set up my booking page
       </Link>

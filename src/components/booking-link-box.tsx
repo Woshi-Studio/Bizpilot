@@ -8,7 +8,7 @@ import { copyText } from "@/lib/copy-text";
 // always there, so the link can be copied by hand if the browser blocks
 // the Copy button (tap the box: the whole link is selected).
 //   big: inside the "Your page is live" popup
-//   bar: the thin strip at the top of Calendar / Settings → Booking
+//   bar: the thin strip at the top of Calendar / Calendar → Booking page
 export default function BookingLinkBox({ url, variant = "bar" }: { url: string; variant?: "big" | "bar" }) {
   const box = useRef<HTMLInputElement & HTMLTextAreaElement>(null);
   const [state, setState] = useState<"idle" | "copied" | "manual">("idle");

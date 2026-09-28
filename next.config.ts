@@ -11,6 +11,16 @@ const nextConfig: NextConfig = {
       // The Lead Finder's tab was "Found"; it is "Search leads" now.
       { source: "/leads/found", destination: "/leads/search", permanent: false },
       { source: "/leads/found/:path*", destination: "/leads/search/:path*", permanent: false },
+      // Settings holds only true settings now; the rest moved where it's used.
+      { source: "/settings/booking", destination: "/calendar/booking-page", permanent: false },
+      { source: "/settings/booking/:path*", destination: "/calendar/booking-page/:path*", permanent: false },
+      { source: "/settings/plan", destination: "/plans", permanent: false },
+      { source: "/settings/payments", destination: "/money/payments", permanent: false },
+      { source: "/settings/templates", destination: "/messages/templates", permanent: false },
+      { source: "/settings/public-page", destination: "/leads/public-page", permanent: false },
+      { source: "/templates", destination: "/messages/templates", permanent: false },
+      { source: "/payments", destination: "/money/payments", permanent: false },
+      { source: "/booking-page", destination: "/calendar/booking-page", permanent: false },
     ];
   },
   experimental: {

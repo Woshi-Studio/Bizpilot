@@ -117,7 +117,7 @@ export default async function SearchLeadsPage() {
   const note = locked
     ? `Free search (${LOCKED_SEARCHES_PER_DAY} a day): you see the company, city and why it fits. Boss unlocks the phone, email, website and source.`
     : outOfCredits
-      ? "You're out of lead credits. Get more in Settings → Lead Finder."
+      ? "You're out of lead credits. Get more in Settings → Plans."
       : "Known companies show at once (1 credit). Not found = no charge.";
 
   return (
@@ -136,7 +136,7 @@ export default async function SearchLeadsPage() {
           </p>
         )}
         {locked && (
-          <Link href="/settings#plan" className="btn-primary btn-sm">
+          <Link href="/plans" className="btn-primary btn-sm">
             Upgrade to Boss to unlock
           </Link>
         )}
@@ -151,7 +151,7 @@ export default async function SearchLeadsPage() {
           intakeFilled={intakeFilled(profile)}
         />
         {outOfCredits && (
-          <Link href="/settings#lead-finder" className="btn-secondary btn-sm mt-3">
+          <Link href="/plans#lead-finder" className="btn-secondary btn-sm mt-3">
             Get more lead credits
           </Link>
         )}

@@ -69,18 +69,22 @@ export default function PlanSection({
   billingReady,
   tierReady,
   message,
+  part = "all",
 }: {
   state: PlanState;
   ai: AiCredit | null;
   billingReady: boolean;
   tierReady: Record<PaidTier, boolean>;
   message: string | null;
+  // "plans": the 3 cards (the Plans page); "usage": the meters (Settings)
+  part?: "all" | "plans" | "usage";
 }) {
   const { plan, unlimited, limits, usage } = state;
   const paid = plan !== "free";
 
   return (
     <section id="plan" className="scroll-mt-24">
+      {part !== "usage" && (
       <div className="card p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -172,8 +176,10 @@ export default function PlanSection({
           })}
         </div>
       </div>
+      )}
 
-      <div className="card mt-5 p-6">
+      {part !== "plans" && (
+      <div className={`card p-6 ${part === "all" ? "mt-5" : ""}`}>
         <h2 className="section-title">Usage</h2>
         <p className="mt-1 text-sm text-muted">
           {unlimited ? "Owner account: nothing is limited." : "What you've used on your plan."}
@@ -201,6 +207,7 @@ export default function PlanSection({
           </p>
         )}
       </div>
+      )}
     </section>
   );
 }

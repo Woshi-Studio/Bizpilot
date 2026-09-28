@@ -3,7 +3,7 @@ import { stripeConfigured, tierConfigured } from "@/lib/stripe";
 import { getAiCredits, isOwnerBusiness } from "@/lib/ai-quota";
 import { getPlanState } from "@/lib/plan-limits";
 import { getFinderAccess, intakeFilled, loadCredits, loadLeadSub, loadProfile } from "@/lib/finder-server";
-import { canBuyLeadProducts, finderProductReady } from "@/lib/finder-plans";
+import { finderProductReady, leadProductView } from "@/lib/finder-plans";
 import { PlanFaq, PlanTable } from "@/components/plan-explainer";
 import PlanSection from "../settings/plan-section";
 import FinderSection from "../settings/finder-section";
@@ -65,7 +65,7 @@ export default async function PlansPage({
         <div className="mt-8">
           <FinderSection
             access={finderAccess}
-            canBuy={finderAccess === "full" && canBuyLeadProducts({ plan: business.plan, owner })}
+            view={leadProductView({ access: finderAccess, plan: business.plan, owner })}
             credits={credits}
             sub={leadSub}
             intakeFilled={intakeFilled(profile)}

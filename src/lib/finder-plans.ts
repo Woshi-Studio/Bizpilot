@@ -92,6 +92,18 @@ export function canBuyLeadProducts(opts: { plan: string | null | undefined; owne
   return LEAD_PRODUCTS_BOSS_ONLY ? opts.plan === "pro" : true;
 }
 
+// How /plans shows the lead products. The cards always show (to everyone
+// with Finder access); only the button changes:
+//   "buy"     -> Boss: real Buy buttons
+//   "upgrade" -> Starter / Hustle: "Available on Boss: Upgrade"
+//   "owner"   -> the owner: unlimited, buttons shown but disabled
+export type LeadProductView = "buy" | "upgrade" | "owner";
+
+export function leadProductView(opts: { access: string; plan: string | null | undefined; owner: boolean }): LeadProductView {
+  if (opts.owner || opts.access === "owner") return "owner";
+  return opts.access === "full" && canBuyLeadProducts(opts) ? "buy" : "upgrade";
+}
+
 export function rolloverText(): string {
   return LEAD_CREDITS_ROLL_OVER
     ? "Unused credits carry over."

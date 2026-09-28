@@ -113,12 +113,13 @@ export default async function SearchLeadsPage() {
   const unlimited = access === "owner";
   const locked = access === "locked";
   const pending = pendingItems(page.items);
+  const hasIntake = intakeFilled(profile);
   const outOfCredits = access === "full" && page.balance <= 0;
   const note = locked
     ? `Free search (${LOCKED_SEARCHES_PER_DAY} a day): you see the company, city and why it fits. Boss unlocks the phone, email, website and source.`
     : outOfCredits
       ? "You're out of lead credits. Get more in Settings → Plans."
-      : "Known companies show at once (1 credit). Not found = no charge.";
+      : "Known companies show at once (1 credit).";
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -142,13 +143,19 @@ export default async function SearchLeadsPage() {
         )}
       </div>
 
+      <div className="mt-6 card p-5 sm:p-6">
+        <Link href="/leads/search/hunt" className="btn-primary w-full px-6 py-3 text-base sm:w-auto">
+          {hasIntake ? "🎯 Edit what you're hunting" : "🎯 Tell us what you're hunting"}
+        </Link>
+        <p className="mt-2 text-sm text-muted">Better matches + powers Find me customers.</p>
+      </div>
+
       <div className="mt-6">
         <SearchForm
           disabled={outOfCredits}
           note={note}
           needsAup={!profile || profile.aup_version !== AUP_VERSION}
           defaultCountry={areaCountry(profile?.area) ?? profile?.country ?? "CA"}
-          intakeFilled={intakeFilled(profile)}
         />
         {outOfCredits && (
           <Link href="/plans#lead-finder" className="btn-secondary btn-sm mt-3">

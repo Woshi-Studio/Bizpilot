@@ -33,7 +33,14 @@ function rows(): { label: string; value: (p: Plan) => string }[] {
       label: "Lead credits every 4 weeks",
       value: (p) => (p === "pro" ? String(BOSS_CREDITS_PER_PERIOD) : "—"),
     },
-    { label: "Lead subscription + packs", value: (p) => (p === "pro" ? "Can buy" : "—") },
+    {
+      label: "Leads subscription (add-on)",
+      value: (p) => (p === "pro" ? `+${LEADSUB_CREDITS_PER_PERIOD} leads every 4 weeks` : "Boss only"),
+    },
+    {
+      label: "Lead packs (one time)",
+      value: (p) => (p === "pro" ? `${PACK_CREDITS.pack25} or ${PACK_CREDITS.pack100} leads` : "Boss only"),
+    },
   ];
 }
 
@@ -67,6 +74,46 @@ export function PlanTable({ showPrices }: { showPrices: boolean }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+// The Boss add-ons, as plain cards. No prices here: the public page hides
+// them, and Stripe checkout shows the price before anyone pays.
+export function LeadAddOns() {
+  const cards = [
+    {
+      title: "Leads subscription",
+      big: LEADSUB_CREDITS_PER_PERIOD,
+      unit: "leads every 4 weeks",
+      text: `On top of Boss's ${BOSS_CREDITS_PER_PERIOD}. Renews every 4 weeks; cancel any time.`,
+    },
+    {
+      title: `Pack ${PACK_CREDITS.pack25}`,
+      big: PACK_CREDITS.pack25,
+      unit: "leads, one time",
+      text: "A one-time top-up. Pack credits never expire.",
+    },
+    {
+      title: `Pack ${PACK_CREDITS.pack100}`,
+      big: PACK_CREDITS.pack100,
+      unit: "leads, one time",
+      text: "A one-time top-up. Pack credits never expire.",
+    },
+  ];
+  return (
+    <div className="grid gap-4 md:grid-cols-3">
+      {cards.map((c) => (
+        <div key={c.title} className="card p-5">
+          <h3 className="section-title">{c.title}</h3>
+          <p className="mt-2 text-3xl font-bold tracking-tight text-ink">
+            {c.big}
+            <span className="text-sm font-medium text-muted"> {c.unit}</span>
+          </p>
+          <p className="mt-2 text-sm text-ink-2">{c.text}</p>
+          <p className="mt-3 text-xs font-medium text-muted">Available on Boss</p>
+        </div>
+      ))}
     </div>
   );
 }

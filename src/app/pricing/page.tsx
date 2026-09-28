@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PlanFaq, PlanTable } from "@/components/plan-explainer";
+import { LeadAddOns, PlanFaq, PlanTable } from "@/components/plan-explainer";
 import { SHOW_PUBLIC_PRICES } from "@/lib/plans";
 
 export const metadata = {
@@ -40,6 +40,14 @@ export default function PricingPage() {
 
         <section className="mt-10">
           <PlanTable showPrices={SHOW_PUBLIC_PRICES} />
+        </section>
+
+        <section className="mt-10">
+          <h2 className="text-xl font-bold tracking-tight text-ink">Need more leads? Boss add-ons</h2>
+          <p className="mt-1 text-sm text-ink-2">1 lead credit = 1 business found with a way to reach it. Not found = free.</p>
+          <div className="mt-4">
+            <LeadAddOns />
+          </div>
         </section>
 
         <section className="mt-10">

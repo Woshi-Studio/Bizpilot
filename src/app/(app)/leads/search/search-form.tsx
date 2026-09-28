@@ -13,13 +13,11 @@ export default function SearchForm({
   note,
   needsAup,
   defaultCountry,
-  intakeFilled,
 }: {
   disabled: boolean;
   note: string;
   needsAup: boolean;
   defaultCountry: string | null;
-  intakeFilled: boolean;
 }) {
   const [state, action, pending] = useActionState(searchLeads, initial);
   const ref = useRef<HTMLFormElement>(null);
@@ -134,16 +132,11 @@ export default function SearchForm({
       <FormError error={state.error} upgrade={state.upgrade} className="mt-3" />
       {state.success && <p className="alert-success mt-3">{state.success}</p>}
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-xs text-muted">
-          Not found = no charge. Several matches = you pick, free.{" "}
-          <Link href="/leads/search/hunt" className="link">
-            {intakeFilled ? "Edit what you're hunting" : "Tell us what you're hunting (optional, better matches)"}
-          </Link>
-        </p>
+      <div className="mt-4 flex flex-col items-end">
         <button type="submit" disabled={pending || disabled || bad} className="btn-primary">
           {pending ? "Searching..." : "Search"}
         </button>
+        <p className="mt-1.5 text-xs text-muted">Not found = no charge. Several matches = you pick, free.</p>
       </div>
     </form>
   );

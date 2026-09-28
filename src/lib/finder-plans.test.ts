@@ -8,6 +8,7 @@ import {
   finderProductForPrice,
   finderProductReady,
   invoiceGrant,
+  leadProductView,
   packGrant,
 } from "./finder-plans.ts";
 
@@ -50,4 +51,13 @@ test("lead products: Boss only; the owner never buys", () => {
   assert.equal(canBuyLeadProducts({ plan: "premium", owner: false }), false);
   assert.equal(canBuyLeadProducts({ plan: "free", owner: false }), false);
   assert.equal(canBuyLeadProducts({ plan: "pro", owner: true }), false);
+});
+
+test("lead products on /plans: always shown; Boss buys, others upgrade, owner sees disabled", () => {
+  assert.equal(leadProductView({ access: "full", plan: "pro", owner: false }), "buy");
+  assert.equal(leadProductView({ access: "locked", plan: "premium", owner: false }), "upgrade");
+  assert.equal(leadProductView({ access: "locked", plan: "free", owner: false }), "upgrade");
+  assert.equal(leadProductView({ access: "full", plan: "premium", owner: false }), "upgrade");
+  assert.equal(leadProductView({ access: "owner", plan: "free", owner: true }), "owner");
+  assert.equal(leadProductView({ access: "full", plan: "pro", owner: true }), "owner");
 });

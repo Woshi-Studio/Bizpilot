@@ -67,9 +67,11 @@ export default function ResultCard({
   reportedStatus,
   canUnlock = false,
   have = null,
+  isNew = false,
 }: {
   result: FinderResult;
   have?: string | null;
+  isNew?: boolean;
   sender: { name: string | null; business: string; offer: string | null };
   reportedStatus: string | null;
   canUnlock?: boolean;
@@ -99,7 +101,14 @@ export default function ResultCard({
     <li className="card p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="section-title break-words">{r.company_name}</p>
+          <p className="section-title break-words">
+            {r.company_name}
+            {isNew && (
+              <span className="ml-2 rounded-full bg-accent-soft px-2 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wide text-accent-text">
+                New
+              </span>
+            )}
+          </p>
           <p className="mt-0.5 text-xs text-muted">
             {[place, r.address].filter(Boolean).join(" · ") || "Location not listed"}
           </p>

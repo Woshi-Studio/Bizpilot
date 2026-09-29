@@ -5,6 +5,8 @@ import { AUP_VERSION, areaCountry, industryLabel, sortResults, type ResultSort }
 import { applyHide, buildHaveIndex, haveLabel, type HaveRecord } from "@/lib/finder-suppress";
 import { runFairChecks } from "@/lib/fair-credit-server";
 import { isDemoMode } from "@/lib/demo";
+import { alertMode, seenSince, wantsApp } from "@/lib/lead-alerts";
+import { markLeadsSeen } from "@/lib/lead-alerts-server";
 import { DISCOVER_DEFAULT_COUNT, LOCKED_SEARCHES_PER_DAY } from "@/lib/finder-plans";
 import FindCustomers from "./find-customers";
 import {
@@ -154,6 +156,10 @@ export default async function SearchLeadsPage({
   const hasIntake = intakeFilled(profile);
   const outOfCredits = access === "full" && page.balance <= 0;
   const { shown, hidden } = applyHide(sortResults(page.results, sort), haveIdx, hide);
+  // Lead alerts: what's new since the last visit, then clear the bell.
+  const newSince = Date.parse(seenSince(user.user_metadata));
+  const newCount = page.results.filter((r) => Date.parse(r.created_at) > newSince).length;
+  if (newCount > 0 && wantsApp(alertMode(user.user_metadata)) && !isDemoMode()) await markLeadsSeen(user);
   const unlockedCount = page.results.filter((r) => !r.locked).length;
   const note = locked
     ? `Free search (${LOCKED_SEARCHES_PER_DAY} a day): you see the company, city and why it fits. Boss unlocks the phone, email, website and source.`
@@ -264,6 +270,11 @@ export default async function SearchLeadsPage({
             </div>
           )}
         </div>
+        {newCount > 0 && (
+          <p className="mt-2 text-xs font-medium text-ink-2">
+            {newCount} new since your last visit.
+          </p>
+        )}
         {hide && hidden > 0 && (
           <p className="mt-2 text-xs text-muted">
             {hidden} hidden: already in your leads or customers.{" "}
@@ -287,6 +298,7 @@ export default async function SearchLeadsPage({
                 key={r.id}
                 result={r}
                 have={r.have ? haveLabel(r.have) : null}
+                isNew={Date.parse(r.created_at) > newSince}
                 canUnlock={!locked}
                 reportedStatus={page.reported.get(r.id) ?? null}
                 sender={{

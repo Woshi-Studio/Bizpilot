@@ -18,6 +18,9 @@ import { getFinderAccess } from "@/lib/finder-server";
 import { referralLink } from "@/lib/referral";
 import { referralCounts } from "@/lib/referral-server";
 import { siteUrl } from "@/lib/stripe";
+import LeadAlertsSection from "./lead-alerts-section";
+import { alertMode } from "@/lib/lead-alerts";
+import { platformEmailProvider } from "@/lib/email";
 
 export const metadata = { title: "Settings" };
 
@@ -91,8 +94,8 @@ export default async function SettingsPage({
   // Lead Finder worker keys: owner only, server-only table (0019).
   const finderWorkers = owner ? await loadFinderWorkers() : null;
   // Invite a business: only where lead credits mean something.
-  const invite =
-    business && getFinderAccess(business) !== "none" ? referralLink(siteUrl(), business.id) : null;
+  const finderOn = !!business && getFinderAccess(business) !== "none";
+  const invite = finderOn && business ? referralLink(siteUrl(), business.id) : null;
   const inviteCounts = invite && business ? await referralCounts(business.id) : null;
 
   const agentReady = !!keysResult && !keysResult.error;
@@ -109,6 +112,7 @@ export default async function SettingsPage({
     ["theme", "Theme"],
     ["plan", "Plan & usage"],
     ...(showEmailCard ? [["sending", "Email sending"]] : []),
+    ...(finderOn ? [["lead-alerts", "Lead alerts"]] : []),
     ...(invite ? [["invite", "Invite a business"]] : []),
     ["assistant", "Assistant"],
     ...(owner ? [["finder-worker", "Finder worker"]] : []),
@@ -199,6 +203,8 @@ export default async function SettingsPage({
           )}
         </section>
       )}
+
+      {finderOn && <LeadAlertsSection mode={alertMode(user.user_metadata)} emailReady={!!platformEmailProvider()} />}
 
       {invite && <InviteSection link={invite} counts={inviteCounts} owner={owner} />}
 

@@ -34,8 +34,11 @@ export default function AppShell({
   signOutAction,
   athena,
   extras,
+  leadAlerts = null,
   children,
 }: {
+  // New Lead Finder results since the user last looked (null = no bell)
+  leadAlerts?: number | null;
   businessName: string;
   userName: string;
   signOutAction: () => Promise<void>;
@@ -129,6 +132,21 @@ export default function AppShell({
               >
                 ?
               </button>
+              {leadAlerts !== null && (
+                <Link
+                  href="/leads/search#results"
+                  aria-label={leadAlerts > 0 ? `${leadAlerts} new leads` : "Lead alerts: nothing new"}
+                  title={leadAlerts > 0 ? `${leadAlerts} new lead${leadAlerts === 1 ? "" : "s"}` : "No new leads"}
+                  className="relative flex h-9 w-9 items-center justify-center rounded-xl text-muted transition-colors hover:bg-surface-3 hover:text-ink"
+                >
+                  <Icon name="bell" className="h-[18px] w-[18px]" />
+                  {leadAlerts > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 min-w-[18px] rounded-full bg-accent px-1 text-center text-[10px] font-bold leading-[18px] text-white">
+                      {leadAlerts > 99 ? "99+" : leadAlerts}
+                    </span>
+                  )}
+                </Link>
+              )}
               <FeedbackWidget />
               <ThemeToggleButton />
               <div className="relative lg:hidden">

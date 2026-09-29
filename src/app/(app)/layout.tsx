@@ -8,6 +8,7 @@ import { ThemeSync } from "@/components/theme";
 import { isOwnerBusiness } from "@/lib/ai-quota";
 import { ensureUnlimitedFlag } from "@/lib/plan-limits";
 import { effectiveTheme, normalizePlanValue } from "@/lib/plans";
+import { unseenLeadCount } from "@/lib/lead-alerts-server";
 
 type ProfileRow = {
   full_name: string | null;
@@ -67,12 +68,14 @@ export default async function AppLayout({
   const serverTheme = effectiveTheme(profile?.theme, plan, unlimited);
 
   const userName = profile?.full_name ?? user.email ?? "";
+  const leadAlerts = await unseenLeadCount(supabase, user, business).catch(() => null);
 
   return (
     <AppShell
       businessName={business.name}
       userName={userName}
       signOutAction={signOut}
+      leadAlerts={leadAlerts}
       athena={<Athena firstName={userName.split(/[\s@]/)[0] || "there"} />}
       extras={
         <>

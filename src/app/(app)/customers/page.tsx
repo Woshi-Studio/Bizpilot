@@ -34,10 +34,15 @@ export default async function CustomersPage({
           <h1 className="page-title">Customers</h1>
           <p className="page-sub">Everyone you work with, and when to follow up.</p>
         </div>
-        <Link href="/customers/new" className="btn-primary self-start sm:self-auto">
-          <Icon name="plus" className="h-4 w-4" />
-          Add customer
-        </Link>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <a href="/leads/export?what=customers" className="btn-secondary" download>
+            ⬇ Download CSV
+          </a>
+          <Link href="/customers/new" className="btn-primary">
+            <Icon name="plus" className="h-4 w-4" />
+            Add customer
+          </Link>
+        </div>
       </div>
 
       <div className="mt-6">

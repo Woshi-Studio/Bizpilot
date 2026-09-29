@@ -403,4 +403,32 @@ await db.exec("reset role");
 // Ledger: 'expire' rows are append-only too
 await fails("update finder_credit_ledger set delta = 0 where reason='expire'", [], /append-only/);
 
+// ------------------------------------------------------------------
+// Fair credits (src/lib/fair-credit-server.ts), no schema change: the same
+// service-role writes the server makes when a paid result's email fails
+// the free check. One report row per result = never refunded twice.
+// ------------------------------------------------------------------
+{
+  r = await submit(boss, bp, "Acme Plumbing", "Toronto", null, "full");
+  assert.equal(r.status, "found");
+  const paid = r.result_id;
+  const before = await balance(boss);
+  const spent = await one("select count(*)::int n from finder_credit_ledger where result_id=$1 and reason='spend'", [paid]);
+  assert.equal(spent.n, 1, "the spend row points at the result (what the server looks for)");
+
+  await q("insert into finder_bounce_reports (business_id, result_id, kind, note, status) values ($1,$2,'bounce','Bad email: credit returned (automatic check: the domain has no mail server)','refunded')", [boss, paid]);
+  await q("insert into finder_credit_ledger (business_id, delta, reason, result_id, note) values ($1, 1, 'refund', $2, 'bad_email')", [boss, paid]);
+  await q("update finder_results set email_checks = coalesce(email_checks,'{}'::jsonb) || '{\"fair\":\"bad\",\"fair_refunded\":true}'::jsonb where id=$1 and locked = false", [paid]);
+  await q("insert into finder_audit (business_id, actor, action, detail) values ($1,'system','fair_refund',jsonb_build_object('result',$2::text))", [boss, paid]);
+  assert.equal(await balance(boss), before + 1, "the credit is back");
+
+  // A second run (or a second tab) can't claim the same result again
+  await fails("insert into finder_bounce_reports (business_id, result_id, kind, status) values ($1,$2,'bounce','refunded')", [boss, paid], /duplicate key|unique/);
+  // ...and the user's own bounce report can't refund it a second time
+  await fails("select finder_report_bounce($1,'bounce','bounced')", [paid], /finder:already_reported/);
+  assert.equal(await balance(boss), before + 1);
+  const fair = await one("select email_checks->>'fair' f from finder_results where id=$1", [paid]);
+  assert.equal(fair.f, "bad");
+}
+
 console.log("ALL 0020 SQL CHECKS PASSED");

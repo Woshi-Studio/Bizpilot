@@ -1,5 +1,16 @@
 # Lead Finder
 
+## Branch `feat/lead-export-suppression` (no migration)
+
+| Part | Where |
+|---|---|
+| CSV export, one column set everywhere (name, title, company, email, phone, website, city, region, country, source, unlocked_at) | `src/lib/lead-export.ts`. Lead Finder: `/leads/search/export` (all unlocked), `?id=` (one), `?job=` (one search/list). CRM: `/leads/export?what=leads\|customers` (buttons on Leads and Customers). Locked results never exported; formula cells guarded |
+| Hide ones I have | `src/lib/finder-suppress.ts`: match leads + customers by email, then website/company-email domain (webmail ignored), then normalised name + city. Card chip "Already in your leads (same email)"; toggle `?hide=1` |
+| Freshness | Order: newest found/re-checked first (`?sort=fresh` = freshest check first). Card: "Found X days ago" + "Checked X days ago" |
+| Fair credits | `src/lib/fair-credit*.ts`: a PAID unlocked result with an email gets a free check (format + MX via DNS; no SMTP). Fails → a `finder_bounce_reports` row (status refunded; unique per result = never twice), a `refund` ledger row (note `bad_email`), a `finder_audit` `fair_refund` row, the kb email retired (bad_reports 2). Card: "Bad email: credit returned". DNS timeouts never refund. Runs on the Search leads page load (Boss) and right after an instant "found" |
+| Referrals | `src/lib/referral*.ts`. Link `/signup?ref=<22-char code>` (Settings → Invite a business). Onboarding pins the referrer in app metadata (server-only). First cleared Stripe payment (`invoice.paid` or a pack checkout, amount > 0) → `finder_grant(referrer, 'pack', REFERRAL_CREDITS=25, 'referral:<referred id>')`: once per referred business, retries add nothing. No self-referral (same business, user, or company email domain) |
+| HubSpot | plan only: `docs/hubspot-sync-plan.md` |
+
 - **F2 (branch `finder-plans`)**: plans + locked results, lead credits from Stripe, the smart search
   box, "Find me customers", area + radius. Migration **0020**. This section.
 - **F0 + F1 (live on main)**: legal pages, invite-only single search, worker, credits. Further down.

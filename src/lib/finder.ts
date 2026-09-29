@@ -346,6 +346,31 @@ export function freshness(lastChecked: string | Date | null | undefined, now = D
   return "fresh";
 }
 
+// "today", "1 day ago", "12 days ago"
+export function daysAgoText(iso: string | Date | null | undefined, now = Date.now()): string {
+  const t = iso ? new Date(iso).getTime() : NaN;
+  if (!Number.isFinite(t)) return "date unknown";
+  const days = Math.max(0, Math.floor((now - t) / 86_400_000));
+  return days === 0 ? "today" : days === 1 ? "1 day ago" : `${days} days ago`;
+}
+
+// Results order. "newest" (default): most recently found or re-checked
+// first. "fresh": the most recently checked data first.
+export type ResultSort = "newest" | "fresh";
+
+export function sortResults<T extends { created_at: string; last_checked_at: string }>(
+  rows: T[],
+  sort: ResultSort = "newest"
+): T[] {
+  const ms = (v: string) => {
+    const t = new Date(v).getTime();
+    return Number.isFinite(t) ? t : 0;
+  };
+  const key = (r: T) =>
+    sort === "fresh" ? ms(r.last_checked_at) : Math.max(ms(r.created_at), ms(r.last_checked_at));
+  return [...rows].sort((a, b) => key(b) - key(a) || ms(b.created_at) - ms(a.created_at));
+}
+
 // ------------------------------------------------------------------
 // What the checks say, in plain words. Never "verified deliverable".
 // ------------------------------------------------------------------

@@ -47,11 +47,18 @@ export default async function LeadsPage({
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="page-title">Leads</h1>
-      <p className="page-sub">
-        Everyone you&apos;ve reached out to, and everyone who&apos;s reached out to
-        you.
-      </p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="page-title">Leads</h1>
+          <p className="page-sub">
+            Everyone you&apos;ve reached out to, and everyone who&apos;s reached out to
+            you.
+          </p>
+        </div>
+        <a href="/leads/export?what=leads" className="btn-secondary btn-sm" download>
+          ⬇ Download CSV
+        </a>
+      </div>
 
       <div className="mt-4">
         <BusinessLineFilter basePath="/leads" lines={lines} current={line} />

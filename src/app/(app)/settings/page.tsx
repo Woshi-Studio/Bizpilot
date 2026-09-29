@@ -13,6 +13,11 @@ import PlanSection from "./plan-section";
 import FinderWorkers, { type WorkerRow } from "./finder-workers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { Business } from "@/lib/types";
+import InviteSection from "./invite-section";
+import { getFinderAccess } from "@/lib/finder-server";
+import { referralLink } from "@/lib/referral";
+import { referralCounts } from "@/lib/referral-server";
+import { siteUrl } from "@/lib/stripe";
 
 export const metadata = { title: "Settings" };
 
@@ -85,6 +90,10 @@ export default async function SettingsPage({
   ]);
   // Lead Finder worker keys: owner only, server-only table (0019).
   const finderWorkers = owner ? await loadFinderWorkers() : null;
+  // Invite a business: only where lead credits mean something.
+  const invite =
+    business && getFinderAccess(business) !== "none" ? referralLink(siteUrl(), business.id) : null;
+  const inviteCounts = invite && business ? await referralCounts(business.id) : null;
 
   const agentReady = !!keysResult && !keysResult.error;
   const apiKeys = agentReady ? ((keysResult.data ?? []) as ApiKeyRow[]) : [];
@@ -100,6 +109,7 @@ export default async function SettingsPage({
     ["theme", "Theme"],
     ["plan", "Plan & usage"],
     ...(showEmailCard ? [["sending", "Email sending"]] : []),
+    ...(invite ? [["invite", "Invite a business"]] : []),
     ["assistant", "Assistant"],
     ...(owner ? [["finder-worker", "Finder worker"]] : []),
   ] as [string, string][];
@@ -189,6 +199,8 @@ export default async function SettingsPage({
           )}
         </section>
       )}
+
+      {invite && <InviteSection link={invite} counts={inviteCounts} owner={owner} />}
 
       <div id="assistant" className="mt-8 scroll-mt-24">
         {business && paidFeatures ? (

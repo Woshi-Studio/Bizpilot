@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { requireUserAndBusiness } from "@/lib/data";
 import { creditLine } from "@/lib/finder-credits";
-import { AUP_VERSION, areaCountry, industryLabel } from "@/lib/finder";
+import { AUP_VERSION, areaCountry, industryLabel, sortResults, type ResultSort } from "@/lib/finder";
+import { applyHide, buildHaveIndex, haveLabel, type HaveRecord } from "@/lib/finder-suppress";
+import { runFairChecks } from "@/lib/fair-credit-server";
+import { isDemoMode } from "@/lib/demo";
 import { DISCOVER_DEFAULT_COUNT, LOCKED_SEARCHES_PER_DAY } from "@/lib/finder-plans";
 import FindCustomers from "./find-customers";
 import {
@@ -74,9 +77,33 @@ function PendingItem({ item }: { item: FinderItem }) {
   );
 }
 
-export default async function SearchLeadsPage() {
+// The user's own leads + customers, for "hide ones I have".
+async function loadHave(supabase: Awaited<ReturnType<typeof requireUserAndBusiness>>["supabase"], businessId: string) {
+  const [leads, customers] = await Promise.all([
+    supabase.from("leads").select("*").eq("business_id", businessId).limit(10000),
+    supabase.from("customers").select("*").eq("business_id", businessId).limit(10000),
+  ]);
+  return buildHaveIndex((leads.data ?? []) as HaveRecord[], (customers.data ?? []) as HaveRecord[]);
+}
+
+function viewHref(v: { hide: boolean; sort: ResultSort }) {
+  const q = new URLSearchParams();
+  if (v.hide) q.set("hide", "1");
+  if (v.sort !== "newest") q.set("sort", v.sort);
+  const s = q.toString();
+  return `/leads/search${s ? `?${s}` : ""}#results`;
+}
+
+export default async function SearchLeadsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ hide?: string; sort?: string }>;
+}) {
   const { supabase, business, user } = await requireUserAndBusiness();
   const access = getFinderAccess(business);
+  const sp = await searchParams;
+  const hide = sp.hide === "1";
+  const sort: ResultSort = sp.sort === "fresh" ? "fresh" : "newest";
 
   if (access === "none") {
     return (
@@ -91,10 +118,21 @@ export default async function SearchLeadsPage() {
     );
   }
 
-  const [{ profile, ready }, page, { data: me }] = await Promise.all([
+  // Fair credits: paid results whose email fails the free check get their
+  // credit back before the page reads the balance.
+  if (access === "full" && !isDemoMode()) {
+    try {
+      await runFairChecks(business.id);
+    } catch (err) {
+      console.error("fair credit check failed:", err instanceof Error ? err.message : err);
+    }
+  }
+
+  const [{ profile, ready }, page, { data: me }, haveIdx] = await Promise.all([
     loadProfile(supabase, business.id),
     loadFinderPage(supabase, business.id, access),
     supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
+    loadHave(supabase, business.id),
   ]);
 
   if (!ready || !page.ready) {
@@ -115,6 +153,8 @@ export default async function SearchLeadsPage() {
   const pending = pendingItems(page.items);
   const hasIntake = intakeFilled(profile);
   const outOfCredits = access === "full" && page.balance <= 0;
+  const { shown, hidden } = applyHide(sortResults(page.results, sort), haveIdx, hide);
+  const unlockedCount = page.results.filter((r) => !r.locked).length;
   const note = locked
     ? `Free search (${LOCKED_SEARCHES_PER_DAY} a day): you see the company, city and why it fits. Boss unlocks the phone, email, website and source.`
     : outOfCredits
@@ -201,18 +241,52 @@ export default async function SearchLeadsPage() {
         </section>
       )}
 
-      <section className="mt-8">
-        <h2 className="section-title">Results</h2>
+      <section id="results" className="mt-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="section-title">Results</h2>
+          {page.results.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <Link
+                href={viewHref({ hide, sort: sort === "fresh" ? "newest" : "fresh" })}
+                className="btn-ghost btn-sm"
+                title="Change the order"
+              >
+                {sort === "fresh" ? "Order: freshest check first" : "Order: newest first"}
+              </Link>
+              <Link href={viewHref({ hide: !hide, sort })} className="btn-secondary btn-sm" aria-pressed={hide}>
+                {hide ? "✓ Hiding ones I have" : "Hide ones I have"}
+              </Link>
+              {unlockedCount > 0 && (
+                <a href="/leads/search/export" className="btn-secondary btn-sm" download>
+                  ⬇ Download CSV ({unlockedCount})
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+        {hide && hidden > 0 && (
+          <p className="mt-2 text-xs text-muted">
+            {hidden} hidden: already in your leads or customers.{" "}
+            <Link href={viewHref({ hide: false, sort })} className="link">
+              Show them
+            </Link>
+          </p>
+        )}
         {page.results.length === 0 ? (
           <p className="mt-3 card-empty p-6 text-center text-sm">
             Nothing yet. Search for a business above.
           </p>
+        ) : shown.length === 0 ? (
+          <p className="mt-3 card-empty p-6 text-center text-sm">
+            You already have every result here in your leads or customers.
+          </p>
         ) : (
           <ul className="mt-3 grid gap-4 lg:grid-cols-2">
-            {page.results.map((r) => (
+            {shown.map((r) => (
               <ResultCard
                 key={r.id}
                 result={r}
+                have={r.have ? haveLabel(r.have) : null}
                 canUnlock={!locked}
                 reportedStatus={page.reported.get(r.id) ?? null}
                 sender={{
@@ -229,7 +303,8 @@ export default async function SearchLeadsPage() {
       <p className="mt-8 text-xs text-muted">
         We check, we don&apos;t guarantee: format, mail server and &quot;still on their
         website&quot; for emails; format and &quot;listed on their website&quot; for phones. A
-        bounce or wrong number reported within 30 days gets the credit back. People are only found
+        bounce or wrong number reported within 30 days gets the credit back, and an email that
+        fails our free check (the domain has no mail server) gets its credit back on its own. People are only found
         where their own business lists them.{" "}
         <Link href="/data-sources" className="link">Where the data comes from</Link> ·{" "}
         <Link href="/acceptable-use" className="link">Acceptable Use</Link>

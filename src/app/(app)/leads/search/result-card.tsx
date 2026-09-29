@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useActionState } from "react";
 import FormError from "@/components/form-error";
+import { BAD_EMAIL_LABEL, isBadEmail } from "@/lib/fair-credit";
 import {
+  daysAgoText,
   emailCheckText,
   freshness,
   outreachTemplate,
@@ -23,10 +25,6 @@ const BADGE: Record<string, string> = {
   amber: "border-amber-200 bg-amber-50 text-amber-800",
   grey: "border-slate-200 bg-slate-100 text-slate-500",
 };
-
-function day(iso: string) {
-  return iso.slice(0, 10);
-}
 
 // What a locked card shows in place of the contacts: fixed shapes, never
 // the real values (the server never sends them).
@@ -68,8 +66,10 @@ export default function ResultCard({
   sender,
   reportedStatus,
   canUnlock = false,
+  have = null,
 }: {
   result: FinderResult;
+  have?: string | null;
   sender: { name: string | null; business: string; offer: string | null };
   reportedStatus: string | null;
   canUnlock?: boolean;
@@ -92,6 +92,8 @@ export default function ResultCard({
   const sources = r.source_urls.map((s) => safeHttpUrl(s)).filter((s): s is string => !!s);
   const place = [r.city, r.region, r.country].filter(Boolean).join(", ");
   const added = !!r.lead_id || !!addState.success;
+  const badEmail = isBadEmail(r.email_checks);
+  const refunded = badEmail && (r.email_checks ?? {})["fair_refunded"] === true;
 
   return (
     <li className="card p-5">
@@ -101,11 +103,21 @@ export default function ResultCard({
           <p className="mt-0.5 text-xs text-muted">
             {[place, r.address].filter(Boolean).join(" · ") || "Location not listed"}
           </p>
+          <p className="mt-0.5 text-xs text-muted">Found {daysAgoText(r.created_at)}</p>
         </div>
-        <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${BADGE[fresh]}`}>
-          Last checked {day(r.last_checked_at)}
+        <span
+          className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-medium ${BADGE[fresh]}`}
+          title={`Last checked ${r.last_checked_at.slice(0, 10)}`}
+        >
+          Checked {daysAgoText(r.last_checked_at)}
         </span>
       </div>
+
+      {have && (
+        <p className="mt-2 inline-flex rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-medium text-sky-800">
+          {have}
+        </p>
+      )}
 
       {r.why && <p className="mt-3 text-sm text-ink-2">{r.why}</p>}
 
@@ -130,8 +142,10 @@ export default function ResultCard({
           {r.email && (
             <div className="min-w-0">
               <dt className="text-xs font-medium text-muted">Email</dt>
-              <dd className="break-all font-medium text-ink">{r.email}</dd>
-              <dd className="text-xs text-muted">{emailCheckText(r.email_checks)}</dd>
+              <dd className={`break-all font-medium ${badEmail ? "text-muted line-through" : "text-ink"}`}>{r.email}</dd>
+              <dd className={`text-xs ${badEmail ? "font-medium text-amber-800" : "text-muted"}`}>
+                {badEmail ? (refunded ? BAD_EMAIL_LABEL : "Bad email: failed our free check") : emailCheckText(r.email_checks)}
+              </dd>
             </div>
           )}
           {website && (
@@ -174,11 +188,14 @@ export default function ResultCard({
               Call
             </a>
           )}
-          {r.email && (
+          {r.email && !badEmail && (
             <a href={mailtoHref(r.email, tpl.subject, tpl.body)} className="btn-secondary btn-sm">
               Email
             </a>
           )}
+          <a href={`/leads/search/export?id=${r.id}`} className="btn-ghost btn-sm" download>
+            ⬇ CSV
+          </a>
           {added ? (
             <Link href={r.lead_id ? `/leads/${r.lead_id}` : "/leads"} className="btn-ghost btn-sm">
               In your leads ✓
@@ -195,7 +212,7 @@ export default function ResultCard({
       )}
       <FormError error={addState.error} upgrade={addState.upgrade} className="mt-3" />
 
-      {r.email && !r.locked && (
+      {r.email && !r.locked && !badEmail && (
         <p className="mt-2 text-xs text-muted">
           The Email button opens your own email app with a first message that says who you are and
           how to opt out. Fill in the [brackets] before sending.
@@ -203,7 +220,7 @@ export default function ResultCard({
       )}
 
       {!r.locked &&
-        (reportedStatus || repState.success ? (
+        (refunded ? null : reportedStatus || repState.success ? (
           <p className="mt-3 text-xs text-muted">{repState.success ?? "Reported. Thanks."}</p>
         ) : (
           <details className="mt-3">

@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { pinReferrer } from "@/lib/referral-server";
 
 export type OnboardingState = {
   error?: string;
@@ -52,17 +53,24 @@ export async function completeOnboarding(
     return { error: profileError.message };
   }
 
-  const { error: businessError } = await supabase.from("businesses").insert({
-    owner_id: user.id,
-    name: businessName,
-    business_type: businessType,
-    primary_goal: primaryGoal,
-    onboarding_completed: true,
-  });
+  const { data: created, error: businessError } = await supabase
+    .from("businesses")
+    .insert({
+      owner_id: user.id,
+      name: businessName,
+      business_type: businessType,
+      primary_goal: primaryGoal,
+      onboarding_completed: true,
+    })
+    .select("id")
+    .single();
 
   if (businessError) {
     return { error: businessError.message };
   }
+
+  // Signed up from an invite link: remember who referred them (never throws).
+  if (created?.id) await pinReferrer(user, created.id as string);
 
   // Brand-new founders go straight to Launchpad to build their plan
   const stage = String(formData.get("stage") ?? "");

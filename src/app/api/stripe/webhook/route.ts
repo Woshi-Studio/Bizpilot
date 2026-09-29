@@ -9,6 +9,8 @@ import {
   packGrant,
   type Grant,
 } from "@/lib/finder-plans";
+import { paymentCleared } from "@/lib/referral";
+import { rewardReferral } from "@/lib/referral-server";
 
 // Stripe calls this endpoint when a payment succeeds or a subscription
 // changes. We verify the signature, then:
@@ -93,6 +95,7 @@ export async function POST(request: Request) {
             break;
           }
           await grantCredits(admin, businessId, grant, `cs:${session.id}`);
+          if (paymentCleared(session.amount_total)) await rewardReferral(admin, businessId);
           break;
         }
 
@@ -131,8 +134,14 @@ export async function POST(request: Request) {
         const item = sub.items.data[0];
         const grant = invoiceGrant(item?.price?.id ?? null, item?.quantity ?? 1, process.env);
         if (isLeadSub(sub)) await saveLeadSub(admin, sub);
-        if (!grant) break; // Hustle: no lead credits
         const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id ?? null;
+        // Referrals: the referred business's first payment that clears
+        // (any plan, Hustle too) rewards the referrer, once (never throws).
+        if (paymentCleared(invoice.amount_paid)) {
+          const payer = await businessFor(admin, sub.metadata?.business_id ?? null, customerId);
+          if (payer) await rewardReferral(admin, payer);
+        }
+        if (!grant) break; // Hustle: no lead credits
         const businessId = await businessFor(admin, sub.metadata?.business_id ?? null, customerId);
         if (!businessId) throw new Error("invoice paid but no business found");
         await grantCredits(admin, businessId, grant, `in:${invoice.id}:${grant.pool}`);

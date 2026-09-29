@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import {
   AUP_VERSION,
   betaCredits,
+  daysAgoText,
+  sortResults,
   emailCheckText,
   finderAccess,
   finderErrorKey,
@@ -212,4 +214,24 @@ test("only http(s) links and real phone numbers become links", () => {
   assert.equal(safeHttpUrl("https://acme.ca/\"onmouseover=x"), null);
   assert.equal(telHref("+1 (416) 555-0100"), "tel:+14165550100");
   assert.equal(telHref("n/a"), null);
+});
+
+test("found X days ago", () => {
+  const now = Date.parse("2026-09-29T12:00:00Z");
+  assert.equal(daysAgoText("2026-09-29T01:00:00Z", now), "today");
+  assert.equal(daysAgoText("2026-09-28T11:00:00Z", now), "1 day ago");
+  assert.equal(daysAgoText("2026-09-17T12:00:00Z", now), "12 days ago");
+  assert.equal(daysAgoText(null, now), "date unknown");
+  assert.equal(daysAgoText("2026-10-01T00:00:00Z", now), "today");
+});
+
+test("results: most recently found or checked first", () => {
+  const rows = [
+    { id: "old", created_at: "2026-09-01T00:00:00Z", last_checked_at: "2026-09-01T00:00:00Z" },
+    { id: "rechecked", created_at: "2026-09-02T00:00:00Z", last_checked_at: "2026-09-28T00:00:00Z" },
+    { id: "new-old-data", created_at: "2026-09-27T00:00:00Z", last_checked_at: "2026-03-01T00:00:00Z" },
+  ];
+  assert.deepEqual(sortResults(rows).map((r) => r.id), ["rechecked", "new-old-data", "old"]);
+  assert.deepEqual(sortResults(rows, "fresh").map((r) => r.id), ["rechecked", "old", "new-old-data"]);
+  assert.equal(rows[0].id, "old", "does not sort in place");
 });

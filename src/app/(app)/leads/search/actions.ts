@@ -9,6 +9,7 @@ import { parseSmartSearch } from "@/lib/finder-query";
 import { DISCOVER_DEFAULT_COUNT, LOCKED_SEARCHES_PER_DAY } from "@/lib/finder-plans";
 import { industryLabel } from "@/lib/finder";
 import { getFinderAccess, loadProfile } from "@/lib/finder-server";
+import { runFairChecks } from "@/lib/fair-credit-server";
 
 // Lead Finder actions. Every one starts from the user's own session
 // (requireUserAndBusiness). Reads and owner actions go through RLS and the
@@ -120,8 +121,15 @@ export async function searchLeads(_prev: FinderFormState, formData: FormData): P
     return { error: finderErrorMessage(error?.message) };
   }
 
-  revalidatePath("/leads/search");
   const out = data as { status?: string; locked?: boolean };
+  // Fair credits: a paid result whose email fails the free check gets its
+  // credit back straight away (researched ones are checked on the next page load).
+  if (out.status === "found" && access === "full") {
+    await runFairChecks(business.id).catch((err) =>
+      console.error("fair credit check failed:", err instanceof Error ? err.message : err)
+    );
+  }
+  revalidatePath("/leads/search");
   const lockedNote = out.locked ? " Upgrade to Boss to see the phone, email and website." : "";
   if (out.status === "found") return { success: `Found in our records. It's at the top of the list.${lockedNote}`, locked: !!out.locked };
   if (out.status === "pick") return { success: "We know a few with that name. Pick the right one below (free)." };

@@ -45,6 +45,9 @@ export async function signUp(
   const fullName = String(formData.get("full_name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  // Invite link code (checked again at onboarding; see src/lib/referral.ts)
+  const refIn = String(formData.get("ref") ?? "");
+  const ref = /^[A-Za-z0-9_-]{22}$/.test(refIn) ? refIn : null;
 
   if (!fullName || !email || !password) {
     return { error: "Please fill in all fields." };
@@ -60,7 +63,7 @@ export async function signUp(
     email,
     password,
     options: {
-      data: { full_name: fullName },
+      data: ref ? { full_name: fullName, ref } : { full_name: fullName },
       emailRedirectTo: `${origin}/auth/callback`,
     },
   });

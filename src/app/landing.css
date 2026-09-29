@@ -1,0 +1,709 @@
+/* ==================================================================
+   Front page (app/page.tsx) + the product story (components/landing).
+   Everything that moves uses transform/opacity only (no layout, no
+   paint work per frame). Sizes inside the story are in em, and 1em is
+   a slice of the story's own width, so it scales like a picture.
+   One loop = 16 s: 5 scenes x 3.2 s. A scene starts at --sd; a piece
+   inside it pops in --d seconds after that.
+   ================================================================== */
+
+.ls-page {
+  --ls-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ls-green: #16a34a;
+  --ls-pin: #f97316;
+}
+
+.ls-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2.1rem, 6.2vw, 3.6rem);
+  line-height: 1.06;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  text-wrap: balance;
+}
+.ls-h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(1.5rem, 3.6vw, 2.1rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  text-wrap: balance;
+}
+.ls-cta {
+  padding: 0.8rem 1.6rem;
+  font-size: 1rem;
+}
+
+/* soft color behind the hero (still) */
+.ls-hero {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.ls-hero::before {
+  content: "";
+  position: absolute;
+  inset: -20% -10% auto;
+  height: 120%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(40% 45% at 78% 40%, color-mix(in oklab, var(--accent) 16%, transparent), transparent 70%),
+    radial-gradient(30% 35% at 12% 20%, color-mix(in oklab, var(--accent) 9%, transparent), transparent 70%);
+}
+
+/* ---------------- the story ---------------- */
+.ls-story {
+  /* the stage's em is measured from this box's width */
+  container-type: inline-size;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 34rem;
+}
+.ls-stage {
+  position: relative;
+  aspect-ratio: 10 / 9;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-pop);
+  color: var(--text);
+  font-size: calc(100cqw / 28);
+  line-height: 1.3;
+  contain: layout paint;
+}
+@supports not (container-type: inline-size) {
+  .ls-stage { font-size: 15px; }
+}
+.ls-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  height: 2.2em;
+  padding: 0 1em;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.ls-bar span {
+  width: 0.65em;
+  height: 0.65em;
+  border-radius: 50%;
+  background: var(--border);
+}
+.ls-bar b {
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0.15em 2.5em;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 0.72em;
+  font-weight: 500;
+  transform: translateX(-1.2em);
+}
+.ls-scene {
+  position: absolute;
+  inset: 2.2em 0 0 0;
+  padding: 1.3em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ls-scene 16s var(--ls-ease) var(--sd) infinite both;
+}
+.ls-h {
+  font-weight: 650;
+  font-size: 1.05em;
+  color: var(--text);
+}
+
+/* generic pieces */
+.ls-in {
+  animation: ls-pop 16s var(--ls-ease) calc(var(--sd) + var(--d)) infinite both;
+}
+.ls-slide {
+  animation: ls-slide 16s var(--ls-ease) calc(var(--sd) + var(--d)) infinite both;
+}
+.ls-press {
+  animation: ls-press 16s ease calc(var(--sd) + var(--d)) infinite both;
+}
+/* "typing": a block the color of the field wipes away from the text */
+.ls-type {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  vertical-align: bottom;
+}
+.ls-type::after {
+  content: "";
+  position: absolute;
+  inset: -2px -1px;
+  background: var(--ls-field, var(--surface));
+  transform-origin: right center;
+  animation: ls-wipe 16s steps(14, end) calc(var(--sd) + var(--d)) infinite both;
+}
+
+/* 1. sign up */
+.ls-signup {
+  width: 17em;
+  padding: 1.4em;
+  border-radius: 1em;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  --ls-field: var(--surface-2);
+}
+.ls-logo {
+  width: 2.1em;
+  height: 2.1em;
+  margin-bottom: 0.7em;
+  border-radius: 0.6em;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 700;
+  background: linear-gradient(135deg, #6366f1, #7c3aed);
+}
+.ls-field {
+  margin-top: 0.75em;
+  padding: 0.45em 0.7em 0.5em;
+  border-radius: 0.6em;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 0.85em;
+}
+.ls-field small {
+  display: block;
+  font-size: 0.75em;
+  color: var(--muted);
+}
+.ls-btn {
+  position: relative;
+  margin-top: 1em;
+  padding: 0.6em;
+  border-radius: 0.6em;
+  text-align: center;
+  font-weight: 650;
+  font-size: 0.9em;
+  color: #fff;
+  background: var(--accent);
+  overflow: hidden;
+}
+.ls-btn-ok {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--ls-green);
+}
+
+/* 2. dashboard */
+.ls-dash {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  gap: 0.9em;
+}
+.ls-side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6em;
+  padding: 0.7em 0.5em;
+  border-radius: 0.8em;
+  background: var(--surface-2);
+}
+.ls-side i {
+  display: block;
+  width: 1.4em;
+  height: 1.4em;
+  border-radius: 0.4em;
+  background: var(--surface-3);
+}
+.ls-side i:first-child { background: var(--accent); }
+.ls-dmain { flex: 1; min-width: 0; }
+.ls-tiles {
+  margin-top: 0.8em;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7em;
+}
+.ls-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  padding: 0.75em;
+  height: 7.4em;
+  border-radius: 0.8em;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.ls-tile b { font-size: 0.85em; font-weight: 650; }
+.ls-ic {
+  font-style: normal;
+  width: 1.7em;
+  height: 1.7em;
+  border-radius: 0.5em;
+  display: grid;
+  place-items: center;
+  font-size: 0.9em;
+}
+.ls-ic-a { background: color-mix(in oklab, #6366f1 16%, transparent); }
+.ls-ic-b { background: color-mix(in oklab, #0ea5e9 16%, transparent); }
+.ls-ic-c { background: color-mix(in oklab, #16a34a 16%, transparent); }
+.ls-ic-d { background: color-mix(in oklab, #f59e0b 18%, transparent); }
+.ls-lines { display: flex; flex-direction: column; gap: 0.3em; margin-top: auto; }
+.ls-lines i {
+  display: block;
+  height: 0.45em;
+  border-radius: 1em;
+  background: var(--surface-3);
+}
+.ls-lines i:nth-child(2) { width: 75%; }
+.ls-lines i:nth-child(3) { width: 55%; }
+.ls-minical {
+  margin-top: auto;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.2em;
+}
+.ls-minical i {
+  display: block;
+  aspect-ratio: 1;
+  border-radius: 0.2em;
+  background: var(--surface-3);
+}
+.ls-minical i.on { background: #0ea5e9; }
+.ls-bars {
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.3em;
+  height: 2.2em;
+}
+.ls-bars i {
+  flex: 1;
+  display: block;
+  border-radius: 0.2em 0.2em 0 0;
+  background: color-mix(in oklab, var(--ls-green) 70%, transparent);
+}
+
+/* 3. lead finder */
+.ls-finder {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 0.8em;
+  width: 100%;
+  height: 100%;
+}
+.ls-map {
+  position: relative;
+  border-radius: 0.9em;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.ls-map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ls-map-bg { fill: var(--surface-2); }
+.ls-park { fill: color-mix(in oklab, #16a34a 14%, var(--surface-2)); }
+.ls-road { stroke: var(--surface-3); stroke-width: 7; fill: none; }
+.ls-road-s { stroke-width: 5; }
+.ls-search {
+  position: absolute;
+  left: 0.6em;
+  right: 0.6em;
+  top: 0.6em;
+  padding: 0.4em 0.6em;
+  border-radius: 0.6em;
+  font-size: 0.72em;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.ls-pin {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+.ls-drop {
+  position: absolute;
+  left: -0.7em;
+  top: -1.9em;
+  width: 1.4em;
+  height: 1.9em;
+  animation: ls-drop 16s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--sd) + var(--d)) infinite both;
+}
+.ls-drop::before {
+  /* the pin: a rounded drop shape */
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.4em;
+  height: 1.4em;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--ls-pin);
+  box-shadow: 0 0.2em 0.5em rgba(0, 0, 0, 0.25);
+}
+.ls-drop::after {
+  content: "";
+  position: absolute;
+  left: 0.45em;
+  top: 0.45em;
+  width: 0.5em;
+  height: 0.5em;
+  border-radius: 50%;
+  background: #fff;
+}
+.ls-drop i {
+  /* the "found it" ring */
+  position: absolute;
+  left: -0.3em;
+  top: 1.2em;
+  width: 2em;
+  height: 1em;
+  border-radius: 50%;
+  border: 2px solid var(--ls-pin);
+  animation: ls-ping 16s ease-out calc(var(--sd) + var(--d) + 0.25s) infinite both;
+}
+.ls-cards {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.55em;
+}
+.ls-lead {
+  padding: 0.6em 0.7em;
+  border-radius: 0.7em;
+  border: 1px solid var(--border);
+  border-left: 0.25em solid var(--ls-pin);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.ls-lead b { display: block; font-size: 0.8em; font-weight: 650; }
+.ls-lead small { display: block; font-size: 0.66em; color: var(--muted); }
+
+/* 4. email */
+.ls-mail {
+  position: relative;
+  width: 21em;
+  padding: 1em 1.1em 1.1em;
+  border-radius: 1em;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  font-size: 0.95em;
+  --ls-field: var(--surface);
+}
+.ls-mrow {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.45em 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.85em;
+}
+.ls-mrow small { width: 3.6em; color: var(--muted); }
+.ls-chip {
+  padding: 0.1em 0.6em;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+.ls-mbody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35em;
+  padding: 0.8em 0 0.2em;
+  font-size: 0.8em;
+  color: var(--text-2);
+}
+.ls-line { display: block; width: fit-content; }
+.ls-send {
+  width: 6em;
+  margin-left: auto;
+  margin-top: 0.7em;
+}
+.ls-toast {
+  position: absolute;
+  left: 50%;
+  bottom: -1.2em;
+  margin-left: -3.4em;
+  width: 6.8em;
+  padding: 0.45em 0;
+  border-radius: 999px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9em;
+  color: #fff;
+  background: var(--ls-green);
+  box-shadow: 0 0.5em 1.4em -0.3em rgba(22, 163, 74, 0.55);
+}
+
+/* 5. calendar */
+.ls-cal { width: 100%; }
+.ls-week {
+  position: relative;
+  margin-top: 0.7em;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.35em;
+  height: 12.5em;
+}
+.ls-day {
+  border-radius: 0.6em;
+  background: var(--surface-2);
+  border: 1px solid var(--border-soft);
+  padding: 0.35em;
+  text-align: center;
+}
+.ls-day small { font-size: 0.66em; color: var(--muted); font-weight: 600; }
+.ls-ev {
+  position: absolute;
+  height: 1.8em;
+  border-radius: 0.4em;
+  background: var(--surface-3);
+}
+/* column n of 5 (gap 0.35em): left = n * (100% + 0.35em) / 5 */
+.ls-ev-a { left: calc(0 * (100% + 0.35em) / 5 + 0.3em); width: calc((100% - 1.4em) / 5 - 0.6em); top: 2.3em; }
+.ls-ev-b { left: calc(1 * (100% + 0.35em) / 5 + 0.3em); width: calc((100% - 1.4em) / 5 - 0.6em); top: 7.4em; }
+.ls-ev-c { left: calc(4 * (100% + 0.35em) / 5 + 0.3em); width: calc((100% - 1.4em) / 5 - 0.6em); top: 4.2em; height: 2.6em; }
+.ls-book {
+  position: absolute;
+  left: calc(3 * (100% + 0.35em) / 5 + 0.2em);
+  width: calc((100% - 1.4em) / 5 - 0.4em);
+  top: 3.6em;
+  padding: 0.35em 0.4em;
+  border-radius: 0.5em;
+  font-size: 0.66em;
+  line-height: 1.25;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  box-shadow: 0 0.6em 1.4em -0.4em color-mix(in oklab, var(--accent) 70%, transparent);
+  animation: ls-land 16s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--sd) + var(--d)) infinite both;
+}
+.ls-book b { display: block; font-size: 1.1em; }
+.ls-notes {
+  margin-top: 0.9em;
+  display: flex;
+  justify-content: center;
+  gap: 0.6em;
+}
+.ls-note,
+.ls-paid {
+  padding: 0.4em 0.9em;
+  border-radius: 999px;
+  font-size: 0.8em;
+  font-weight: 650;
+}
+.ls-note {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.ls-paid {
+  color: #fff;
+  background: var(--ls-green);
+  box-shadow: 0 0.5em 1.4em -0.3em rgba(22, 163, 74, 0.55);
+}
+
+/* step labels under the story */
+.ls-steps {
+  margin-top: 0.9rem;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.4rem;
+  list-style: none;
+  padding: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: center;
+  color: var(--muted);
+}
+.ls-track {
+  display: block;
+  height: 3px;
+  margin-bottom: 0.4rem;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--surface-3);
+}
+.ls-track i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left center;
+  transform: scaleX(0);
+}
+.ls-step-0 .ls-track i { animation: ls-fill0 16s linear infinite both; }
+.ls-step-1 .ls-track i { animation: ls-fill1 16s linear infinite both; }
+.ls-step-2 .ls-track i { animation: ls-fill2 16s linear infinite both; }
+.ls-step-3 .ls-track i { animation: ls-fill3 16s linear infinite both; }
+.ls-step-4 .ls-track i { animation: ls-fill4 16s linear infinite both; }
+
+/* ---------------- keyframes (16 s loop) ---------------- */
+@keyframes ls-scene {
+  0% { opacity: 0; transform: translateY(0.8em) scale(0.97); }
+  3% { opacity: 1; transform: none; }
+  18% { opacity: 1; transform: none; }
+  20.5% { opacity: 0; transform: translateY(-0.8em) scale(0.97); }
+  100% { opacity: 0; transform: translateY(-0.8em) scale(0.97); }
+}
+@keyframes ls-pop {
+  0% { opacity: 0; transform: translateY(0.6em) scale(0.92); }
+  2.5%, 100% { opacity: 1; transform: none; }
+}
+@keyframes ls-slide {
+  0% { opacity: 0; transform: translateX(3em); }
+  2.5%, 100% { opacity: 1; transform: none; }
+}
+@keyframes ls-press {
+  0% { transform: none; }
+  0.8% { transform: scale(0.94); }
+  1.8%, 100% { transform: none; }
+}
+@keyframes ls-wipe {
+  0% { transform: scaleX(1); }
+  3.5%, 100% { transform: scaleX(0); }
+}
+@keyframes ls-drop {
+  0% { opacity: 0; transform: translateY(-2.5em); }
+  2.5%, 100% { opacity: 1; transform: none; }
+}
+@keyframes ls-ping {
+  0% { opacity: 0.9; transform: scale(0.3); }
+  5% { opacity: 0; transform: scale(2.2); }
+  100% { opacity: 0; transform: scale(2.2); }
+}
+@keyframes ls-land {
+  0% { opacity: 0; transform: translateY(-6em) rotate(-4deg); }
+  3%, 100% { opacity: 1; transform: none; }
+}
+@keyframes ls-fill0 { 0% { transform: scaleX(0); } 20%, 100% { transform: scaleX(1); } }
+@keyframes ls-fill1 { 0%, 20% { transform: scaleX(0); } 40%, 100% { transform: scaleX(1); } }
+@keyframes ls-fill2 { 0%, 40% { transform: scaleX(0); } 60%, 100% { transform: scaleX(1); } }
+@keyframes ls-fill3 { 0%, 60% { transform: scaleX(0); } 80%, 100% { transform: scaleX(1); } }
+@keyframes ls-fill4 { 0%, 80% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+
+/* ---------------- how it works ---------------- */
+.ls-how {
+  position: relative;
+  display: grid;
+  gap: 1.75rem;
+  list-style: none;
+  padding: 0;
+}
+@media (min-width: 768px) {
+  .ls-how { grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+  /* the line that joins the three steps */
+  .ls-how::before {
+    content: "";
+    position: absolute;
+    top: 1.5rem;
+    left: 16.6%;
+    right: 16.6%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), color-mix(in oklab, var(--accent) 30%, transparent));
+    opacity: 0.35;
+  }
+}
+.ls-how-item {
+  position: relative;
+  text-align: center;
+  padding: 0 0.5rem;
+}
+.ls-how-num {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 1rem;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  box-shadow: 0 10px 24px -10px var(--accent);
+}
+.ls-how-num b {
+  position: absolute;
+  right: -0.45rem;
+  top: -0.45rem;
+  display: grid;
+  place-items: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  color: var(--accent-text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+/* ---------------- features ---------------- */
+.ls-feat-wrap {
+  background: var(--surface-2);
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+}
+.ls-feat-ic {
+  display: inline-grid;
+  place-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 0.8rem;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+/* feature icons light up as their card comes into view */
+@media (prefers-reduced-motion: no-preference) {
+  .ls-reveal[data-in] .ls-feat-ic {
+    animation: ls-icon-in 900ms var(--ls-ease) 250ms both;
+  }
+  .card-hover:hover .ls-feat-ic {
+    transform: translateY(-2px) rotate(-6deg);
+  }
+}
+.ls-feat-ic { transition: transform 200ms var(--ls-ease); }
+@keyframes ls-icon-in {
+  0% { opacity: 0; transform: scale(0.4) rotate(-20deg); }
+  60% { opacity: 1; transform: scale(1.12) rotate(4deg); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* ---------------- scroll reveal ---------------- */
+.ls-reveal {
+  transition: opacity 700ms var(--ls-ease), transform 700ms var(--ls-ease);
+}
+@media (scripting: enabled) and (prefers-reduced-motion: no-preference) {
+  .ls-reveal:not([data-in]) {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+}
+
+/* paused while the story is off screen (components/landing/pause-offscreen.tsx) */
+.ls-paused .ls-story *,
+.ls-paused .ls-story *::before,
+.ls-paused .ls-story *::after {
+  animation-play-state: paused !important;
+}
+
+/* ---------------- reduce motion: one still frame ---------------- */
+@media (prefers-reduced-motion: reduce) {
+  .ls-story *,
+  .ls-story *::before,
+  .ls-story *::after {
+    animation: none !important;
+  }
+  .ls-scene { opacity: 0; }
+  .ls-scene.ls-last { opacity: 1; }
+  .ls-type::after { transform: scaleX(0); }
+  .ls-drop i { opacity: 0; }
+  .ls-track i { transform: scaleX(1); }
+}

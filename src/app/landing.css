@@ -3,8 +3,9 @@
    Everything that moves uses transform/opacity only (no layout, no
    paint work per frame). Sizes inside the story are in em, and 1em is
    a slice of the story's own width, so it scales like a picture.
-   One loop = 16 s: 5 scenes x 3.2 s. A scene starts at --sd; a piece
-   inside it pops in --d seconds after that.
+   One loop = 22.5 s: 9 scenes x 2.5 s. A scene starts at --sd; a piece
+   inside it pops in --d seconds after that. --off (set when a visitor
+   taps a step) shifts the whole loop so that scene plays first.
    ================================================================== */
 
 .ls-page {
@@ -56,6 +57,7 @@
 
 /* ---------------- the story ---------------- */
 .ls-story {
+  --off: 0s;
   /* the stage's em is measured from this box's width */
   container-type: inline-size;
   margin: 0 auto;
@@ -111,7 +113,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: ls-scene 16s var(--ls-ease) var(--sd) infinite both;
+  animation: ls-scene 22.5s var(--ls-ease) calc(var(--sd) - var(--off)) infinite both;
 }
 .ls-h {
   font-weight: 650;
@@ -121,13 +123,13 @@
 
 /* generic pieces */
 .ls-in {
-  animation: ls-pop 16s var(--ls-ease) calc(var(--sd) + var(--d)) infinite both;
+  animation: ls-pop 22.5s var(--ls-ease) calc(var(--sd) + var(--d) - var(--off)) infinite both;
 }
 .ls-slide {
-  animation: ls-slide 16s var(--ls-ease) calc(var(--sd) + var(--d)) infinite both;
+  animation: ls-slide 22.5s var(--ls-ease) calc(var(--sd) + var(--d) - var(--off)) infinite both;
 }
 .ls-press {
-  animation: ls-press 16s ease calc(var(--sd) + var(--d)) infinite both;
+  animation: ls-press 22.5s ease calc(var(--sd) + var(--d) - var(--off)) infinite both;
 }
 /* "typing": a block the color of the field wipes away from the text */
 .ls-type {
@@ -143,7 +145,7 @@
   inset: -2px -1px;
   background: var(--ls-field, var(--surface));
   transform-origin: right center;
-  animation: ls-wipe 16s steps(14, end) calc(var(--sd) + var(--d)) infinite both;
+  animation: ls-wipe 22.5s steps(14, end) calc(var(--sd) + var(--d) - var(--off)) infinite both;
 }
 
 /* 1. sign up */
@@ -335,7 +337,7 @@
   top: -1.9em;
   width: 1.4em;
   height: 1.9em;
-  animation: ls-drop 16s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--sd) + var(--d)) infinite both;
+  animation: ls-drop 22.5s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--sd) + var(--d) - var(--off)) infinite both;
 }
 .ls-drop::before {
   /* the pin: a rounded drop shape */
@@ -369,7 +371,7 @@
   height: 1em;
   border-radius: 50%;
   border: 2px solid var(--ls-pin);
-  animation: ls-ping 16s ease-out calc(var(--sd) + var(--d) + 0.25s) infinite both;
+  animation: ls-ping 22.5s ease-out calc(var(--sd) + var(--d) - var(--off) + 0.2s) infinite both;
 }
 .ls-cards {
   display: flex;
@@ -487,7 +489,7 @@
   color: #fff;
   background: var(--accent);
   box-shadow: 0 0.6em 1.4em -0.4em color-mix(in oklab, var(--accent) 70%, transparent);
-  animation: ls-land 16s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--sd) + var(--d)) infinite both;
+  animation: ls-land 22.5s cubic-bezier(0.34, 1.56, 0.64, 1) calc(var(--sd) + var(--d) - var(--off)) infinite both;
 }
 .ls-book b { display: block; font-size: 1.1em; }
 .ls-notes {
@@ -513,23 +515,279 @@
   box-shadow: 0 0.5em 1.4em -0.3em rgba(22, 163, 74, 0.55);
 }
 
-/* step labels under the story */
-.ls-steps {
-  margin-top: 0.9rem;
+
+/* shared card for scenes 4, 6, 7 */
+.ls-panel {
+  width: 21em;
+  padding: 1.1em 1.2em 1.2em;
+  border-radius: 1em;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.ls-spark { margin-right: 0.35em; color: var(--accent); }
+.ls-eyebrow {
+  font-size: 0.66em;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+.ls-sub { margin-top: 0.3em; font-size: 0.8em; color: var(--muted); }
+
+/* 4. today's plan */
+.ls-plan { margin-top: 0.8em; display: flex; flex-direction: column; gap: 0.55em; list-style: none; padding: 0; }
+.ls-plan li {
+  display: flex;
+  align-items: center;
+  gap: 0.7em;
+  padding: 0.55em 0.7em;
+  border-radius: 0.7em;
+  background: var(--surface-2);
+  font-size: 0.85em;
+}
+.ls-box {
+  position: relative;
+  flex-shrink: 0;
+  width: 1.3em;
+  height: 1.3em;
+  border-radius: 0.4em;
+  border: 2px solid var(--border);
+  background: var(--surface);
+}
+.ls-tick {
+  position: absolute;
+  inset: -2px;
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.4rem;
+  place-items: center;
+  border-radius: 0.4em;
+  color: #fff;
+  font-size: 0.8em;
+  font-weight: 800;
+  background: var(--ls-green);
+}
+.ls-task { position: relative; color: var(--text-2); }
+.ls-strike {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 52%;
+  height: 1.5px;
+  background: var(--muted);
+  transform-origin: left center;
+  animation: ls-strike 22.5s ease calc(var(--sd) + var(--d) - var(--off)) infinite both;
+}
+
+/* 5. email: "draft ready" tag */
+.ls-draft {
+  width: fit-content;
+  margin-bottom: 0.2em;
+  padding: 0.1em 0.6em;
+  border-radius: 999px;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+
+/* 6. Decision Guard */
+.ls-q {
+  margin-top: 0.8em;
+  padding: 0.7em 0.8em;
+  border-radius: 0.7em;
+  background: var(--surface-2);
+}
+.ls-q small { display: block; font-size: 0.78em; color: var(--text-2); }
+.ls-ans {
+  display: inline-block;
+  margin-top: 0.5em;
+  padding: 0.15em 0.7em;
+  border-radius: 999px;
+  font-size: 0.75em;
+  font-weight: 650;
+  color: var(--accent-contrast);
+  background: var(--accent);
+}
+.ls-meter { margin-top: 0.9em; display: flex; align-items: center; gap: 0.7em; }
+.ls-meter-track {
+  flex: 1;
+  height: 0.55em;
+  border-radius: 1em;
+  overflow: hidden;
+  background: var(--surface-3);
+}
+.ls-meter-fill {
+  display: block;
+  width: 58%;
+  height: 100%;
+  border-radius: 1em;
+  background: #f59e0b;
+  transform-origin: left center;
+  animation: ls-grow 22.5s var(--ls-ease) calc(var(--sd) + var(--d) - var(--off)) infinite both;
+}
+.ls-risk {
+  padding: 0.15em 0.6em;
+  border-radius: 999px;
+  font-size: 0.72em;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+.ls-verdict { margin-top: 0.6em; font-size: 0.8em; color: var(--text-2); }
+
+/* 7. follow-ups */
+.ls-people { margin-top: 0.8em; display: flex; flex-direction: column; gap: 0.5em; }
+.ls-person {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.5em 0.6em;
+  border-radius: 0.7em;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.ls-person b { display: block; font-size: 0.78em; font-weight: 650; }
+.ls-person small { display: block; font-size: 0.66em; color: var(--muted); }
+.ls-av {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 1.9em;
+  height: 1.9em;
+  border-radius: 50%;
+  font-size: 0.8em;
+  font-weight: 700;
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+.ls-mini {
+  margin-left: auto;
+  padding: 0.2em 0.6em;
+  border-radius: 0.5em;
+  font-size: 0.66em;
+  font-weight: 650;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  white-space: nowrap;
+}
+
+/* 8. lead alert */
+.ls-alert { width: 21em; display: flex; flex-direction: column; align-items: center; gap: 0.8em; }
+.ls-bell-wrap { position: relative; }
+.ls-bell {
+  display: grid;
+  place-items: center;
+  width: 2.6em;
+  height: 2.6em;
+  border-radius: 50%;
+  font-size: 1.1em;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  transform-origin: 50% 10%;
+  animation: ls-ring 22.5s ease calc(var(--sd) + var(--d) - var(--off)) infinite both;
+}
+.ls-badge {
+  position: absolute;
+  right: -0.35em;
+  top: -0.35em;
+  display: grid;
+  place-items: center;
+  width: 1.4em;
+  height: 1.4em;
+  border-radius: 50%;
+  font-size: 0.72em;
+  font-weight: 800;
+  color: #fff;
+  background: #dc2626;
+}
+.ls-inbox {
+  width: 100%;
+  border-radius: 0.9em;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.ls-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+  padding: 0.6em 0.8em;
+  border-bottom: 1px solid var(--border-soft);
+  font-size: 0.78em;
+}
+.ls-row:last-child { border-bottom: 0; }
+.ls-row b { width: 5.2em; flex-shrink: 0; font-weight: 650; }
+.ls-row small { color: var(--muted); font-size: 0.95em; }
+.ls-dim { opacity: 0.55; }
+.ls-new { background: var(--accent-soft); }
+.ls-new b, .ls-new small { color: var(--accent-text); font-weight: 650; }
+.ls-new b { width: 4.2em; }
+.ls-dot { width: 0.5em; height: 0.5em; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.ls-leadpills { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4em; }
+.ls-leadpills span {
+  padding: 0.25em 0.7em;
+  border-radius: 999px;
+  font-size: 0.68em;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-left: 0.25em solid var(--ls-pin);
+  background: var(--surface);
+}
+
+/* phones: the current scene's name under the story */
+.ls-caption {
+  position: relative;
+  height: 1.4rem;
+  margin-top: 0.7rem;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 650;
+  color: var(--text-2);
+}
+.ls-cap {
+  position: absolute;
+  inset: 0;
+  animation: ls-cap 22.5s ease calc(var(--sd) - var(--off)) infinite both;
+}
+@media (min-width: 640px) {
+  .ls-caption { display: none; }
+}
+
+/* the step row: a bar per scene (fills while it plays), tap to jump */
+.ls-steps {
+  margin-top: 0.4rem;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 0.25rem;
   list-style: none;
   padding: 0;
-  font-size: 0.72rem;
+}
+.ls-step {
+  display: block;
+  width: 100%;
+  padding: 0.9rem 0;
+  border-radius: 0.4rem;
+  font-size: 0.66rem;
   font-weight: 600;
+  line-height: 1.15;
   text-align: center;
   color: var(--muted);
+  cursor: pointer;
+  transition: color 140ms ease;
+}
+.ls-step:hover { color: var(--accent-text); }
+.ls-step:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.ls-step-label { display: none; margin-top: 0.4rem; }
+@media (min-width: 640px) {
+  .ls-steps { margin-top: 0.8rem; }
+  .ls-step { padding: 0.55rem 0 0.35rem; }
+  .ls-step-label { display: block; }
 }
 .ls-track {
   display: block;
   height: 3px;
-  margin-bottom: 0.4rem;
   border-radius: 3px;
   overflow: hidden;
   background: var(--surface-3);
@@ -541,55 +799,84 @@
   transform-origin: left center;
   transform: scaleX(0);
 }
-.ls-step-0 .ls-track i { animation: ls-fill0 16s linear infinite both; }
-.ls-step-1 .ls-track i { animation: ls-fill1 16s linear infinite both; }
-.ls-step-2 .ls-track i { animation: ls-fill2 16s linear infinite both; }
-.ls-step-3 .ls-track i { animation: ls-fill3 16s linear infinite both; }
-.ls-step-4 .ls-track i { animation: ls-fill4 16s linear infinite both; }
+.ls-step-0 .ls-track i { animation: ls-fill0 22.5s linear calc(0s - var(--off)) infinite both; }
+.ls-step-1 .ls-track i { animation: ls-fill1 22.5s linear calc(0s - var(--off)) infinite both; }
+.ls-step-2 .ls-track i { animation: ls-fill2 22.5s linear calc(0s - var(--off)) infinite both; }
+.ls-step-3 .ls-track i { animation: ls-fill3 22.5s linear calc(0s - var(--off)) infinite both; }
+.ls-step-4 .ls-track i { animation: ls-fill4 22.5s linear calc(0s - var(--off)) infinite both; }
+.ls-step-5 .ls-track i { animation: ls-fill5 22.5s linear calc(0s - var(--off)) infinite both; }
+.ls-step-6 .ls-track i { animation: ls-fill6 22.5s linear calc(0s - var(--off)) infinite both; }
+.ls-step-7 .ls-track i { animation: ls-fill7 22.5s linear calc(0s - var(--off)) infinite both; }
+.ls-step-8 .ls-track i { animation: ls-fill8 22.5s linear calc(0s - var(--off)) infinite both; }
 
-/* ---------------- keyframes (16 s loop) ---------------- */
+/* ---------------- keyframes (22.5 s loop; 1 s = 4.44%) ---------------- */
 @keyframes ls-scene {
   0% { opacity: 0; transform: translateY(0.8em) scale(0.97); }
-  3% { opacity: 1; transform: none; }
-  18% { opacity: 1; transform: none; }
-  20.5% { opacity: 0; transform: translateY(-0.8em) scale(0.97); }
+  2.5% { opacity: 1; transform: none; }
+  9.8% { opacity: 1; transform: none; }
+  11.1% { opacity: 0; transform: translateY(-0.8em) scale(0.97); }
   100% { opacity: 0; transform: translateY(-0.8em) scale(0.97); }
+}
+@keyframes ls-cap {
+  0% { opacity: 0; }
+  1.5%, 10% { opacity: 1; }
+  11.1%, 100% { opacity: 0; }
 }
 @keyframes ls-pop {
   0% { opacity: 0; transform: translateY(0.6em) scale(0.92); }
-  2.5%, 100% { opacity: 1; transform: none; }
+  2.2%, 100% { opacity: 1; transform: none; }
 }
 @keyframes ls-slide {
   0% { opacity: 0; transform: translateX(3em); }
-  2.5%, 100% { opacity: 1; transform: none; }
+  2.2%, 100% { opacity: 1; transform: none; }
 }
 @keyframes ls-press {
   0% { transform: none; }
-  0.8% { transform: scale(0.94); }
-  1.8%, 100% { transform: none; }
+  0.7% { transform: scale(0.94); }
+  1.5%, 100% { transform: none; }
 }
 @keyframes ls-wipe {
   0% { transform: scaleX(1); }
-  3.5%, 100% { transform: scaleX(0); }
+  3%, 100% { transform: scaleX(0); }
 }
 @keyframes ls-drop {
   0% { opacity: 0; transform: translateY(-2.5em); }
-  2.5%, 100% { opacity: 1; transform: none; }
+  2.2%, 100% { opacity: 1; transform: none; }
 }
 @keyframes ls-ping {
   0% { opacity: 0.9; transform: scale(0.3); }
-  5% { opacity: 0; transform: scale(2.2); }
+  4% { opacity: 0; transform: scale(2.2); }
   100% { opacity: 0; transform: scale(2.2); }
 }
 @keyframes ls-land {
   0% { opacity: 0; transform: translateY(-6em) rotate(-4deg); }
-  3%, 100% { opacity: 1; transform: none; }
+  2.6%, 100% { opacity: 1; transform: none; }
 }
-@keyframes ls-fill0 { 0% { transform: scaleX(0); } 20%, 100% { transform: scaleX(1); } }
-@keyframes ls-fill1 { 0%, 20% { transform: scaleX(0); } 40%, 100% { transform: scaleX(1); } }
-@keyframes ls-fill2 { 0%, 40% { transform: scaleX(0); } 60%, 100% { transform: scaleX(1); } }
-@keyframes ls-fill3 { 0%, 60% { transform: scaleX(0); } 80%, 100% { transform: scaleX(1); } }
-@keyframes ls-fill4 { 0%, 80% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+@keyframes ls-strike {
+  0% { transform: scaleX(0); }
+  1.5%, 100% { transform: scaleX(1); }
+}
+@keyframes ls-grow {
+  0% { transform: scaleX(0); }
+  3%, 100% { transform: scaleX(1); }
+}
+@keyframes ls-ring {
+  0% { transform: none; }
+  0.6% { transform: rotate(16deg); }
+  1.2% { transform: rotate(-14deg); }
+  1.8% { transform: rotate(9deg); }
+  2.4% { transform: rotate(-5deg); }
+  3%, 100% { transform: none; }
+}
+@keyframes ls-fill0 { 0% { transform: scaleX(0); } 11.11%, 100% { transform: scaleX(1); } }
+@keyframes ls-fill1 { 0%, 11.11% { transform: scaleX(0); } 22.22%, 100% { transform: scaleX(1); } }
+@keyframes ls-fill2 { 0%, 22.22% { transform: scaleX(0); } 33.33%, 100% { transform: scaleX(1); } }
+@keyframes ls-fill3 { 0%, 33.33% { transform: scaleX(0); } 44.44%, 100% { transform: scaleX(1); } }
+@keyframes ls-fill4 { 0%, 44.44% { transform: scaleX(0); } 55.56%, 100% { transform: scaleX(1); } }
+@keyframes ls-fill5 { 0%, 55.56% { transform: scaleX(0); } 66.67%, 100% { transform: scaleX(1); } }
+@keyframes ls-fill6 { 0%, 66.67% { transform: scaleX(0); } 77.78%, 100% { transform: scaleX(1); } }
+@keyframes ls-fill7 { 0%, 77.78% { transform: scaleX(0); } 88.89%, 100% { transform: scaleX(1); } }
+@keyframes ls-fill8 { 0%, 88.89% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
 
 /* ---------------- how it works ---------------- */
 .ls-how {
@@ -687,22 +974,47 @@
   }
 }
 
-/* paused while the story is off screen (components/landing/pause-offscreen.tsx) */
-.ls-paused .ls-story *,
-.ls-paused .ls-story *::before,
-.ls-paused .ls-story *::after {
+
+/* paused while the story is off screen, or restarting after a tap */
+.ls-story.ls-paused *,
+.ls-story.ls-paused *::before,
+.ls-story.ls-paused *::after {
   animation-play-state: paused !important;
 }
+.ls-story.ls-reset *,
+.ls-story.ls-reset *::before,
+.ls-story.ls-reset *::after {
+  animation: none !important;
+}
 
-/* ---------------- reduce motion: one still frame ---------------- */
+/* ---------------- reduce motion: one still scene ---------------- */
+/* Shows the booking, or the scene the visitor tapped. */
 @media (prefers-reduced-motion: reduce) {
   .ls-story *,
   .ls-story *::before,
   .ls-story *::after {
     animation: none !important;
   }
-  .ls-scene { opacity: 0; }
-  .ls-scene.ls-last { opacity: 1; }
+  .ls-scene,
+  .ls-cap { opacity: 0; }
+  .ls-story[data-scene="0"] .ls-scene-0,
+  .ls-story[data-scene="0"] .ls-cap-0 { opacity: 1; }
+  .ls-story[data-scene="1"] .ls-scene-1,
+  .ls-story[data-scene="1"] .ls-cap-1 { opacity: 1; }
+  .ls-story[data-scene="2"] .ls-scene-2,
+  .ls-story[data-scene="2"] .ls-cap-2 { opacity: 1; }
+  .ls-story[data-scene="3"] .ls-scene-3,
+  .ls-story[data-scene="3"] .ls-cap-3 { opacity: 1; }
+  .ls-story[data-scene="4"] .ls-scene-4,
+  .ls-story[data-scene="4"] .ls-cap-4 { opacity: 1; }
+  .ls-story[data-scene="5"] .ls-scene-5,
+  .ls-story[data-scene="5"] .ls-cap-5 { opacity: 1; }
+  .ls-story[data-scene="6"] .ls-scene-6,
+  .ls-story[data-scene="6"] .ls-cap-6 { opacity: 1; }
+  .ls-story[data-scene="7"] .ls-scene-7,
+  .ls-story[data-scene="7"] .ls-cap-7 { opacity: 1; }
+  .ls-story[data-scene="8"] .ls-scene-8,
+  .ls-story[data-scene="8"] .ls-cap-8 { opacity: 1; }
   .ls-type::after { transform: scaleX(0); }
   .ls-drop i { opacity: 0; }
   .ls-track i { transform: scaleX(1); }

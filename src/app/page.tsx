@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import Icon, { type IconName } from "@/components/icons";
 import Story from "@/components/landing/story";
 import Reveal from "@/components/landing/reveal";
-import PauseOffscreen from "@/components/landing/pause-offscreen";
 import "./landing.css";
 
 // The six features the page always had, plus Lead Finder and the booking
@@ -132,9 +131,7 @@ export default async function Home() {
                 </span>
               </div>
             </div>
-            <PauseOffscreen>
-              <Story />
-            </PauseOffscreen>
+            <Story />
           </div>
         </section>
 

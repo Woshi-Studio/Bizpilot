@@ -8,7 +8,7 @@ import { AUP_VERSION, areaCountry, betaCredits, isFinderBeta, finderErrorKey, fi
 import { parseSmartSearch } from "@/lib/finder-query";
 import { DISCOVER_DEFAULT_COUNT, LOCKED_SEARCHES_PER_DAY } from "@/lib/finder-plans";
 import { industryLabel } from "@/lib/finder";
-import { getFinderAccess, loadProfile } from "@/lib/finder-server";
+import { getFinderAccess, getSpendAccess, loadProfile, unlockPaid } from "@/lib/finder-server";
 import { runFairChecks } from "@/lib/fair-credit-server";
 
 // Lead Finder actions. Every one starts from the user's own session
@@ -53,7 +53,8 @@ export async function saveIntake(_prev: FinderFormState, formData: FormData): Pr
 
 export async function searchLeads(_prev: FinderFormState, formData: FormData): Promise<FinderFormState> {
   const { supabase, business } = await requireUserAndBusiness();
-  const access = getFinderAccess(business);
+  // Starter / Hustle with lead credits spend them (unlocked results).
+  const { access } = await getSpendAccess(supabase, business);
   if (access === "none") return { error: CLOSED };
 
   let { profile } = await loadProfile(supabase, business.id);
@@ -130,7 +131,7 @@ export async function searchLeads(_prev: FinderFormState, formData: FormData): P
     );
   }
   revalidatePath("/leads/search");
-  const lockedNote = out.locked ? " Upgrade to Boss to see the phone, email and website." : "";
+  const lockedNote = out.locked ? " Get lead credits to see the phone, email and website." : "";
   if (out.status === "found") return { success: `Found in our records. It's at the top of the list.${lockedNote}`, locked: !!out.locked };
   if (out.status === "pick") return { success: "We know a few with that name. Pick the right one below (free)." };
   return { success: "Queued. We're researching it now: usually within 1 hour, at most 24 hours." };
@@ -141,7 +142,7 @@ export async function searchLeads(_prev: FinderFormState, formData: FormData): P
 export async function findCustomers(_prev: FinderFormState, _formData: FormData): Promise<FinderFormState> {
   void _formData;
   const { supabase, business } = await requireUserAndBusiness();
-  const access = getFinderAccess(business);
+  const { access } = await getSpendAccess(supabase, business);
   if (access === "none") return { error: CLOSED };
   const { profile } = await loadProfile(supabase, business.id);
   if (!profile?.my_business || !profile.offer) {
@@ -209,4 +210,24 @@ export async function reportFound(_prev: FinderFormState, formData: FormData): P
   if (status === "refunded") return { success: "Thanks. Your credit is back, and we've flagged that contact." };
   if (status === "review") return { success: "Thanks. We'll look at it and refund the credit if it's wrong." };
   return { success: "Thanks. We've flagged that contact." };
+}
+
+// Unlock one saved locked result. Boss / owner: free. Starter / Hustle:
+// 1 lead credit (finder_unlock_paid, 0021).
+export async function unlockResult(_prev: FinderFormState, formData: FormData): Promise<FinderFormState> {
+  const id = String(formData.get("result_id") ?? "");
+  if (!UUID_RE.test(id)) return { error: "That result wasn't found." };
+  const { business } = await requireUserAndBusiness();
+  if (getFinderAccess(business) === "none") return { error: CLOSED };
+  const out = await unlockPaid(business.id, id);
+  if (!out.ok) {
+    const key = finderErrorKey(out.error);
+    if (!key) {
+      console.error("finder_unlock_paid failed:", out.error);
+      if (/finder_unlock_paid/.test(out.error ?? "")) return { error: "Unlocking isn't switched on yet. Please try again later." };
+    }
+    return { error: finderErrorMessage(out.error), upgrade: key === "no_credits" };
+  }
+  revalidatePath("/leads/search");
+  return { success: out.credits ? "Unlocked for 1 lead credit." : "Unlocked." };
 }

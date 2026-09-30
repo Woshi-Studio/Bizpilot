@@ -2,7 +2,7 @@ import { requireUserAndBusiness } from "@/lib/data";
 import { stripeConfigured, tierConfigured } from "@/lib/stripe";
 import { getAiCredits, isOwnerBusiness } from "@/lib/ai-quota";
 import { getPlanState } from "@/lib/plan-limits";
-import { getFinderAccess, intakeFilled, loadCredits, loadLeadSub, loadProfile } from "@/lib/finder-server";
+import { ensureWelcomeLeads, getFinderAccess, intakeFilled, loadCredits, loadLeadSub, loadProfile } from "@/lib/finder-server";
 import { finderProductReady, leadProductView } from "@/lib/finder-plans";
 import { PlanFaq, PlanTable } from "@/components/plan-explainer";
 import PlanSection from "../settings/plan-section";
@@ -18,7 +18,7 @@ const BILLING_MESSAGES: Record<string, string> = {
   nocustomer: "No billing account found yet.",
   leads_ok: "🎉 Thanks! Your lead subscription is on. The credits arrive in a minute.",
   pack_ok: "🎉 Thanks! Your lead credits arrive in a minute.",
-  boss_only: "Lead subscriptions and packs come with Boss.",
+  boss_only: "Lead packs and the lead subscription aren't available on this account.",
 };
 
 // Plans & billing: the plan cards (Upgrade / Manage), what each plan gets,
@@ -33,6 +33,8 @@ export default async function PlansPage({
   const { supabase, business } = await requireUserAndBusiness();
   const owner = isOwnerBusiness(business.id);
   const finderAccess = getFinderAccess(business);
+  // The welcome lead credits, once (before the balance is read).
+  await ensureWelcomeLeads(business);
 
   const [planState, ai, credits, leadSub, profile] = await Promise.all([
     getPlanState(supabase, business),

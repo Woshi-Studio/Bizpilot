@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUserAndBusiness } from "@/lib/data";
 import { AUP_VERSION, kmToMiles } from "@/lib/finder";
-import { canDiscover, getFinderAccess, loadProfile } from "@/lib/finder-server";
+import { canDiscover, getSpendAccess, loadProfile } from "@/lib/finder-server";
 import { DISCOVER_DEFAULT_COUNT } from "@/lib/finder-plans";
 import IntakeForm from "./intake-form";
 import FindCustomers from "../find-customers";
@@ -11,7 +11,7 @@ export const metadata = { title: "What are you hunting?" };
 export default async function HuntPage({ searchParams }: { searchParams: Promise<{ need?: string }> }) {
   const { need } = await searchParams;
   const { supabase, business } = await requireUserAndBusiness();
-  const access = getFinderAccess(business);
+  const { access } = await getSpendAccess(supabase, business);
 
   if (access === "none") {
     return (

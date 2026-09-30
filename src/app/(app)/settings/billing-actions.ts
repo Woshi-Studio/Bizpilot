@@ -10,22 +10,8 @@ import {
   priceIdFor,
   tierConfigured,
 } from "@/lib/stripe";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAndSaveCustomer, isMissingCustomer } from "@/lib/stripe-customer";
 import { finderPriceId } from "@/lib/finder-plans";
-
-type Stripe = ReturnType<typeof getStripe>;
-
-// A saved cus_ id that doesn't exist in the current Stripe mode (e.g. a
-// TEST-mode customer after switching to LIVE keys). Stripe answers
-// resource_missing / "No such customer".
-function isMissingCustomer(err: unknown) {
-  const e = err as { code?: string; message?: string; raw?: { code?: string } } | null;
-  return (
-    e?.code === "resource_missing" ||
-    e?.raw?.code === "resource_missing" ||
-    /no such customer/i.test(String(e?.message ?? ""))
-  );
-}
 
 // Logs what Stripe really said (code + message), never secrets.
 function logStripeError(where: string, err: unknown) {
@@ -48,35 +34,6 @@ function isRedirect(err: unknown) {
     typeof (err as { digest?: string }).digest === "string" &&
     (err as { digest: string }).digest.startsWith("NEXT_REDIRECT")
   );
-}
-
-// Creates a Stripe customer for this business and saves the id.
-// stripe_customer_id is billing-only (0011): users can't write it, so it is
-// saved with the service-role client. business.id comes from
-// requireUserAndBusiness(), so it is this user's own business.
-async function createAndSaveCustomer(
-  stripe: Stripe,
-  business: { id: string; name: string },
-  user: { id: string; email?: string | null }
-): Promise<string> {
-  const customer = await stripe.customers.create({
-    email: user.email ?? undefined,
-    name: business.name,
-    metadata: { business_id: business.id },
-  });
-  const admin = createAdminClient();
-  if (!admin) {
-    redirect("/plans?billing=unconfigured");
-  }
-  const { error: saveError } = await admin
-    .from("businesses")
-    .update({ stripe_customer_id: customer.id })
-    .eq("id", business.id)
-    .eq("owner_id", user.id);
-  if (saveError) {
-    throw new Error(`Could not save Stripe customer: ${saveError.message}`);
-  }
-  return customer.id;
 }
 
 // Starts a Stripe Checkout session for a paid tier and redirects to it.

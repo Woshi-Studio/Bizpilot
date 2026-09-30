@@ -5,6 +5,7 @@ import {
   BOSS_CREDITS_PER_PERIOD,
   LEAD_CREDITS_ROLL_OVER,
   LEADSUB_CREDITS_PER_PERIOD,
+  LEAD_PRODUCTS_BOSS_ONLY,
   LOCKED_SEARCHES_PER_DAY,
   PACK_CREDITS,
   rolloverText,
@@ -137,7 +138,9 @@ export default function FinderSection({
               ? "Owner account: unlimited searches, nothing to buy."
               : access === "full"
                 ? `Boss gives you ${BOSS_CREDITS_PER_PERIOD} lead credits every 4 weeks. 1 credit = 1 business found with a way to reach it. ${rolloverText()}`
-                : `You can search for free (${LOCKED_SEARCHES_PER_DAY} a day): results show the company, city and why it fits. Boss unlocks the phone, email, website and source, plus ${BOSS_CREDITS_PER_PERIOD} lead credits every 4 weeks.`}
+                : LEAD_PRODUCTS_BOSS_ONLY
+                  ? `You can search for free (${LOCKED_SEARCHES_PER_DAY} a day): results show the company, city and why it fits. Boss unlocks the phone, email, website and source, plus ${BOSS_CREDITS_PER_PERIOD} lead credits every 4 weeks.`
+                  : `Search free (${LOCKED_SEARCHES_PER_DAY} a day): results show the company, city and why it fits. Lead credits unlock the phone, email, website and source, on any plan. No plan change needed: buy a pack or get the lead subscription below.`}
           </p>
         </div>
         <Link href="/leads/search" className="btn-secondary btn-sm">
@@ -147,7 +150,7 @@ export default function FinderSection({
 
       {message && <p className="alert-info mt-4">{message}</p>}
 
-      {!owner && credits && (access === "full" || credits.balance > 0) && (
+      {!owner && credits && (
         <p className="mt-4 text-2xl font-bold tracking-tight text-ink">
           {credits.balance}
           <span className="text-sm font-medium text-muted"> lead credits</span>
@@ -163,7 +166,10 @@ export default function FinderSection({
           These come with Boss. Your saved results unlock when you upgrade.
         </p>
       ) : (
-        <p className="mt-1 text-sm text-ink-2">1 lead credit = 1 business found with a way to reach it.</p>
+        <p className="mt-1 text-sm text-ink-2">
+          1 lead credit = 1 business found with a way to reach it.
+          {LEAD_PRODUCTS_BOSS_ONLY ? "" : " Any plan can buy: Starter, Hustle or Boss."}
+        </p>
       )}
 
       <div className="mt-4 grid gap-4 md:grid-cols-3">
@@ -172,7 +178,9 @@ export default function FinderSection({
           big={LEADSUB_CREDITS_PER_PERIOD}
           unit="leads every 4 weeks"
           lines={[
-            `${LEADSUB_CREDITS_PER_PERIOD} lead credits every 4 weeks, on top of Boss's ${BOSS_CREDITS_PER_PERIOD}.`,
+            access === "full"
+              ? `${LEADSUB_CREDITS_PER_PERIOD} lead credits every 4 weeks, on top of Boss's ${BOSS_CREDITS_PER_PERIOD}.`
+              : `${LEADSUB_CREDITS_PER_PERIOD} lead credits every 4 weeks. Works on any plan.`,
             "Renews every 4 weeks. Cancel any time.",
             LEAD_CREDITS_ROLL_OVER ? "Unused credits carry over." : "Unused credits don't carry over.",
           ]}

@@ -3,6 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { getStripe, tierForPriceId, type PaidTier } from "@/lib/stripe";
 import {
   LEAD_CREDITS_ROLL_OVER,
+  LEAD_PRODUCTS_BOSS_ONLY,
   finderPriceId,
   finderProductForPrice,
   invoiceGrant,
@@ -260,11 +261,13 @@ async function expireOnEnd(
   }
 }
 
-// The business is no longer on Boss: Boss credits left go (no rollover), and
-// the lead subscription stops at the end of its period (its credits would be
-// locked on Starter / Hustle).
+// The business is no longer on Boss: Boss credits left go (no rollover).
+// While lead products are Boss only, the lead subscription also stops at the
+// end of its period. Since 2026-09-30 every plan can hold one (and spend its
+// credits), so it keeps running.
 async function leftBoss(admin: SupabaseClient, sub: Stripe.Subscription, customerId: string, eventId: string) {
   await expireOnEnd(admin, sub, customerId, "plan", eventId);
+  if (!LEAD_PRODUCTS_BOSS_ONLY) return;
   const leadPrice = finderPriceId("leadsub", process.env);
   if (!leadPrice) return;
   try {

@@ -21,9 +21,28 @@ export const LOCKED_SEARCHES_PER_DAY = 5;
 // How many NEW companies one "Find me customers" run delivers.
 export const DISCOVER_DEFAULT_COUNT = 10;
 
-// Who may buy the lead subscription and packs: Boss only (it drives
-// upgrades). The owner never needs them.
-export const LEAD_PRODUCTS_BOSS_ONLY = true;
+// Who may buy the lead subscription and packs. Lucy 2026-09-30: everyone
+// ("if they want leads they don't need to pay the Boss sub; they can just
+// buy, or sub for leads only"). true = Boss only again. The owner never
+// needs them.
+export const LEAD_PRODUCTS_BOSS_ONLY = false;
+
+// Free lead credits every new business gets once (Lucy 2026-09-29: "offer
+// the 5 free leads to people that just sign up and let them have a tease").
+// Existing businesses that never had any credits get them once too. They
+// are pack credits: they never expire.
+export const WELCOME_LEAD_CREDITS = 5;
+
+// The grant reference: one per business, so a repeat adds nothing.
+export function welcomeRef(businessId: string): string {
+  return `welcome:${businessId.trim().toLowerCase()}`;
+}
+
+// Does this business get the welcome credits now? Never the owner, never
+// before the Lead Finder is open to it, never after any earlier grant.
+export function welcomeDue(opts: { owner: boolean; access: string; hadGrant: boolean }): boolean {
+  return !opts.owner && opts.access !== "owner" && opts.access !== "none" && !opts.hadGrant;
+}
 
 export type FinderProduct = "leadsub" | "pack25" | "pack100";
 
@@ -86,6 +105,25 @@ export function packGrant(lines: { priceId: string | null | undefined; quantity:
   return credits > 0 ? { pool: "pack", credits } : null;
 }
 
+// The "Get leads" line for Starter / Hustle (dashboard + Search leads).
+// No prices here: those live on /plans and in Stripe checkout only.
+// `free` = the only credits ever granted are the welcome ones.
+export function leadOffer(rows: { delta: number; reason: string; note?: string | null }[]): { balance: number; free: boolean } {
+  const balance = rows.reduce((n, r) => n + (Number.isFinite(r.delta) ? r.delta : 0), 0);
+  const grants = rows.filter((r) => r.reason === "grant" && r.delta > 0);
+  const free = grants.length === 1 && grants[0].delta === WELCOME_LEAD_CREDITS && (grants[0].note ?? "pack") === "pack";
+  return { balance, free };
+}
+
+export function leadOfferText(o: { balance: number; free: boolean }): string {
+  const more = "Get more anytime: a lead pack or the lead subscription.";
+  if (o.balance <= 0) return `You're out of lead credits. Free searches still show the company and city. ${more}`;
+  const n = o.balance;
+  return o.free
+    ? `You have ${n} free lead${n === 1 ? "" : "s"}. ${more}`
+    : `You have ${n} lead credit${n === 1 ? "" : "s"}. ${more}`;
+}
+
 // Can this business buy the lead sub / a pack?
 export function canBuyLeadProducts(opts: { plan: string | null | undefined; owner: boolean }): boolean {
   if (opts.owner) return false;
@@ -94,14 +132,16 @@ export function canBuyLeadProducts(opts: { plan: string | null | undefined; owne
 
 // How /plans shows the lead products. The cards always show (to everyone
 // with Finder access); only the button changes:
-//   "buy"     -> Boss: real Buy buttons
-//   "upgrade" -> Starter / Hustle: "Available on Boss: Upgrade"
+//   "buy"     -> real Buy buttons (every plan while LEAD_PRODUCTS_BOSS_ONLY
+//                is false; else Boss only)
+//   "upgrade" -> "Available on Boss: Upgrade" (Boss-only mode)
 //   "owner"   -> the owner: unlimited, buttons shown but disabled
 export type LeadProductView = "buy" | "upgrade" | "owner";
 
 export function leadProductView(opts: { access: string; plan: string | null | undefined; owner: boolean }): LeadProductView {
   if (opts.owner || opts.access === "owner") return "owner";
-  return opts.access === "full" && canBuyLeadProducts(opts) ? "buy" : "upgrade";
+  if (opts.access === "none") return "upgrade";
+  return canBuyLeadProducts(opts) ? "buy" : "upgrade";
 }
 
 export function rolloverText(): string {

@@ -129,7 +129,7 @@ export default function SearchForm({
         </label>
       )}
 
-      <FormError error={state.error} upgrade={state.upgrade} className="mt-3" />
+      <FormError error={state.error} upgrade={state.upgrade} upgradeHref="/plans#lead-finder" upgradeLabel="Get leads" className="mt-3" />
       {state.success && <p className="alert-success mt-3">{state.success}</p>}
 
       <div className="mt-4 flex flex-col items-end">

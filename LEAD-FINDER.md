@@ -1,5 +1,28 @@
 # Lead Finder
 
+## Branch `feat/leads-for-everyone` (migration 0021, additive: one function)
+
+Lucy 2026-09-30: "everyone able to buy leads ... they don't need to pay the Boss sub, they can just
+buy, or sub for leads only". 2026-09-29: "offer the 5 free leads to people that just sign up".
+
+| Part | Where |
+|---|---|
+| Any plan buys | `LEAD_PRODUCTS_BOSS_ONLY = false` (`src/lib/finder-plans.ts`). Starter, Hustle and Boss all get Buy on Pack 25, Pack 100 and the lead subscription (/plans). Set it back to `true` = Boss only again (copy follows it) |
+| First purchase | `settings/finder-billing-actions.ts`: no Stripe customer yet → one is made and saved (`src/lib/stripe-customer.ts`, shared with the plan checkout); a saved customer from the other Stripe mode is replaced once |
+| Credits spend on any plan | `spendAccess()` (`src/lib/finder.ts`) + `getSpendAccess()`: Starter / Hustle with a balance ≥ 1 search in `full` mode (1 credit, unlocked). At 0 they fall back to free locked searches (5 a day) |
+| Unlock a saved locked result | `finder_unlock_paid` (0021, service role only): Starter / Hustle pay 1 credit (a `spend` row with the result id, so fair credits + bounce refunds see it); Boss / owner free as before; 0 credits = `finder:no_credits`. Card button "Unlock (1 lead credit)", or "Get leads to unlock" at 0 |
+| 5 free leads | `WELCOME_LEAD_CREDITS = 5`. `ensureWelcomeLeads()` on the dashboard, Search leads and Plans: `finder_grant(business, 'pack', 5, 'welcome:<id>')` once the Lead Finder is open to the business and only if it never had a grant. Idempotent per ref, logged in `finder_audit` like every grant. Pack credits: never expire. Existing businesses with no credits get them on their next visit |
+| Push | Dashboard card (Starter / Hustle) + Search leads banner: "You have 5 free leads. Get more anytime: a lead pack or the lead subscription." → **Get leads** (/plans#lead-finder). Locked cards, the daily-cap error and Find me customers point to Get leads, not "Upgrade to Boss". No prices anywhere outside Stripe checkout |
+| Leaving Boss | The lead subscription keeps running (it used to be set to end with its period) |
+
+Go-live (Marlene, after Lucy okays the preview): run `supabase/migrations/0021_leads_for_everyone.sql`
+AFTER 0020 (safe twice; without it the paid unlock says "isn't switched on yet", everything else
+works) → merge → `FINDER_OPEN=1` when wanted. Nothing grants until the Lead Finder is open to a business.
+
+Checks: `npm test` 128 pass · `npm run test:sql` (0021 test: welcome once + owner none, Starter full
+search spends, paid unlock fills contacts and spends 1, repeat free, other business refused, no
+credits refused, Boss free, service role only) · lint 0 errors · `npm run build` passes.
+
 ## Branch `feat/lead-export-suppression` (no migration)
 
 | Part | Where |

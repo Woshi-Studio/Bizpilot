@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --test src/lib/*.test.ts",
-    "test:sql": "node supabase/tests/0019_finder.test.mjs && node supabase/tests/0020_finder_plans.test.mjs"
+    "test:sql": "node supabase/tests/0019_finder.test.mjs && node supabase/tests/0020_finder_plans.test.mjs && node supabase/tests/0021_leads_for_everyone.test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",

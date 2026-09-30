@@ -3,11 +3,14 @@
 import { redirect } from "next/navigation";
 import { requireUserAndBusiness } from "@/lib/data";
 import { getStripe, siteUrl } from "@/lib/stripe";
+import { createAndSaveCustomer, isMissingCustomer } from "@/lib/stripe-customer";
 import { isOwnerBusiness } from "@/lib/ai-quota";
 import { canBuyLeadProducts, finderPriceId, finderProductReady, isFinderProduct } from "@/lib/finder-plans";
 import { getFinderAccess, intakeFilled, loadProfile } from "@/lib/finder-server";
 
-// Lead Finder purchases (Settings -> Lead Finder). Boss only.
+// Lead Finder purchases (Plans -> Lead Finder). Every plan can buy
+// (LEAD_PRODUCTS_BOSS_ONLY = false); a business that never paid gets its
+// Stripe customer made here, on the first purchase.
 //   leadsub: Checkout in subscription mode (every 4 weeks); the credits
 //            come with each paid invoice (webhook: invoice.paid).
 //   pack25 / pack100: Checkout in payment mode; the credits come once per
@@ -26,13 +29,12 @@ export async function buyLeadProduct(formData: FormData) {
   if (!isFinderProduct(product)) redirect(`${BACK}?billing=error#lead-finder`);
   if (!finderProductReady(product, process.env)) redirect(`${BACK}?billing=unconfigured#lead-finder`);
 
-  const { supabase, business } = await requireUserAndBusiness();
+  const { supabase, business, user } = await requireUserAndBusiness();
   const owner = isOwnerBusiness(business.id);
-  if (!canBuyLeadProducts({ plan: business.plan, owner }) || getFinderAccess(business) !== "full") {
+  const access = getFinderAccess(business);
+  if (!canBuyLeadProducts({ plan: business.plan, owner }) || access === "none" || access === "owner") {
     redirect(`${BACK}?billing=boss_only#lead-finder`);
   }
-  const customer = (business as { stripe_customer_id?: string | null }).stripe_customer_id;
-  if (!customer) redirect(`${BACK}?billing=nocustomer#lead-finder`);
 
   if (product === "leadsub") {
     // The lead subscription finds companies from the saved hunt.
@@ -44,12 +46,15 @@ export async function buyLeadProduct(formData: FormData) {
   try {
     const stripe = getStripe();
     const price = finderPriceId(product, process.env);
-    if (product === "leadsub") {
-      // Already subscribed? Manage it in the portal instead of a second one.
-      const existing = await stripe.subscriptions.list({ customer, price, status: "active", limit: 1 });
-      if (existing.data.length > 0) {
-        url = (await stripe.billingPortal.sessions.create({ customer, return_url: `${siteUrl()}/plans#lead-finder` })).url;
-      } else {
+    const saved = (business as { stripe_customer_id?: string | null }).stripe_customer_id ?? null;
+
+    const run = async (customer: string): Promise<string> => {
+      if (product === "leadsub") {
+        // Already subscribed? Manage it in the portal instead of a second one.
+        const existing = await stripe.subscriptions.list({ customer, price, status: "active", limit: 1 });
+        if (existing.data.length > 0) {
+          return (await stripe.billingPortal.sessions.create({ customer, return_url: `${siteUrl()}/plans#lead-finder` })).url;
+        }
         const session = await stripe.checkout.sessions.create({
           mode: "subscription",
           customer,
@@ -61,9 +66,8 @@ export async function buyLeadProduct(formData: FormData) {
           cancel_url: `${siteUrl()}/plans?billing=cancelled#lead-finder`,
         });
         if (!session.url) redirect(`${BACK}?billing=error#lead-finder`);
-        url = session.url;
+        return session.url;
       }
-    } else {
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
         customer,
@@ -74,7 +78,17 @@ export async function buyLeadProduct(formData: FormData) {
         cancel_url: `${siteUrl()}/plans?billing=cancelled#lead-finder`,
       });
       if (!session.url) redirect(`${BACK}?billing=error#lead-finder`);
-      url = session.url;
+      return session.url;
+    };
+
+    // First purchase ever (Starter never paid): make the Stripe customer now.
+    const customer = saved ?? (await createAndSaveCustomer(stripe, business, user, BACK));
+    try {
+      url = await run(customer);
+    } catch (err) {
+      if (isRedirect(err) || !saved || !isMissingCustomer(err)) throw err;
+      // The saved customer is from the other Stripe mode: make a fresh one.
+      url = await run(await createAndSaveCustomer(stripe, business, user, BACK));
     }
   } catch (err) {
     if (isRedirect(err)) throw err;

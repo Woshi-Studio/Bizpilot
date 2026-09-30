@@ -2,6 +2,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  spendAccess,
   AUP_VERSION,
   betaCredits,
   daysAgoText,
@@ -137,7 +138,7 @@ test("radius: miles in the form, km in the database", () => {
 test("database errors become plain words", () => {
   assert.equal(finderErrorKey('ERROR: finder:no_credits'), "no_credits");
   assert.match(finderErrorMessage("finder:no_credits"), /out of lead credits/);
-  assert.match(finderErrorMessage("finder:upgrade"), /Upgrade to Boss/);
+  assert.match(finderErrorMessage("finder:upgrade"), /Get lead credits/);
   assert.match(finderErrorMessage("finder:locked_cap"), /free searches/);
   assert.equal(finderErrorKey("finder:unknown_thing"), null);
   assert.match(finderErrorMessage("boom"), /try again/);
@@ -234,4 +235,15 @@ test("results: most recently found or checked first", () => {
   assert.deepEqual(sortResults(rows).map((r) => r.id), ["rechecked", "new-old-data", "old"]);
   assert.deepEqual(sortResults(rows, "fresh").map((r) => r.id), ["rechecked", "old", "new-old-data"]);
   assert.equal(rows[0].id, "old", "does not sort in place");
+});
+
+test("Starter / Hustle with lead credits search like Boss; none = locked", () => {
+  assert.equal(spendAccess("locked", 5), "full");
+  assert.equal(spendAccess("locked", 1), "full");
+  assert.equal(spendAccess("locked", 0), "locked");
+  assert.equal(spendAccess("locked", -1), "locked");
+  assert.equal(spendAccess("locked", NaN), "locked");
+  assert.equal(spendAccess("full", 0), "full", "Boss out of credits stays Boss");
+  assert.equal(spendAccess("owner", 0), "owner");
+  assert.equal(spendAccess("none", 50), "none", "credits never open a closed Lead Finder");
 });

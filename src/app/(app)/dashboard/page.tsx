@@ -11,6 +11,8 @@ import { loadBusinessLines, withLine } from "@/lib/activities";
 import { NO_LINE, lineFromParam } from "@/lib/business-lines";
 import CopyBookingLink from "@/components/copy-booking-link";
 import { myBookingLink } from "@/lib/booking-server";
+import { ensureWelcomeLeads, getFinderAccess, loadCredits } from "@/lib/finder-server";
+import { leadOffer, leadOfferText } from "@/lib/finder-plans";
 
 export const metadata = { title: "Dashboard" };
 
@@ -24,6 +26,11 @@ export default async function DashboardPage({
   const line = lineFromParam((await searchParams).line);
 
   const monthStart = `${today.slice(0, 7)}-01`;
+
+  // Lead Finder push for Starter / Hustle: the welcome lead credits (once),
+  // then a "Get leads" card. Boss and the owner don't see it.
+  const leadsPush = getFinderAccess(business) === "locked";
+  if (leadsPush) await ensureWelcomeLeads(business);
 
   // Plain-string column lists keep the filtered query types simple.
   const cols = (c: string) => c;
@@ -67,6 +74,7 @@ export default async function DashboardPage({
     dueCustomersResult,
     lines,
     bookingLink,
+    leadCredits,
   ] = await Promise.all([
       supabase
         .from("profiles")
@@ -141,7 +149,9 @@ export default async function DashboardPage({
         .limit(300),
       loadBusinessLines(supabase, business.id),
       myBookingLink(supabase, business),
+      leadsPush ? loadCredits(supabase, business.id) : Promise.resolve(null),
     ]);
+  const offer = leadCredits ? leadOffer(leadCredits.rows) : null;
 
   // Scoreboard: one card per business line (or just the chosen one)
   const scoreMissing = !!scoreResult.error;
@@ -346,6 +356,25 @@ export default async function DashboardPage({
       <div className="mt-6">
         <BusinessLineFilter basePath="/dashboard" lines={lines} current={line} />
       </div>
+
+      {offer && (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-accent/40 bg-accent-soft p-5">
+          <div className="min-w-0">
+            <p className="text-base font-semibold text-ink">
+              {offer.balance > 0 ? "🎯 Find your next customers" : "🎯 Need more customers?"}
+            </p>
+            <p className="mt-1 text-sm text-ink-2">{leadOfferText(offer)}</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/leads/search" className="btn-secondary btn-sm">
+              Search leads
+            </Link>
+            <Link href="/plans#lead-finder" className="btn-primary btn-sm">
+              Get leads
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* KPI row */}
       <div className="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">

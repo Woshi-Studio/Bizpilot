@@ -7,11 +7,12 @@ import { runFairChecks } from "@/lib/fair-credit-server";
 import { isDemoMode } from "@/lib/demo";
 import { alertMode, seenSince, wantsApp } from "@/lib/lead-alerts";
 import { markLeadsSeen } from "@/lib/lead-alerts-server";
-import { DISCOVER_DEFAULT_COUNT, LOCKED_SEARCHES_PER_DAY } from "@/lib/finder-plans";
+import { DISCOVER_DEFAULT_COUNT, LOCKED_SEARCHES_PER_DAY, leadOffer, leadOfferText } from "@/lib/finder-plans";
 import FindCustomers from "./find-customers";
 import {
   canDiscover,
-  getFinderAccess,
+  ensureWelcomeLeads,
+  getSpendAccess,
   intakeFilled,
   loadFinderPage,
   loadProfile,
@@ -102,7 +103,11 @@ export default async function SearchLeadsPage({
   searchParams: Promise<{ hide?: string; sort?: string }>;
 }) {
   const { supabase, business, user } = await requireUserAndBusiness();
-  const access = getFinderAccess(business);
+  // New (or never-credited) businesses get the welcome lead credits once.
+  await ensureWelcomeLeads(business);
+  // `base` = what the plan gives; `access` = how a search runs now
+  // (Starter / Hustle with lead credits spend them like Boss).
+  const { access, base, credits } = await getSpendAccess(supabase, business);
   const sp = await searchParams;
   const hide = sp.hide === "1";
   const sort: ResultSort = sp.sort === "fresh" ? "fresh" : "newest";
@@ -132,7 +137,7 @@ export default async function SearchLeadsPage({
 
   const [{ profile, ready }, page, { data: me }, haveIdx] = await Promise.all([
     loadProfile(supabase, business.id),
-    loadFinderPage(supabase, business.id, access),
+    loadFinderPage(supabase, business.id, base),
     supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
     loadHave(supabase, business.id),
   ]);
@@ -152,6 +157,9 @@ export default async function SearchLeadsPage({
 
   const unlimited = access === "owner";
   const locked = access === "locked";
+  // Starter / Hustle: the "Get leads" push (no prices here, only on /plans).
+  const nonBoss = base === "locked";
+  const offer = nonBoss ? leadOffer(credits?.rows ?? []) : null;
   const pending = pendingItems(page.items);
   const hasIntake = intakeFilled(profile);
   const outOfCredits = access === "full" && page.balance <= 0;
@@ -162,10 +170,11 @@ export default async function SearchLeadsPage({
   if (newCount > 0 && wantsApp(alertMode(user.user_metadata)) && !isDemoMode()) await markLeadsSeen(user);
   const unlockedCount = page.results.filter((r) => !r.locked).length;
   const note = locked
-    ? `Free search (${LOCKED_SEARCHES_PER_DAY} a day): you see the company, city and why it fits. Boss unlocks the phone, email, website and source.`
+    ? `Free search (${LOCKED_SEARCHES_PER_DAY} a day): you see the company, city and why it fits. Lead credits unlock the phone, email, website and source.`
     : outOfCredits
-      ? "You're out of lead credits. Get more in Settings → Plans."
-      : "Known companies show at once (1 credit).";
+      ? "You're out of lead credits. Get more anytime: a lead pack or the lead subscription."
+      : "1 lead credit per business found. Not found = free.";
+  const unlockMode = nonBoss ? (page.balance >= 1 ? "paid" : "buy") : "gone";
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -182,12 +191,27 @@ export default async function SearchLeadsPage({
             {creditLine(page.balance, page.held, unlimited)}
           </p>
         )}
-        {locked && (
-          <Link href="/plans" className="btn-primary btn-sm">
-            Upgrade to Boss to unlock
+        {nonBoss && (
+          <Link href="/plans#lead-finder" className="btn-primary btn-sm">
+            Get leads
           </Link>
         )}
       </div>
+
+      {offer && (
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border-2 border-accent/40 bg-accent-soft p-5">
+          <div className="min-w-0">
+            <p className="text-base font-semibold text-ink">
+              {offer.balance > 0 ? "Your leads are ready" : "Want the phone, email and website?"}
+            </p>
+            <p className="mt-1 text-sm text-ink-2">{leadOfferText(offer)}</p>
+            <p className="mt-1 text-xs text-muted">No plan change needed. 1 lead credit = 1 business with a way to reach it.</p>
+          </div>
+          <Link href="/plans#lead-finder" className="btn-primary">
+            Get leads
+          </Link>
+        </div>
+      )}
 
       <div className="mt-6 card p-5 sm:p-6">
         <Link href="/leads/search/hunt" className="btn-primary w-full px-6 py-3 text-base sm:w-auto">
@@ -299,7 +323,7 @@ export default async function SearchLeadsPage({
                 result={r}
                 have={r.have ? haveLabel(r.have) : null}
                 isNew={Date.parse(r.created_at) > newSince}
-                canUnlock={!locked}
+                unlockMode={unlockMode}
                 reportedStatus={page.reported.get(r.id) ?? null}
                 sender={{
                   name: (me as { full_name?: string | null } | null)?.full_name ?? null,

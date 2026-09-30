@@ -4,7 +4,9 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { isDemoMode } from "@/lib/demo";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { balanceOf, heldOf, type LedgerRow } from "@/lib/finder-credits";
-import { finderAccess, visibleResult, type FinderAccess, type FinderResult } from "@/lib/finder";
+import { finderAccess, spendAccess, visibleResult, type FinderAccess, type FinderResult } from "@/lib/finder";
+import { WELCOME_LEAD_CREDITS, welcomeDue, welcomeRef } from "@/lib/finder-plans";
+import { isOwnerBusiness } from "@/lib/ai-quota";
 
 type Biz = { id: string; plan?: string | null };
 
@@ -15,6 +17,66 @@ export function getFinderAccess(business: Biz): FinderAccess {
     return d === "full" || d === "locked" || d === "none" ? d : "owner";
   }
   return finderAccess(business.id, process.env, business.plan ?? null);
+}
+
+// The access a search runs with: Starter / Hustle with lead credits spend
+// them like Boss (unlocked results); with none, free locked searches.
+// Also returns the plan access and the balance, for the page.
+export async function getSpendAccess(supabase: SupabaseClient, business: Biz) {
+  const base = getFinderAccess(business);
+  if (base !== "locked") return { access: base, base, credits: null };
+  const credits = await loadCredits(supabase, business.id);
+  return { access: spendAccess(base, credits?.balance ?? 0), base, credits };
+}
+
+// The welcome lead credits (WELCOME_LEAD_CREDITS, once per business).
+// Given on the first visit to the dashboard, Search leads or Plans once the
+// Lead Finder is open to the business, and only if it never had a grant
+// before (Boss, packs, testers). finder_grant is idempotent per reference,
+// so two page loads at once still grant once. Never throws.
+export async function ensureWelcomeLeads(business: Biz): Promise<number> {
+  if (isDemoMode()) return 0;
+  const access = getFinderAccess(business);
+  const owner = isOwnerBusiness(business.id);
+  if (!welcomeDue({ owner, access, hadGrant: false })) return 0;
+  const admin = createAdminClient();
+  if (!admin) return 0;
+  try {
+    const { count, error } = await admin
+      .from("finder_credit_ledger")
+      .select("id", { count: "exact", head: true })
+      .eq("business_id", business.id)
+      .eq("reason", "grant");
+    if (error) return 0; // before 0019: nothing to grant into
+    if (!welcomeDue({ owner, access, hadGrant: (count ?? 0) > 0 })) return 0;
+    const { data, error: grantError } = await admin.rpc("finder_grant", {
+      p_business: business.id,
+      p_pool: "pack",
+      p_credits: WELCOME_LEAD_CREDITS,
+      p_ref: welcomeRef(business.id),
+      p_rollover: false,
+    });
+    if (grantError) {
+      if (!/does not exist|schema cache/i.test(grantError.message)) console.error("welcome leads grant failed:", grantError.message);
+      return 0;
+    }
+    const out = data as { status?: string; credits?: number } | null;
+    return out?.status === "granted" ? out.credits ?? 0 : 0;
+  } catch (err) {
+    console.error("welcome leads grant failed:", err instanceof Error ? err.message : err);
+    return 0;
+  }
+}
+
+// Starter / Hustle: unlock one saved locked result for 1 lead credit
+// (finder_unlock_paid, 0021). Boss and the owner unlock free. The caller
+// checked the session; the business id is the user's own.
+export async function unlockPaid(businessId: string, resultId: string): Promise<{ ok: boolean; error?: string; credits?: number }> {
+  const admin = createAdminClient();
+  if (!admin) return { ok: false, error: "The Lead Finder isn't ready yet. Please try again later." };
+  const { data, error } = await admin.rpc("finder_unlock_paid", { p_business: businessId, p_result: resultId });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, credits: (data as { credits?: number } | null)?.credits ?? 0 };
 }
 
 export type FinderProfile = {
@@ -226,9 +288,9 @@ export async function loadLeadSub(supabase: SupabaseClient, businessId: string):
 export async function loadCredits(supabase: SupabaseClient, businessId: string) {
   const { data, error } = await supabase
     .from("finder_credit_ledger")
-    .select("delta, reason, item_id, created_at")
+    .select("delta, reason, item_id, note, created_at")
     .eq("business_id", businessId);
   if (error) return null;
   const rows = (data ?? []) as LedgerRow[];
-  return { balance: balanceOf(rows), held: heldOf(rows) };
+  return { balance: balanceOf(rows), held: heldOf(rows), rows };
 }

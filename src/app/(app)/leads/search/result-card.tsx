@@ -16,7 +16,7 @@ import {
   type FinderResult,
 } from "@/lib/finder";
 import { mailtoHref } from "@/lib/mailto";
-import { addFoundToLeads, reportFound, type FinderFormState } from "./actions";
+import { addFoundToLeads, reportFound, unlockResult, type FinderFormState } from "./actions";
 
 const initial: FinderFormState = {};
 
@@ -35,7 +35,15 @@ const LOCKED_ROWS = [
   ["Contact", "Name Surname"],
 ] as const;
 
-function LockedContacts({ canUnlock }: { canUnlock: boolean }) {
+// How a locked card can open:
+//   "gone" -> Boss / owner: saved results unlock on their own, so a card
+//             still locked here lost its company (removed)
+//   "paid" -> Starter / Hustle with lead credits: Unlock for 1 credit
+//   "buy"  -> no credits: Get leads (packs or the lead subscription)
+export type UnlockMode = "gone" | "paid" | "buy";
+
+function LockedContacts({ resultId, mode }: { resultId: string; mode: UnlockMode }) {
+  const [state, action, pending] = useActionState(unlockResult, initial);
   return (
     <div className="mt-3 rounded-xl border border-line/70 bg-surface-2 p-3">
       <dl className="grid gap-2 text-sm sm:grid-cols-2" aria-hidden>
@@ -47,16 +55,32 @@ function LockedContacts({ canUnlock }: { canUnlock: boolean }) {
         ))}
       </dl>
       <p className="mt-2 text-xs text-muted">Source: hidden</p>
-      {canUnlock ? (
+      {mode === "gone" ? (
         <p className="mt-3 text-sm text-muted">This result is no longer available.</p>
+      ) : mode === "paid" ? (
+        <form action={action} className="mt-3 flex flex-wrap items-center gap-3">
+          <input type="hidden" name="result_id" value={resultId} />
+          <button type="submit" disabled={pending} className="btn-primary btn-sm">
+            {pending ? "Unlocking..." : "Unlock (1 lead credit)"}
+          </button>
+          <span className="text-xs text-muted">Shows the phone, email, website and source.</span>
+        </form>
       ) : (
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <Link href="/plans" className="btn-primary btn-sm">
-            Upgrade to Boss to unlock
+          <Link href="/plans#lead-finder" className="btn-primary btn-sm">
+            Get leads to unlock
           </Link>
-          <span className="text-xs text-muted">Saved here: it unlocks when you upgrade.</span>
+          <span className="text-xs text-muted">Saved here. A pack or the lead subscription unlocks it.</span>
         </div>
       )}
+      <FormError
+        error={state.error}
+        upgrade={state.upgrade}
+        upgradeHref="/plans#lead-finder"
+        upgradeLabel="Get leads"
+        className="mt-3"
+      />
+      {state.success && <p className="alert-success mt-3">{state.success}</p>}
     </div>
   );
 }
@@ -65,7 +89,7 @@ export default function ResultCard({
   result,
   sender,
   reportedStatus,
-  canUnlock = false,
+  unlockMode = "buy",
   have = null,
   isNew = false,
 }: {
@@ -74,7 +98,7 @@ export default function ResultCard({
   isNew?: boolean;
   sender: { name: string | null; business: string; offer: string | null };
   reportedStatus: string | null;
-  canUnlock?: boolean;
+  unlockMode?: UnlockMode;
 }) {
   const r = visibleResult(result);
   const [addState, addAction, adding] = useActionState(addFoundToLeads, initial);
@@ -131,7 +155,7 @@ export default function ResultCard({
       {r.why && <p className="mt-3 text-sm text-ink-2">{r.why}</p>}
 
       {r.locked ? (
-        <LockedContacts canUnlock={canUnlock} />
+        <LockedContacts resultId={r.id} mode={unlockMode} />
       ) : (
         <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
           {r.contact_name && (

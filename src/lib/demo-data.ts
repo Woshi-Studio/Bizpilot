@@ -595,7 +595,11 @@ export function buildDemoData(): Record<string, Row[]> {
     finder_profiles,
     finder_results,
     finder_job_items,
-    finder_credit_ledger: finderEmpty || finderLocked ? [] : [
+    finder_credit_ledger: finderEmpty ? [] : finderLocked ? [
+      // A Starter's welcome lead credits (WELCOME_LEAD_CREDITS), one used
+      { business_id: B, delta: 5, reason: "grant", note: "pack", item_id: null, created_at: ts(-2) },
+      { business_id: B, delta: -1, reason: "spend", note: null, item_id: null, created_at: ts(-1) },
+    ] : [
       { business_id: B, delta: 40, reason: "grant", note: "plan", item_id: null, created_at: ts(-10) },
       { business_id: B, delta: 25, reason: "grant", note: "pack", item_id: null, created_at: ts(-5) },
       { business_id: B, delta: -3, reason: "spend", note: null, item_id: null, created_at: ts(-1) },

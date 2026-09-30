@@ -150,6 +150,14 @@ export function finderAccess(businessId: string, env: Env, plan?: string | null)
   return plan === "pro" ? "full" : "locked";
 }
 
+// Starter / Hustle with lead credits (bought, or the welcome ones) search
+// like Boss: each search spends a credit and comes back unlocked. With no
+// credits left they fall back to free, locked searches. Boss, testers and
+// the owner are unchanged.
+export function spendAccess(access: FinderAccess, balance: number): FinderAccess {
+  return access === "locked" && Number.isFinite(balance) && balance >= 1 ? "full" : access;
+}
+
 // The database's access mode for finder_submit (0020).
 export function submitMode(access: FinderAccess): "owner" | "full" | "locked" | null {
   return access === "none" ? null : access;
@@ -305,11 +313,11 @@ export function parseRemoval(body: Record<string, unknown>, now = Date.now()): O
 // ------------------------------------------------------------------
 
 const FINDER_ERRORS: Record<string, string> = {
-  no_credits: "You're out of lead credits. Get more in Settings → Plans.",
+  no_credits: "You're out of lead credits. Get more anytime: a pack or the lead subscription (Plans).",
   no_profile: "Tick the Acceptable Use box first.",
   bad_input: "Something in the search didn't look right. Check what you typed.",
-  upgrade: "Upgrade to Boss to unlock this result.",
-  locked_cap: `You've used today's free searches. Boss has no daily limit.`,
+  upgrade: "Get lead credits to unlock this result (Plans).",
+  locked_cap: `You've used today's free searches. Lead credits have no daily limit: get a pack or the lead subscription (Plans).`,
   no_industries: "Pick at least one kind of customer (or type one under Other) first.",
   discover_busy: "A \"Find me customers\" run is already going. It shows under In progress.",
   rate: "That's a lot of searches in one hour. Try again a little later.",

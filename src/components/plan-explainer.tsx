@@ -5,7 +5,12 @@ import {
   LOCKED_SEARCHES_PER_DAY,
   PACK_CREDITS,
   LEAD_CREDITS_ROLL_OVER,
+  LEAD_PRODUCTS_BOSS_ONLY,
+  WELCOME_LEAD_CREDITS,
 } from "@/lib/finder-plans";
+
+// Who can buy lead packs / the lead subscription on plan p.
+const canBuyLeads = (p: Plan) => p === "pro" || !LEAD_PRODUCTS_BOSS_ONLY;
 
 // What each plan gets, in plain words. Used by the in-app Plans page and
 // the public /pricing page (which hides prices unless SHOW_PUBLIC_PRICES).
@@ -27,7 +32,16 @@ function rows(): { label: string; value: (p: Plan) => string }[] {
     { label: "Assistant access (API keys)", value: (p) => (p === "free" ? "—" : "Yes") },
     {
       label: "Lead Finder searches",
-      value: (p) => (p === "pro" ? "Unlocked results" : `Free, ${LOCKED_SEARCHES_PER_DAY} a day, results locked`),
+      value: (p) =>
+        p === "pro"
+          ? "Unlocked results"
+          : LEAD_PRODUCTS_BOSS_ONLY
+            ? `Free, ${LOCKED_SEARCHES_PER_DAY} a day, results locked`
+            : `Free, ${LOCKED_SEARCHES_PER_DAY} a day; lead credits unlock them`,
+    },
+    {
+      label: "Free lead credits to start",
+      value: () => `${WELCOME_LEAD_CREDITS}, once`,
     },
     {
       label: "Lead credits every 4 weeks",
@@ -35,11 +49,11 @@ function rows(): { label: string; value: (p: Plan) => string }[] {
     },
     {
       label: "Leads subscription (add-on)",
-      value: (p) => (p === "pro" ? `+${LEADSUB_CREDITS_PER_PERIOD} leads every 4 weeks` : "Boss only"),
+      value: (p) => (canBuyLeads(p) ? `+${LEADSUB_CREDITS_PER_PERIOD} leads every 4 weeks` : "Boss only"),
     },
     {
       label: "Lead packs (one time)",
-      value: (p) => (p === "pro" ? `${PACK_CREDITS.pack25} or ${PACK_CREDITS.pack100} leads` : "Boss only"),
+      value: (p) => (canBuyLeads(p) ? `${PACK_CREDITS.pack25} or ${PACK_CREDITS.pack100} leads` : "Boss only"),
     },
   ];
 }
@@ -78,7 +92,7 @@ export function PlanTable({ showPrices }: { showPrices: boolean }) {
   );
 }
 
-// The Boss add-ons, as plain cards. No prices here: the public page hides
+// The lead add-ons (any plan unless LEAD_PRODUCTS_BOSS_ONLY), as plain cards. No prices here: the public page hides
 // them, and Stripe checkout shows the price before anyone pays.
 export function LeadAddOns() {
   const cards = [
@@ -86,7 +100,9 @@ export function LeadAddOns() {
       title: "Leads subscription",
       big: LEADSUB_CREDITS_PER_PERIOD,
       unit: "leads every 4 weeks",
-      text: `On top of Boss's ${BOSS_CREDITS_PER_PERIOD}. Renews every 4 weeks; cancel any time.`,
+      text: LEAD_PRODUCTS_BOSS_ONLY
+        ? `On top of Boss's ${BOSS_CREDITS_PER_PERIOD}. Renews every 4 weeks; cancel any time.`
+        : "Leads without changing your plan. Renews every 4 weeks; cancel any time.",
     },
     {
       title: `Pack ${PACK_CREDITS.pack25}`,
@@ -111,7 +127,9 @@ export function LeadAddOns() {
             <span className="text-sm font-medium text-muted"> {c.unit}</span>
           </p>
           <p className="mt-2 text-sm text-ink-2">{c.text}</p>
-          <p className="mt-3 text-xs font-medium text-muted">Available on Boss</p>
+          <p className="mt-3 text-xs font-medium text-muted">
+            {LEAD_PRODUCTS_BOSS_ONLY ? "Available on Boss" : "Any plan: Starter, Hustle or Boss"}
+          </p>
         </div>
       ))}
     </div>
@@ -127,21 +145,35 @@ export function PlanFaq({ inApp }: { inApp: boolean }) {
           <li>
             <strong>Starter and Hustle</strong> can search for free ({LOCKED_SEARCHES_PER_DAY} a day). Each
             result shows the company, the city and why it fits. The phone, email, website, contact
-            name and source stay locked.
+            name and source stay locked
+            {LEAD_PRODUCTS_BOSS_ONLY ? "." : " until you use a lead credit."}
           </li>
+          {!LEAD_PRODUCTS_BOSS_ONLY && (
+            <li>
+              Every new account gets {WELCOME_LEAD_CREDITS} free lead credits. After that, buy a pack or
+              get the lead subscription on any plan. No need to change plans.
+            </li>
+          )}
           <li>
             <strong>Boss</strong> sees everything. 1 lead credit = 1 business found with a way to reach
             it. Not found = free.
           </li>
-          <li>Locked results are saved. They unlock when you move to Boss.</li>
+          <li>
+            {LEAD_PRODUCTS_BOSS_ONLY
+              ? "Locked results are saved. They unlock when you move to Boss."
+              : "Locked results are saved. Unlock one for 1 lead credit, or all of them free by moving to Boss."}
+          </li>
         </ul>
       </div>
       <div className="card p-5">
-        <h3 className="section-title">Lead subscription and packs (Boss)</h3>
+        <h3 className="section-title">
+          {LEAD_PRODUCTS_BOSS_ONLY ? "Lead subscription and packs (Boss)" : "Lead subscription and packs (any plan)"}
+        </h3>
         <ul className="mt-2 list-disc space-y-1.5 pl-5 text-sm text-ink-2">
           <li>Boss comes with {BOSS_CREDITS_PER_PERIOD} lead credits every 4 weeks.</li>
           <li>
-            The lead subscription adds {LEADSUB_CREDITS_PER_PERIOD} lead credits every 4 weeks, on top.
+            The lead subscription adds {LEADSUB_CREDITS_PER_PERIOD} lead credits every 4 weeks
+            {LEAD_PRODUCTS_BOSS_ONLY ? ", on top." : ", on any plan (on top of Boss's, if you have Boss)."}
           </li>
           <li>
             Packs of {PACK_CREDITS.pack25} or {PACK_CREDITS.pack100} leads are one-time top-ups.

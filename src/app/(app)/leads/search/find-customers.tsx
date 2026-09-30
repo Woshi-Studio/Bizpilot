@@ -29,7 +29,7 @@ export default function FindCustomers({
             {ready
               ? `We look for up to ${count} new businesses that need what you sell${summary ? ` (${summary})` : ""}, then find the best way to reach each one. Companies you already have are skipped.`
               : "Tell us what your business does and who your customers are, and we'll go find companies that need what you sell."}
-            {locked && ready ? " On your plan the results come back locked until you upgrade to Boss." : ""}
+            {locked && ready ? " Without lead credits the results come back locked. Get leads to unlock them." : ""}
           </p>
         </div>
         {ready ? (
@@ -44,7 +44,7 @@ export default function FindCustomers({
           </Link>
         )}
       </div>
-      <FormError error={state.error} upgrade={state.upgrade} className="mt-3" />
+      <FormError error={state.error} upgrade={state.upgrade} upgradeHref="/plans#lead-finder" upgradeLabel="Get leads" className="mt-3" />
       {state.success && <p className="alert-success mt-3">{state.success}</p>}
     </div>
   );
